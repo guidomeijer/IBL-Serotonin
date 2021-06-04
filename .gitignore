@@ -2,3 +2,5 @@
 Behavior/model_fit_results/
 
 Pharmacology/model_fit_results/
+
+__pycache__/
