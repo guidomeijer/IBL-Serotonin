@@ -19,7 +19,7 @@ one = ONE()
 _, fig_path, _ = paths()
 fig_path = join(fig_path, '5HT', 'opto-behavior')
 
-subjects = pd.read_csv('subjects.csv')
+subjects = pd.read_csv('/../subjects.csv')
 
 # testing
 #subjects = subjects[subjects['subject'] == 'ZFM-01867'].reset_index(drop=True)

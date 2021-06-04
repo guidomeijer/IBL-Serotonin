@@ -41,6 +41,45 @@ def figure_style(font_scale=2, despine=False, trim=True):
         plt.tight_layout()
 
 
+def query_sessions(selection='aligned', return_subjects=False, one=None):
+    if one is None:
+        one = ONE()
+    if selection == 'all':
+        # Query all opto_ephysChoiceWorld sessions
+        ins = one.alyx.rest('insertions', 'list',
+                        django='session__project__name__icontains,serotonin_inference,'
+                               'session__qc__lt,50')
+    elif selection == 'aligned':
+        # Query all ephys-histology aligned sessions
+        ins = one.alyx.rest('insertions', 'list',
+                        django='session__project__name__icontains,serotonin_inference,'
+                               'session__qc__lt,50,'
+                               'json__extended_qc__alignment_count__gt,0')
+    elif selection == 'aligned-behavior':
+        # Query sessions with an alignment and that meet behavior criterion
+        ins = one.alyx.rest('insertions', 'list',
+                        django='session__project__name__icontains,serotonin_inference,'
+                               'session__qc__lt,50,'
+                               'json__extended_qc__alignment_count__gt,0,'
+                               'session__extended_qc__behavior,1')
+    else:
+        ins = []
+
+    # Get list of eids and probes
+    all_eids = np.array([i['session'] for i in ins])
+    all_probes = np.array([i['name'] for i in ins])
+    all_subjects = np.array([i['session_info']['subject'] for i in ins])
+    eids, ind_unique = np.unique(all_eids, return_index=True)
+    subjects = all_subjects[ind_unique]
+    probes = []
+    for i, eid in enumerate(eids):
+        probes.append(all_probes[[s == eid for s in all_eids]])
+    if return_subjects:
+        return eids, probes, subjects
+    else:
+        return eids, probes
+
+
 def load_trials(eid, laser_stimulation=False, invert_choice=False, invert_stimside=False, one=None):
     if one is None:
         one = ONE()
@@ -64,6 +103,10 @@ def load_trials(eid, laser_stimulation=False, invert_choice=False, invert_stimsi
             trials = trials.drop(columns=['laser_stimulation'])
         if trials.loc[0, 'laser_probability'] is None:
             trials = trials.drop(columns=['laser_probability'])
+        else:
+            trials['catch'] = ((trials['laser_stimulation'] == 0) & (trials['laser_probability'] == 0.75)
+                               | (trials['laser_stimulation'] == 1) & (trials['laser_probability'] == 0.25)).astype(int)
+
     else:
        (trials['stimOn_times'], trials['feedback_times'], trials['goCue_times'],
          trials['probabilityLeft'], trials['contrastLeft'], trials['contrastRight'],
@@ -150,16 +193,21 @@ def criteria_opto_eids(eids, max_lapse=0.2, max_bias=0.3, min_trials=200, one=No
             print('Could not load session %s' % eid)
     return use_eids
 
-def load_exp_smoothing_trials(eids, one):
-    stimuli_arr, actions_arr, stim_sides_arr, session_uuids = [], [], [], []
+def load_exp_smoothing_trials(eids, laser_stimulation=False, one=None):
+    if one is None:
+        one=ONE()
+    stimuli_arr, actions_arr, stim_sides_arr, prob_left_arr, stimulated_arr, session_uuids = [], [], [], [], [], []
     for j, eid in enumerate(eids):
         try:
             # Load in trials vectors
-            trials = load_trials(eid, invert_stimside=True, one=one)
+            trials = load_trials(eid, invert_stimside=True, laser_stimulation=laser_stimulation, one=one)
+            if laser_stimulation:
+                stimulated_arr.append(trials['laser_stimulation'].values)
+            session_uuids.append(eid)
             stimuli_arr.append(trials['signed_contrast'].values)
             actions_arr.append(trials['choice'].values)
             stim_sides_arr.append(trials['stim_side'].values)
-            session_uuids.append(eid)
+            prob_left_arr.append(trials['probabilityLeft'].values)
         except:
             print(f'Could not load trials for {eid}')
 
@@ -171,12 +219,20 @@ def load_exp_smoothing_trials(eids, one):
                         for k in range(len(stimuli_arr))])
     actions = np.array([np.concatenate((actions_arr[k], np.zeros(max_len-len(actions_arr[k]))))
                         for k in range(len(actions_arr))])
+    prob_left = np.array([np.concatenate((prob_left_arr[k], np.zeros(max_len-len(prob_left_arr[k]))))
+                        for k in range(len(prob_left_arr))])
     stim_side = np.array([np.concatenate((stim_sides_arr[k],
                                           np.zeros(max_len-len(stim_sides_arr[k]))))
                           for k in range(len(stim_sides_arr))])
+    if laser_stimulation:
+        stimulated = np.array([np.concatenate((stimulated_arr[k], np.zeros(max_len-len(stimulated_arr[k]))))
+                            for k in range(len(stimulated_arr))])
     session_uuids = np.array(session_uuids)
 
-    return actions, stimuli, stim_side, session_uuids
+    if laser_stimulation:
+        return actions, stimuli, stim_side, prob_left, stimulated, session_uuids
+    else:
+        return actions, stimuli, stim_side, prob_left, session_uuids
 
 
 def fit_psychfunc(stim_levels, n_trials, proportion):
