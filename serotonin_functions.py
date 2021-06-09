@@ -173,7 +173,7 @@ def criteria_opto_eids(eids, max_lapse=0.2, max_bias=0.3, min_trials=200, one=No
     use_eids = []
     for j, eid in enumerate(eids):
         try:
-            trials = load_trials(eid, laser_stimulation=True)
+            trials = load_trials(eid, laser_stimulation=True, one=one)
             lapse_l = 1 - (np.sum(trials.loc[trials['signed_contrast'] == -1, 'choice'] == 1)
                            / trials.loc[trials['signed_contrast'] == -1, 'choice'].shape[0])
             lapse_r = 1 - (np.sum(trials.loc[trials['signed_contrast'] == 1, 'choice'] == -1)
@@ -193,6 +193,7 @@ def criteria_opto_eids(eids, max_lapse=0.2, max_bias=0.3, min_trials=200, one=No
             print('Could not load session %s' % eid)
     return use_eids
 
+
 def load_exp_smoothing_trials(eids, laser_stimulation=False, one=None):
     if one is None:
         one=ONE()
@@ -203,13 +204,18 @@ def load_exp_smoothing_trials(eids, laser_stimulation=False, one=None):
             trials = load_trials(eid, invert_stimside=True, laser_stimulation=laser_stimulation, one=one)
             if laser_stimulation:
                 stimulated_arr.append(trials['laser_stimulation'].values)
-            session_uuids.append(eid)
             stimuli_arr.append(trials['signed_contrast'].values)
             actions_arr.append(trials['choice'].values)
             stim_sides_arr.append(trials['stim_side'].values)
             prob_left_arr.append(trials['probabilityLeft'].values)
+            session_uuids.append(eid)
         except:
             print(f'Could not load trials for {eid}')
+
+    if (len(session_uuids) == 0) and laser_stimulation:
+        return [], [], [], [], [], []
+    elif len(session_uuids) == 0:
+        return [], [], [], [], []
 
     # Get maximum number of trials across sessions
     max_len = np.array([len(stimuli_arr[k]) for k in range(len(stimuli_arr))]).max()
@@ -228,6 +234,14 @@ def load_exp_smoothing_trials(eids, laser_stimulation=False, one=None):
         stimulated = np.array([np.concatenate((stimulated_arr[k], np.zeros(max_len-len(stimulated_arr[k]))))
                             for k in range(len(stimulated_arr))])
     session_uuids = np.array(session_uuids)
+
+    if session_uuids.shape[0] == 1:
+        stimuli = np.array([np.squeeze(stimuli)])
+        actions = np.array([np.squeeze(actions)])
+        prob_left = np.array([np.squeeze(prob_left)])
+        stim_side = np.array([np.squeeze(stim_side)])
+        if laser_stimulation:
+            laser_stimulation = np.array([np.squeeze(laser_stimulation)])
 
     if laser_stimulation:
         return actions, stimuli, stim_side, prob_left, stimulated, session_uuids

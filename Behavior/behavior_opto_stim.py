@@ -11,7 +11,8 @@ from os.path import join
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from my_functions import load_trials, plot_psychometric, paths, criteria_opto_eids, fit_psychfunc
+from serotonin_functions import (load_trials, plot_psychometric, paths, criteria_opto_eids,
+                                 fit_psychfunc, figure_style)
 from oneibl.one import ONE
 one = ONE()
 
@@ -19,7 +20,7 @@ one = ONE()
 _, fig_path, _ = paths()
 fig_path = join(fig_path, '5HT', 'opto-behavior')
 
-subjects = pd.read_csv('/../subjects.csv')
+subjects = pd.read_csv(join('..', 'subjects.csv'))
 
 # testing
 #subjects = subjects[subjects['subject'] == 'ZFM-01867'].reset_index(drop=True)
@@ -35,7 +36,7 @@ for i, nickname in enumerate(subjects['subject']):
     else:
         eids = one.search(subject=nickname, task_protocol='_iblrig_tasks_opto_biasedChoiceWorld',
                           date_range=[subjects.loc[i, 'date_range'][:10], subjects.loc[i, 'date_range'][11:]])
-    eids = criteria_opto_eids(eids, max_lapse=0.3, max_bias=0.5, min_trials=300, one=one)
+    #eids = criteria_opto_eids(eids, max_lapse=0.3, max_bias=0.5, min_trials=300, one=one)
 
     # Get trials DataFrame
     trials = pd.DataFrame()
@@ -211,75 +212,37 @@ for i, nickname in enumerate(subjects['subject']):
 # %% Plot
 colors = [sns.color_palette('colorblind')[0], sns.color_palette('colorblind')[7]]
 
-sns.set(context='talk', style='ticks', font_scale=1.2)
-f, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 5), dpi=300)
+psy_avg_block_df = psy_df.groupby(['subject', 'opto_stim']).mean()
+psy_avg_block_df['lapse_both'] = psy_avg_block_df.loc[:, 'lapse_l':'lapse_r'].mean(axis=1)
+f, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(10, 10), dpi=150)
 sns.lineplot(x='opto_stim', y='bias', hue='sert-cre', style='subject', estimator=None,
              data=bias_df[bias_df['catch_trial'] == 0], dashes=False,
              markers=['o']*int(bias_df.shape[0]/4), palette=colors, hue_order=[1, 0],
              legend=False, ax=ax1)
-ax1.set(xlabel='', xticks=[0, 1], xticklabels=['No stim', 'Stim'], ylabel='Bias')
+ax1.set(xlabel='', xticks=[0, 1], xticklabels=['No stim', 'Stim'], ylabel='Bias', ylim=[0, 0.7])
 
 sns.lineplot(x='opto_stim', y='bias', hue='sert-cre', style='subject', estimator=None,
              data=bias_df[bias_df['catch_trial'] == 1], dashes=False,
              markers=['o']*int(bias_df.shape[0]/4), palette=colors, hue_order=[1, 0],
              legend=False, ax=ax2)
-ax2.set(xlabel='', xticks=[0, 1], xticklabels=['No stim', 'Stim'], ylabel='Bias',
+ax2.set(xlabel='', xticks=[0, 1], xticklabels=['No stim', 'Stim'], ylabel='Bias', ylim=[0, 0.7],
         title='Catch trials')
-plt.tight_layout()
 
-f, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(10, 10), dpi=150)
 sns.lineplot(x='opto_stim', y='threshold', hue='sert-cre', style='subject', estimator=None,
-             data=psy_df[psy_df['prob_left'] == 0.2], dashes=False,
-             markers=['o']*int(bias_df.shape[0]/4), palette=colors, hue_order=[1, 0],
-             legend=False, ax=ax1)
-ax1.set(xlabel='', xticks=[0, 1], xticklabels=['No stim', 'Stim'], ylabel='Threshold')
-
-sns.lineplot(x='opto_stim', y='bias', hue='sert-cre', style='subject', estimator=None,
-             data=psy_df[psy_df['prob_left'] == 0.2], dashes=False,
-             markers=['o']*int(bias_df.shape[0]/4), palette=colors, hue_order=[1, 0],
-             legend=False, ax=ax2)
-ax2.set(xlabel='', xticks=[0, 1], xticklabels=['No stim', 'Stim'], ylabel='Bias')
-
-
-sns.lineplot(x='opto_stim', y='lapse_l', hue='sert-cre', style='subject', estimator=None,
-             data=psy_df[psy_df['prob_left'] == 0.2], dashes=False,
+             data=psy_df.groupby(['subject', 'opto_stim']).mean(), dashes=False,
              markers=['o']*int(bias_df.shape[0]/4), palette=colors, hue_order=[1, 0],
              legend=False, ax=ax3)
-ax3.set(xlabel='', xticks=[0, 1], xticklabels=['No stim', 'Stim'], ylabel='Lapse left')
+ax3.set(xlabel='', xticks=[0, 1], xticklabels=['No stim', 'Stim'], ylabel='Threshold')
 
-sns.lineplot(x='opto_stim', y='lapse_r', hue='sert-cre', style='subject', estimator=None,
-             data=psy_df[psy_df['prob_left'] == 0.2], dashes=False,
+sns.lineplot(x='opto_stim', y='lapse_both', hue='sert-cre', style='subject', estimator=None,
+             data=psy_avg_block_df, dashes=False,
              markers=['o']*int(bias_df.shape[0]/4), palette=colors, hue_order=[1, 0],
              legend=False, ax=ax4)
-ax4.set(xlabel='', xticks=[0, 1], xticklabels=['No stim', 'Stim'], ylabel='Lapse right', ylim=[-.005, .125])
+ax4.set(xlabel='', xticks=[0, 1], xticklabels=['No stim', 'Stim'], ylabel='Lapse rate')
+
 plt.tight_layout()
-
-f, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(10, 10), dpi=150)
-sns.lineplot(x='opto_stim', y='threshold', hue='sert-cre', style='subject', estimator=None,
-             data=psy_df[psy_df['prob_left'] == 0.8], dashes=False,
-             markers=['o']*int(bias_df.shape[0]/4), palette=colors, hue_order=[1, 0],
-             legend=False, ax=ax1)
-ax1.set(xlabel='', xticks=[0, 1], xticklabels=['No stim', 'Stim'], ylabel='Threshold')
-
-sns.lineplot(x='opto_stim', y='bias', hue='sert-cre', style='subject', estimator=None,
-             data=psy_df[psy_df['prob_left'] == 0.8], dashes=False,
-             markers=['o']*int(bias_df.shape[0]/4), palette=colors, hue_order=[1, 0],
-             legend=False, ax=ax2)
-ax2.set(xlabel='', xticks=[0, 1], xticklabels=['No stim', 'Stim'], ylabel='Bias')
-
-
-sns.lineplot(x='opto_stim', y='lapse_l', hue='sert-cre', style='subject', estimator=None,
-             data=psy_df[psy_df['prob_left'] == 0.8], dashes=False,
-             markers=['o']*int(bias_df.shape[0]/4), palette=colors, hue_order=[1, 0],
-             legend=False, ax=ax3)
-ax3.set(xlabel='', xticks=[0, 1], xticklabels=['No stim', 'Stim'], ylabel='Lapse left', ylim=[-.005, .125])
-
-sns.lineplot(x='opto_stim', y='lapse_r', hue='sert-cre', style='subject', estimator=None,
-             data=psy_df[psy_df['prob_left'] == 0.8], dashes=False,
-             markers=['o']*int(bias_df.shape[0]/4), palette=colors, hue_order=[1, 0],
-             legend=False, ax=ax4)
-ax4.set(xlabel='', xticks=[0, 1], xticklabels=['No stim', 'Stim'], ylabel='Lapse right', ylim=[-.005, .125])
-plt.tight_layout()
+sns.despine(trim=True)
+plt.savefig(join(fig_path, 'summary_psycurve'))
 
 f, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 5), dpi=150)
 delta_lapse_l_l_s = (psy_df.loc[(psy_df['opto_stim'] == 1) & (psy_df['prob_left'] == 0.8)
@@ -331,6 +294,9 @@ ax2.plot(np.ones(len(delta_lapse_r_r_wt)), delta_lapse_r_r_wt, 'o', color=colors
 ax2.set(xticks=[0, 1], xticklabels=['L', 'R'], ylabel='delta lapse rate \n (stim minus non-stim)',
         ylim=[-.1, .1], title='20:80 blocks')
 plt.tight_layout()
+
+
+
 
 
 

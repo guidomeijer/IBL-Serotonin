@@ -25,24 +25,17 @@ PRE_TRIALS = 5
 POST_TRIALS = 16
 POSTERIOR = 'posterior_mean'
 _, fig_path, save_path = paths()
-fig_path = join(fig_path, '5HT', 'opto-behavior')
+fig_path = join(fig_path, '5HT', 'opto-behavior-ephys')
 
 subjects = pd.read_csv(join('..', 'subjects.csv'))
 
 results_df = pd.DataFrame()
-accuracy_df = pd.DataFrame()
 block_switches = pd.DataFrame()
 for i, nickname in enumerate(subjects['subject']):
 
     # Query sessions
-    if subjects.loc[i, 'date_range_blocks'] == 'all':
-        eids = one.search(subject=nickname, task_protocol='_iblrig_tasks_opto_biasedChoiceWorld')
-    elif subjects.loc[i, 'date_range_blocks'] == 'none':
-        continue
-    else:
-        eids = one.search(subject=nickname, task_protocol='_iblrig_tasks_opto_biasedChoiceWorld',
-                          date_range=[subjects.loc[i, 'date_range_blocks'][:10],
-                                      subjects.loc[i, 'date_range_blocks'][11:]])
+    eids = one.search(subject=nickname, task_protocol='_iblrig_tasks_opto_ephysChoiceWorld')
+
     #eids = criteria_opto_eids(eids, max_lapse=0.5, max_bias=0.5, min_trials=200, one=one)
     if len(eids) == 0:
         continue
@@ -56,24 +49,21 @@ for i, nickname in enumerate(subjects['subject']):
                          actions, stimuli, stim_side, torch.tensor(stimulated))
     model.load_or_train(nb_steps=2000, remove_old=REMOVE_OLD_FIT)
     param_stimside = model.get_parameters(parameter_type=POSTERIOR)
-    output_stimside = model.compute_signal(signal=['prior', 'score'], act=actions, stim=stimuli, side=stim_side)
-    priors_stimside = output_stimside['prior']
+    priors_stimside = model.compute_signal(signal='prior', act=actions, stim=stimuli,
+                                           side=stim_side)['prior']
 
     model = exp_prev_action('./model_fit_results/', session_uuids, '%s_no_stim' % nickname,
                             actions, stimuli, stim_side, torch.tensor(stimulated))
     model.load_or_train(nb_steps=2000, remove_old=REMOVE_OLD_FIT)
     param_prevaction = model.get_parameters(parameter_type=POSTERIOR)
-    output_prevaction = model.compute_signal(signal=['prior', 'score'], act=actions, stim=stimuli, side=stim_side)
-    priors_prevaction = output_prevaction['prior']
+    priors_prevaction = model.compute_signal(signal='prior', act=actions, stim=stimuli,
+                                             side=stim_side)['prior']
     results_df = results_df.append(pd.DataFrame(data={'tau_ss': [1/param_stimside[0], 1/param_stimside[1]],
                                                       'tau_pa': [1/param_prevaction[0], 1/param_prevaction[1]],
                                                       'opto_stim': ['no stim', 'stim'],
                                                       'sert-cre': subjects.loc[i, 'sert-cre'],
                                                       'subject': nickname}))
-    accuracy_df = accuracy_df.append(pd.DataFrame(data={
-        'accuracy': [output_stimside['accuracy'], output_prevaction['accuracy']],
-        'model': ['stim side', 'prev action'],
-        'subject': nickname, 'sert-cre': subjects.loc[i, 'sert-cre']}))
+
 
     # Add prior around block switch non-stimulated
     for k in range(len(priors_stimside)):
@@ -125,17 +115,8 @@ for i, nickname in enumerate(subjects['subject']):
 
 # %% Plot
 sns.set(context='talk', style='ticks', font_scale=1.5)
-f, ax1 = plt.subplots()
-sns.lineplot(x='model', y='accuracy', hue='sert-cre', style='subject', estimator=None,
-             data=accuracy_df, dashes=False, markers=['o']*int(accuracy_df.shape[0]/2),
-             legend=False, ax=ax1)
-ax1.set(ylabel='Model accuracy', xticks=[0, 1], xticklabels=['Stimulus sides', 'Previous actions'],
-        xlabel='')
-sns.despine(trim=True)
-plt.tight_layout()
-plt.savefig(join(fig_path, 'model_comparison_opto_behavior'))
-
 f, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(25, 10))
+
 sns.lineplot(x='opto_stim', y='tau_ss', hue='sert-cre', style='subject', estimator=None,
              data=results_df, dashes=False, markers=['o']*int(results_df.shape[0]/2),
              legend=False, ax=ax1)
@@ -161,7 +142,10 @@ sns.despine(trim=True)
 plt.tight_layout()
 plt.savefig(join(fig_path, 'model_stimside_opto_behavior'))
 
+
+sns.set(context='talk', style='ticks', font_scale=1.5)
 f, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(25, 10))
+
 sns.lineplot(x='opto_stim', y='tau_pa', hue='sert-cre', style='subject', estimator=None,
              data=results_df, dashes=False, markers=['o']*int(results_df.shape[0]/2),
              legend=False, ax=ax1)

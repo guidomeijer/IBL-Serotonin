@@ -25,7 +25,7 @@ PRE_TRIALS = 5
 POST_TRIALS = 16
 POSTERIOR = 'posterior_mean'
 _, fig_path, save_path = paths()
-fig_path = join(fig_path, '5HT', 'opto-behavior')
+fig_path = join(fig_path, '5HT', 'opto-behavior-half')
 
 subjects = pd.read_csv(join('..', 'subjects.csv'))
 
@@ -35,14 +35,14 @@ block_switches = pd.DataFrame()
 for i, nickname in enumerate(subjects['subject']):
 
     # Query sessions
-    if subjects.loc[i, 'date_range_blocks'] == 'all':
+    if subjects.loc[i, 'date_range_half'] == 'all':
         eids = one.search(subject=nickname, task_protocol='_iblrig_tasks_opto_biasedChoiceWorld')
-    elif subjects.loc[i, 'date_range_blocks'] == 'none':
+    elif subjects.loc[i, 'date_range_half'] == 'none':
         continue
     else:
         eids = one.search(subject=nickname, task_protocol='_iblrig_tasks_opto_biasedChoiceWorld',
-                          date_range=[subjects.loc[i, 'date_range_blocks'][:10],
-                                      subjects.loc[i, 'date_range_blocks'][11:]])
+                          date_range=[subjects.loc[i, 'date_range_half'][:10],
+                                      subjects.loc[i, 'date_range_half'][11:]])
     #eids = criteria_opto_eids(eids, max_lapse=0.5, max_bias=0.5, min_trials=200, one=one)
     if len(eids) == 0:
         continue
