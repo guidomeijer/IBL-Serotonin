@@ -29,17 +29,22 @@ def paths():
     return DATA_PATH, FIG_PATH, SAVE_PATH
 
 
-def figure_style(font_scale=2, despine=False, trim=True):
+def figure_style(font_scale=2, despine=False, trim=True, return_colors=False):
     """
     Set style for plotting figures
     """
     sns.set(style="ticks", context="paper", font_scale=font_scale)
     matplotlib.rcParams['pdf.fonttype'] = 42
     matplotlib.rcParams['ps.fonttype'] = 42
-    if despine is True:
+    if despine:
         sns.despine(trim=trim)
         plt.tight_layout()
-
+    if return_colors:
+        colors = {'sert': sns.color_palette('colorblind')[2],
+                  'wt': sns.color_palette('colorblind')[7],
+                  'left': sns.color_palette('colorblind')[1],
+                  'right': sns.color_palette('colorblind')[0]}
+        return colors
 
 def query_sessions(selection='aligned', return_subjects=False, one=None):
     if one is None:
@@ -194,16 +199,49 @@ def criteria_opto_eids(eids, max_lapse=0.2, max_bias=0.3, min_trials=200, one=No
     return use_eids
 
 
-def load_exp_smoothing_trials(eids, laser_stimulation=False, one=None):
+def load_exp_smoothing_trials(eids, stimulated=None, rt_cutoff=0.2, after_probe_trials=0, one=None):
+    """
+    Parameters
+    ----------
+    eids : list
+        List of eids
+    stimulated : None or string
+        If None, do not return the stimulated array, if a string these are the options:
+            all: all laser stimulated trials
+            probe: only laser probe trials
+            block: only laser block trials (no probes)
+            rt: this is a weird one - return a reaction time cut off as stimulated trials
+    rt_cutoff : float
+        Only used if stimulated = 'rt'. Reaction time cutoff in seconds above which stimulated is 1
+    after_probe_trials : int
+        Only used if stimulated = 'probe'. How many trials after a probe trial are still counted.
+    """
+
     if one is None:
         one=ONE()
     stimuli_arr, actions_arr, stim_sides_arr, prob_left_arr, stimulated_arr, session_uuids = [], [], [], [], [], []
     for j, eid in enumerate(eids):
         try:
             # Load in trials vectors
-            trials = load_trials(eid, invert_stimside=True, laser_stimulation=laser_stimulation, one=one)
-            if laser_stimulation:
+            if stimulated is not None and stimulated != 'rt':
+                trials = load_trials(eid, invert_stimside=True, laser_stimulation=True, one=one)
+            else:
+                trials = load_trials(eid, invert_stimside=True, laser_stimulation=False, one=one)
+            if stimulated == 'all':
                 stimulated_arr.append(trials['laser_stimulation'].values)
+            elif stimulated == 'probe':
+                probe_trials = ((trials['laser_probability'] == 0.25) & (trials['laser_stimulation'] == 1)).values
+                for k, ind in enumerate(np.where(probe_trials == 1)[0]):
+                    probe_trials[ind:ind + (after_probe_trials + 1)] = 1
+                stimulated_arr.append(probe_trials)
+            elif stimulated == 'block':
+                block_trials = trials['laser_stimulation'].values
+                if 'laser_probability' in trials.columns:
+                    block_trials[trials['laser_probability'] == 0.25] = 0
+                    block_trials[trials['laser_probability'] == 0.75] = 1
+                stimulated_arr.append(block_trials)
+            elif stimulated == 'rt':
+                stimulated_arr.append((trials['reaction_times'] > rt_cutoff).values)
             stimuli_arr.append(trials['signed_contrast'].values)
             actions_arr.append(trials['choice'].values)
             stim_sides_arr.append(trials['stim_side'].values)
@@ -212,7 +250,7 @@ def load_exp_smoothing_trials(eids, laser_stimulation=False, one=None):
         except:
             print(f'Could not load trials for {eid}')
 
-    if (len(session_uuids) == 0) and laser_stimulation:
+    if (len(session_uuids) == 0) and (stimulated is not None and stimulated != 'rt'):
         return [], [], [], [], [], []
     elif len(session_uuids) == 0:
         return [], [], [], [], []
@@ -230,7 +268,7 @@ def load_exp_smoothing_trials(eids, laser_stimulation=False, one=None):
     stim_side = np.array([np.concatenate((stim_sides_arr[k],
                                           np.zeros(max_len-len(stim_sides_arr[k]))))
                           for k in range(len(stim_sides_arr))])
-    if laser_stimulation:
+    if stimulated is not None and stimulated != 'rt':
         stimulated = np.array([np.concatenate((stimulated_arr[k], np.zeros(max_len-len(stimulated_arr[k]))))
                             for k in range(len(stimulated_arr))])
     session_uuids = np.array(session_uuids)
@@ -240,10 +278,10 @@ def load_exp_smoothing_trials(eids, laser_stimulation=False, one=None):
         actions = np.array([np.squeeze(actions)])
         prob_left = np.array([np.squeeze(prob_left)])
         stim_side = np.array([np.squeeze(stim_side)])
-        if laser_stimulation:
-            laser_stimulation = np.array([np.squeeze(laser_stimulation)])
+        if stimulated is not None and stimulated != 'rt':
+            stimulated = np.array([np.squeeze(stimulated)])
 
-    if laser_stimulation:
+    if stimulated is not None and stimulated != 'rt':
         return actions, stimuli, stim_side, prob_left, stimulated, session_uuids
     else:
         return actions, stimuli, stim_side, prob_left, session_uuids

@@ -15,7 +15,7 @@ import seaborn as sns
 import torch
 from models.expSmoothing_stimside_SE import expSmoothing_stimside_SE as exp_stimside
 from models.expSmoothing_prevAction_SE import expSmoothing_prevAction_SE as exp_prev_action
-from serotonin_functions import paths, criteria_opto_eids, load_exp_smoothing_trials
+from serotonin_functions import paths, criteria_opto_eids, load_exp_smoothing_trials, figure_style
 from oneibl.one import ONE
 one = ONE()
 
@@ -49,34 +49,22 @@ for i, nickname in enumerate(subjects['subject']):
 
     # Get trial data
     actions, stimuli, stim_side, prob_left, stimulated, session_uuids = load_exp_smoothing_trials(
-        eids, laser_stimulation=True, one=one)
+        eids, stimulated='block', one=one)
 
-    # Fit models
-    model = exp_stimside('./model_fit_results/', session_uuids, '%s' % nickname,
-                         actions, stimuli, stim_side, torch.tensor(stimulated))
-    model.load_or_train(nb_steps=2000, remove_old=REMOVE_OLD_FIT)
-    param_stimside = model.get_parameters(parameter_type=POSTERIOR)
-    output_stimside = model.compute_signal(signal=['prior', 'score'], act=actions, stim=stimuli, side=stim_side)
-    priors_stimside = output_stimside['prior']
-
-    model = exp_prev_action('./model_fit_results/', session_uuids, '%s_no_stim' % nickname,
+    # Fit model
+    model = exp_prev_action('./model_fit_results/', session_uuids, '%s_block' % nickname,
                             actions, stimuli, stim_side, torch.tensor(stimulated))
     model.load_or_train(nb_steps=2000, remove_old=REMOVE_OLD_FIT)
     param_prevaction = model.get_parameters(parameter_type=POSTERIOR)
-    output_prevaction = model.compute_signal(signal=['prior', 'score'], act=actions, stim=stimuli, side=stim_side)
-    priors_prevaction = output_prevaction['prior']
-    results_df = results_df.append(pd.DataFrame(data={'tau_ss': [1/param_stimside[0], 1/param_stimside[1]],
-                                                      'tau_pa': [1/param_prevaction[0], 1/param_prevaction[1]],
+    priors = model.compute_signal(signal='prior', act=actions, stim=stimuli, side=stim_side)['prior']
+    results_df = results_df.append(pd.DataFrame(data={'tau': [1/param_prevaction[0], 1/param_prevaction[1]],
                                                       'opto_stim': ['no stim', 'stim'],
                                                       'sert-cre': subjects.loc[i, 'sert-cre'],
                                                       'subject': nickname}))
-    accuracy_df = accuracy_df.append(pd.DataFrame(data={
-        'accuracy': [output_stimside['accuracy'], output_prevaction['accuracy']],
-        'model': ['stim side', 'prev action'],
-        'subject': nickname, 'sert-cre': subjects.loc[i, 'sert-cre']}))
+
 
     # Add prior around block switch non-stimulated
-    for k in range(len(priors_stimside)):
+    for k in range(len(priors)):
         transitions = np.array(np.where(np.diff(prob_left[k]) != 0)[0])[:-1] + 1
         for t, trans in enumerate(transitions):
             if trans >= PRE_TRIALS:
@@ -85,8 +73,7 @@ for i, nickname in enumerate(subjects['subject']):
                 elif stimulated[k][trans] == 0:
                     opto = 'no stim'
                 block_switches = block_switches.append(pd.DataFrame(data={
-                            'prior_stimside': priors_stimside[k][trans-PRE_TRIALS:trans+POST_TRIALS],
-                            'prior_prevaction': priors_prevaction[k][trans-PRE_TRIALS:trans+POST_TRIALS],
+                            'prior': priors[k][trans-PRE_TRIALS:trans+POST_TRIALS],
                             'trial': np.append(np.arange(-PRE_TRIALS, 0), np.arange(0, POST_TRIALS)),
                             'change_to': prob_left[k][trans],
                             'opto': opto,
@@ -94,23 +81,8 @@ for i, nickname in enumerate(subjects['subject']):
                             'subject': nickname}))
 
     # Plot for this animal
-    sns.set(context='talk', style='ticks', font_scale=1.5)
     f, ax1 = plt.subplots(1, 1, figsize=(10, 10))
-    sns.lineplot(x='trial', y='prior_stimside', data=block_switches[block_switches['subject'] == nickname],
-             hue='change_to', style='opto', palette='colorblind', ax=ax1, ci=68)
-    #plt.plot([0, 0], [0, 1], color=[0.5, 0.5, 0.5], ls='--')
-    handles, labels = ax1.get_legend_handles_labels()
-    labels = ['', 'Change to R', 'Change to L', '', 'No stim', 'Stim']
-    ax1.legend(handles, labels, frameon=False, prop={'size': 20})
-    ax1.set(ylabel='Prior', xlabel='Trials relative to block switch',
-            title='Tau stim: %.2f, Tau no stim: %.2f' % (1/param_stimside[1], 1/param_stimside[0]))
-    sns.despine(trim=True)
-    plt.tight_layout()
-    plt.savefig(join(fig_path, '%s_model_stimside' % nickname))
-
-    # Plot for this animal
-    f, ax1 = plt.subplots(1, 1, figsize=(10, 10))
-    sns.lineplot(x='trial', y='prior_prevaction', data=block_switches[block_switches['subject'] == nickname],
+    sns.lineplot(x='trial', y='prior', data=block_switches[block_switches['subject'] == nickname],
              hue='change_to', style='opto', palette='colorblind', ax=ax1, ci=68)
     #plt.plot([0, 0], [0, 1], color=[0.5, 0.5, 0.5], ls='--')
     handles, labels = ax1.get_legend_handles_labels()
@@ -124,66 +96,33 @@ for i, nickname in enumerate(subjects['subject']):
 
 
 # %% Plot
-sns.set(context='talk', style='ticks', font_scale=1.5)
-f, ax1 = plt.subplots()
-sns.lineplot(x='model', y='accuracy', hue='sert-cre', style='subject', estimator=None,
-             data=accuracy_df, dashes=False, markers=['o']*int(accuracy_df.shape[0]/2),
-             legend=False, ax=ax1)
-ax1.set(ylabel='Model accuracy', xticks=[0, 1], xticklabels=['Stimulus sides', 'Previous actions'],
-        xlabel='')
-sns.despine(trim=True)
-plt.tight_layout()
-plt.savefig(join(fig_path, 'model_comparison_opto_behavior'))
 
-f, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(25, 10))
-sns.lineplot(x='opto_stim', y='tau_ss', hue='sert-cre', style='subject', estimator=None,
+colors = figure_style(return_colors=True)
+f, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(20, 5), dpi=150)
+sns.lineplot(x='opto_stim', y='tau', hue='sert-cre', style='subject', estimator=None,
              data=results_df, dashes=False, markers=['o']*int(results_df.shape[0]/2),
-             legend=False, ax=ax1)
+             legend='brief', palette=[colors['wt'], colors['sert']], lw=2, ms=8, ax=ax1)
+handles, labels = ax1.get_legend_handles_labels()
+labels = ['', 'WT', 'SERT']
+ax1.legend(handles[:3], labels[:3], frameon=False, prop={'size': 20}, loc='center left', bbox_to_anchor=(1, .5))
 ax1.set(xlabel='', ylabel='Lenght of integration window (tau)')
 
-sns.lineplot(x='trial', y='prior_stimside', data=block_switches[block_switches['sert_cre'] == 1],
-             hue='change_to', style='opto', palette='colorblind', ax=ax2, ci=68)
+block_avg_sert = block_switches[block_switches['sert_cre'] == 1].groupby(['subject', 'trial', 'change_to', 'opto']).mean().reset_index()
+sns.lineplot(x='trial', y='prior', data=block_avg_sert, hue='change_to', style='opto',
+             palette=[colors['right'], colors['left']], units='subject', estimator=None, legend=None, ax=ax2)
 #plt.plot([0, 0], [0, 1], color=[0.5, 0.5, 0.5], ls='--')
-handles, labels = ax2.get_legend_handles_labels()
-labels = ['', 'Change to R', 'Change to L', '', 'No stim', 'Stim']
-ax2.legend(handles, labels, frameon=False, prop={'size': 20})
 ax2.set(ylabel='Prior', xlabel='Trials relative to block switch', title='Sert-Cre', ylim=[0, 1])
 
-sns.lineplot(x='trial', y='prior_stimside', data=block_switches[block_switches['sert_cre'] == 0],
-             hue='change_to', style='opto', palette='colorblind', ax=ax3, ci=68)
+block_avg_wt = block_switches[block_switches['sert_cre'] == 0].groupby(['subject', 'trial', 'change_to', 'opto']).mean().reset_index()
+sns.lineplot(x='trial', y='prior', data=block_avg_wt, hue='change_to', style='opto',
+             palette=[colors['right'], colors['left']], units='subject', estimator=None, ax=ax3)
 #plt.plot([0, 0], [0, 1], color=[0.5, 0.5, 0.5], ls='--')
-handles, labels = ax2.get_legend_handles_labels()
+handles, labels = ax3.get_legend_handles_labels()
 labels = ['', 'Change to R', 'Change to L', '', 'No stim', 'Stim']
-ax3.legend(handles, labels, frameon=False, prop={'size': 20})
+ax3.legend(handles, labels, frameon=False, prop={'size': 20}, loc='center left', bbox_to_anchor=(1, .5))
 ax3.set(ylabel='Prior', xlabel='Trials relative to block switch', title='WT control', ylim=[0, 1])
 
-sns.despine(trim=True)
-plt.tight_layout()
-plt.savefig(join(fig_path, 'model_stimside_opto_behavior'))
-
-f, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(25, 10))
-sns.lineplot(x='opto_stim', y='tau_pa', hue='sert-cre', style='subject', estimator=None,
-             data=results_df, dashes=False, markers=['o']*int(results_df.shape[0]/2),
-             legend=False, ax=ax1)
-ax1.set(xlabel='', ylabel='Lenght of integration window (tau)',
-        title='Exponential smoothed previous actions model')
-
-sns.lineplot(x='trial', y='prior_prevaction', data=block_switches[block_switches['sert_cre'] == 1],
-             hue='change_to', style='opto', palette='colorblind', ax=ax2, ci=68)
-#plt.plot([0, 0], [0, 1], color=[0.5, 0.5, 0.5], ls='--')
-handles, labels = ax2.get_legend_handles_labels()
-labels = ['', 'Change to R', 'Change to L', '', 'No stim', 'Stim']
-ax2.legend(handles, labels, frameon=False, prop={'size': 20})
-ax2.set(ylabel='Prior', xlabel='Trials relative to block switch', title='Sert-Cre', ylim=[0, 1])
-
-sns.lineplot(x='trial', y='prior_prevaction', data=block_switches[block_switches['sert_cre'] == 0],
-             hue='change_to', style='opto', palette='colorblind', ax=ax3, ci=68)
-#plt.plot([0, 0], [0, 1], color=[0.5, 0.5, 0.5], ls='--')
-handles, labels = ax2.get_legend_handles_labels()
-labels = ['', 'Change to R', 'Change to L', '', 'No stim', 'Stim']
-ax3.legend(handles, labels, frameon=False, prop={'size': 20})
-ax3.set(ylabel='Prior', xlabel='Trials relative to block switch', title='WT control', ylim=[0, 1])
-
-sns.despine(trim=True)
+sns.despine(trim=False)
 plt.tight_layout()
 plt.savefig(join(fig_path, 'model_prevaction_opto_behavior'))
+

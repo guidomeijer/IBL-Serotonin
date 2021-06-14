@@ -49,17 +49,23 @@ for i, nickname in enumerate(subjects['subject']):
 
     # Get trial data
     actions, stimuli, stim_side, prob_left, stimulated, session_uuids = load_exp_smoothing_trials(
-        eids, laser_stimulation=True, one=one)
+        eids, stimulated='block', one=one)
+
+    actions = actions[:, :600]
+    stimuli = stimuli[:, :600]
+    stim_side = stim_side[:, :600]
+    prob_left = prob_left[:, :600]
+    stimulated = stimulated[:, :600]
 
     # Fit models
-    model = exp_stimside('./model_fit_results/', session_uuids, '%s' % nickname,
+    model = exp_stimside('./model_fit_results/', session_uuids, '%s_half' % nickname,
                          actions, stimuli, stim_side, torch.tensor(stimulated))
     model.load_or_train(nb_steps=2000, remove_old=REMOVE_OLD_FIT)
     param_stimside = model.get_parameters(parameter_type=POSTERIOR)
     output_stimside = model.compute_signal(signal=['prior', 'score'], act=actions, stim=stimuli, side=stim_side)
     priors_stimside = output_stimside['prior']
 
-    model = exp_prev_action('./model_fit_results/', session_uuids, '%s_no_stim' % nickname,
+    model = exp_prev_action('./model_fit_results/', session_uuids, '%s_half' % nickname,
                             actions, stimuli, stim_side, torch.tensor(stimulated))
     model.load_or_train(nb_steps=2000, remove_old=REMOVE_OLD_FIT)
     param_prevaction = model.get_parameters(parameter_type=POSTERIOR)

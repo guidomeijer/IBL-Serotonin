@@ -22,9 +22,6 @@ from oneibl.one import ONE
 one = ONE()
 
 # Settings
-PLOT = False
-T_BEFORE = 1  # for plotting
-T_AFTER = 2
 PRE_TIME = [0.5, 0]  # for significance testing
 POST_TIME = [0, 0.5]
 BIN_SIZE = 0.05
@@ -34,7 +31,7 @@ fig_path = join(fig_path, '5HT', 'light-modulated-neurons')
 save_path = join(save_path, '5HT')
 
 # Query sessions
-eids, _ = query_sessions(one=one)
+eids, _ = query_sessions(selection='all', one=one)
 
 light_neurons = pd.DataFrame()
 for i, eid in enumerate(eids):
@@ -65,11 +62,6 @@ for i, eid in enumerate(eids):
     spikes, clusters, channels = bbone.load_spike_sorting_with_channel(eid, aligned=True, one=one)
 
     for p, probe in enumerate(spikes.keys()):
-        """
-        if 'acronym' not in clusters[probe].keys():
-            print(f'No brain regions found for {eid}')
-            continue
-        """
 
         # Select spikes of passive period
         spikes[probe].clusters = spikes[probe].clusters[spikes[probe].times > opto_times[0]]
@@ -94,42 +86,10 @@ for i, eid in enumerate(eids):
                        | (roc_auc < np.percentile(roc_auc_permut, 2.5, axis=0)))
         enhanced = roc_auc > np.percentile(roc_auc_permut, 97.5, axis=0)
         suppressed = roc_auc < np.percentile(roc_auc_permut, 2.5, axis=0)
-        """
-        cluster_regions = remap(clusters[probe].atlas_id[cluster_ids])
-        light_neurons = light_neurons.append(pd.DataFrame(data={
-            'subject': subject, 'date': date, 'eid': eid, 'probe': probe,
-            'region': cluster_regions, 'cluster_id': cluster_ids,
-            'roc_auc': roc_auc, 'modulated': modulated, 'enhanced': enhanced, 'suppressed': suppressed}))
-        """
+
         light_neurons = light_neurons.append(pd.DataFrame(data={
             'subject': subject, 'date': date, 'eid': eid, 'probe': probe,
             'cluster_id': cluster_ids,
             'roc_auc': roc_auc, 'modulated': modulated, 'enhanced': enhanced, 'suppressed': suppressed}))
 
-        # Plot light modulated units
-        if PLOT:
-            for n, cluster in enumerate(cluster_ids[modulated]):
-                if not isdir(join(fig_path, f'{cluster_regions[cluster_ids == cluster][0]}')):
-                    mkdir(join(fig_path, f'{cluster_regions[cluster_ids == cluster][0]}'))
-
-                # Plot PSTH
-                figure_style()
-                p, ax = plt.subplots()
-                peri_event_time_histogram(spikes[probe].times, spikes[probe].clusters, opto_train_times,
-                                          cluster, t_before=T_BEFORE, t_after=T_AFTER, bin_size=BIN_SIZE,
-                                          include_raster=True, error_bars='sem', ax=ax,
-                                          pethline_kwargs={'color': 'black', 'lw': 2},
-                                          errbar_kwargs={'color': 'black', 'alpha': 0.3},
-                                          eventline_kwargs={'lw': 0})
-                ax.set(ylim=[ax.get_ylim()[0], ax.get_ylim()[1] + ax.get_ylim()[1] * 0.2])
-                ax.plot([0, 1], [ax.get_ylim()[1] - ax.get_ylim()[1] * 0.05,
-                                 ax.get_ylim()[1] - ax.get_ylim()[1] * 0.05], lw=4, color='royalblue')
-                ax.set(ylabel='spikes/s', xlabel='Time (s)',
-                       yticks=np.linspace(0, np.round(ax.get_ylim()[1]), 3))
-                ax.yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
-                plt.tight_layout()
-                plt.savefig(join(fig_path, cluster_regions[cluster_ids == cluster][0],
-                                 f'{subject}_{date}_{probe}_neuron{cluster}'))
-                plt.close(p)
-
-light_neurons.to_csv(join(save_path, 'light_modulated_neurons_no_regions.csv'))
+light_neurons.to_csv(join(save_path, 'light_modulated_neurons_no_histology.csv'))

@@ -62,7 +62,7 @@ for i, nickname in enumerate(subjects['subject']):
     actions, stimuli, stim_side, prob_left, stimulated, session_uuids = load_exp_smoothing_trials(
         [eid], laser_stimulation=True, one=one)
     if len(session_uuids) > 0:
-        model = exp_prev_action('./model_fit_results/', session_uuids, f'{nickname}',
+        model = exp_prev_action('./model_fit_results/', session_uuids, f'{nickname}_first_day',
                                 actions, stimuli, stim_side, torch.tensor(stimulated))
         model.load_or_train(nb_steps=2000, remove_old=REMOVE_OLD_FIT)
         params = model.get_parameters(parameter_type=POSTERIOR)

@@ -29,13 +29,14 @@ bias_df, lapse_df, psy_df = pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
 for i, nickname in enumerate(subjects['subject']):
 
     # Query sessions
-    if subjects.loc[i, 'date_range'] == 'all':
+    if subjects.loc[i, 'date_range_blocks'] == 'all':
         eids = one.search(subject=nickname, task_protocol='_iblrig_tasks_opto_biasedChoiceWorld')
-    elif subjects.loc[i, 'date_range'] == 'none':
+    elif subjects.loc[i, 'date_range_blocks'] == 'none':
         continue
     else:
         eids = one.search(subject=nickname, task_protocol='_iblrig_tasks_opto_biasedChoiceWorld',
-                          date_range=[subjects.loc[i, 'date_range'][:10], subjects.loc[i, 'date_range'][11:]])
+                          date_range=[subjects.loc[i, 'date_range_blocks'][:10],
+                                      subjects.loc[i, 'date_range_blocks'][11:]])
     #eids = criteria_opto_eids(eids, max_lapse=0.3, max_bias=0.5, min_trials=300, one=one)
 
     # Get trials DataFrame
@@ -81,9 +82,19 @@ for i, nickname in enumerate(subjects['subject']):
                                 - trials[(trials['probabilityLeft'] == 0.2)
                                          & (trials['laser_stimulation'] == 0)
                                          & (trials['laser_probability'] == 0.75)].mean())['right_choice']
+    # Get RT
+    rt_no_stim = trials[(trials['signed_contrast'] == 0) & (trials['laser_stimulation'] == 0)
+                        & (trials['laser_probability'] != 0.75)].median()['reaction_times']
+    rt_stim = trials[(trials['signed_contrast'] == 0) & (trials['laser_stimulation'] == 1)
+                     & (trials['laser_probability'] != 0.25)].median()['reaction_times']
+    rt_catch_no_stim = trials[(trials['signed_contrast'] == 0) & (trials['laser_stimulation'] == 0)
+                              & (trials['laser_probability'] == 0.75)].median()['reaction_times']
+    rt_catch_stim = trials[(trials['signed_contrast'] == 0) & (trials['laser_stimulation'] == 1)
+                           & (trials['laser_probability'] == 0.25)].median()['reaction_times']
     bias_df = bias_df.append(pd.DataFrame(data={
         'subject': nickname, 'sert-cre': subjects.loc[i, 'sert-cre'],
         'bias': [bias_no_stim, bias_stim, bias_catch_stim, bias_catch_no_stim],
+        'rt': [rt_no_stim, rt_stim, rt_catch_stim, rt_catch_no_stim],
         'opto_stim': [0, 1, 1, 0], 'catch_trial': [0, 0, 1, 1]}))
 
     # Get lapse rates
@@ -295,8 +306,20 @@ ax2.set(xticks=[0, 1], xticklabels=['L', 'R'], ylabel='delta lapse rate \n (stim
         ylim=[-.1, .1], title='20:80 blocks')
 plt.tight_layout()
 
+f, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 5), dpi=150, sharey=True)
+sns.lineplot(x='opto_stim', y='rt', hue='sert-cre', style='subject', estimator=None,
+             data=bias_df[bias_df['catch_trial'] == 0], dashes=False,
+             markers=['o']*int(bias_df.shape[0]/4), palette=colors, hue_order=[1, 0],
+             legend=False, ax=ax1)
+ax1.set(xlabel='', xticks=[0, 1], xticklabels=['No stim', 'Stim'], ylabel='Median reaction time', ylim=[0, 0.4])
 
-
-
+sns.lineplot(x='opto_stim', y='rt', hue='sert-cre', style='subject', estimator=None,
+             data=bias_df[bias_df['catch_trial'] == 1], dashes=False,
+             markers=['o']*int(bias_df.shape[0]/4), palette=colors, hue_order=[1, 0],
+             legend=False, ax=ax2)
+ax2.set(xlabel='', xticks=[0, 1], xticklabels=['No stim', 'Stim'], ylim=[0, 0.4],
+        title='Catch trials')
+plt.tight_layout()
+sns.despine(trim=True)
 
 
