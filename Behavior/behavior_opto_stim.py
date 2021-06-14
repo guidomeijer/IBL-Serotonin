@@ -17,9 +17,9 @@ from oneibl.one import ONE
 one = ONE()
 
 # Settings
+PLOT_SINGLE_ANIMALS = True
 _, fig_path, _ = paths()
 fig_path = join(fig_path, '5HT', 'opto-behavior')
-
 subjects = pd.read_csv(join('..', 'subjects.csv'))
 
 # testing
@@ -157,98 +157,101 @@ for i, nickname in enumerate(subjects['subject']):
         'bias': pars[0], 'threshold': pars[1], 'lapse_l': pars[2], 'lapse_r': pars[3]}))
 
     # Plot
-    sns.set(context='talk', style='ticks', font_scale=1.5)
-    f, (ax1, ax2) = plt.subplots(1, 2, figsize=(20, 10), sharey=True)
+    if PLOT_SINGLE_ANIMALS:
+        colors = figure_style(return_colors=True)
+        f, (ax1, ax2) = plt.subplots(1, 2, figsize=(20, 10), sharey=True)
 
-    # plot_psychometric(trials[trials['probabilityLeft'] == 0.5], ax=ax1, color='k')
-    plot_psychometric(trials[(trials['probabilityLeft'] == 0.8)
-                             & (trials['laser_stimulation'] == 0)
-                             & (trials['laser_probability'] != 0.75)], ax=ax1, color='b')
-    plot_psychometric(trials[(trials['probabilityLeft'] == 0.8)
-                             & (trials['laser_stimulation'] == 1)
-                             & (trials['laser_probability'] != 0.25)], ax=ax1,
-                      color='b', linestyle='--')
-    plot_psychometric(trials[(trials['probabilityLeft'] == 0.2)
-                             & (trials['laser_stimulation'] == 0)
-                             & (trials['laser_probability'] != 0.75)], ax=ax1, color='r')
-    plot_psychometric(trials[(trials['probabilityLeft'] == 0.2)
-                             & (trials['laser_stimulation'] == 1)
-                             & (trials['laser_probability'] != 0.25)], ax=ax1,
-                      color='r', linestyle='--')
-    ax1.text(-25, 0.75, '20:80', color='r')
-    ax1.text(25, 0.25, '80:20', color='b')
-    ax1.set(title='dashed line = opto stim')
+        # plot_psychometric(trials[trials['probabilityLeft'] == 0.5], ax=ax1, color='k')
+        plot_psychometric(trials[(trials['probabilityLeft'] == 0.8)
+                                 & (trials['laser_stimulation'] == 0)
+                                 & (trials['laser_probability'] != 0.75)], ax=ax1, color=colors['left'])
+        plot_psychometric(trials[(trials['probabilityLeft'] == 0.8)
+                                 & (trials['laser_stimulation'] == 1)
+                                 & (trials['laser_probability'] != 0.25)], ax=ax1,
+                          color=colors['left'], linestyle='--')
+        plot_psychometric(trials[(trials['probabilityLeft'] == 0.2)
+                                 & (trials['laser_stimulation'] == 0)
+                                 & (trials['laser_probability'] != 0.75)], ax=ax1, color=colors['right'])
+        plot_psychometric(trials[(trials['probabilityLeft'] == 0.2)
+                                 & (trials['laser_stimulation'] == 1)
+                                 & (trials['laser_probability'] != 0.25)], ax=ax1,
+                          color=colors['right'], linestyle='--')
+        ax1.text(-25, 0.75, '20:80', color=colors['right'])
+        ax1.text(25, 0.25, '80:20', color=colors['left'])
+        ax1.set(title='dashed line = opto stim')
 
-    catch_trials = trials[((trials['laser_probability'] == 0.75) & (trials['laser_stimulation'] == 0))
-                          | ((trials['laser_probability'] == 0.25) & (trials['laser_stimulation'] == 1))]
+        catch_trials = trials[((trials['laser_probability'] == 0.75) & (trials['laser_stimulation'] == 0))
+                              | ((trials['laser_probability'] == 0.25) & (trials['laser_stimulation'] == 1))]
 
-    ax2.errorbar([0, 1],
-                 [trials[(trials['probabilityLeft'] == 0.2) & (trials['signed_contrast'] == 0)
-                         & (trials['laser_stimulation'] == 1) & (trials['laser_probability'] != 0.25)]['right_choice'].mean(),
-                  catch_trials[(catch_trials['probabilityLeft'] == 0.2) & (catch_trials['laser_stimulation'] == 1)]['right_choice'].mean()],
-                 [trials[(trials['probabilityLeft'] == 0.2) & (trials['signed_contrast'] == 0)
-                         & (trials['laser_stimulation'] == 1) & (trials['laser_probability'] != 0.25)]['right_choice'].sem(),
-                  catch_trials[(catch_trials['probabilityLeft'] == 0.2) & (catch_trials['laser_stimulation'] == 1)]['right_choice'].sem()],
-                 marker='o', label='Stim', color='r', ls='--')
-    ax2.errorbar([0, 1],
-                 [trials[(trials['probabilityLeft'] == 0.2) & (trials['signed_contrast'] == 0)
-                         & (trials['laser_stimulation'] == 0) & (trials['laser_probability'] != 0.75)]['right_choice'].mean(),
-                  catch_trials[(catch_trials['probabilityLeft'] == 0.2) & (catch_trials['laser_stimulation'] == 0)]['right_choice'].mean()],
-                 [trials[(trials['probabilityLeft'] == 0.2) & (trials['signed_contrast'] == 0)
-                         & (trials['laser_stimulation'] == 0) & (trials['laser_probability'] != 0.75)]['right_choice'].sem(),
-                  catch_trials[(catch_trials['probabilityLeft'] == 0.2) & (catch_trials['laser_stimulation'] == 0)]['right_choice'].sem()],
-                 marker='o', label='No stim', color='r')
-    ax2.errorbar([0, 1],
-                 [trials[(trials['probabilityLeft'] == 0.8) & (trials['signed_contrast'] == 0)
-                         & (trials['laser_stimulation'] == 1) & (trials['laser_probability'] != 0.25)]['right_choice'].mean(),
-                  catch_trials[(catch_trials['probabilityLeft'] == 0.8) & (catch_trials['laser_stimulation'] == 1)]['right_choice'].mean()],
-                 [trials[(trials['probabilityLeft'] == 0.8) & (trials['signed_contrast'] == 0)
-                         & (trials['laser_stimulation'] == 1) & (trials['laser_probability'] != 0.25)]['right_choice'].sem(),
-                  catch_trials[(catch_trials['probabilityLeft'] == 0.8) & (catch_trials['laser_stimulation'] == 1)]['right_choice'].sem()],
-                 marker='o', label='Stim', color='b', ls='--')
-    ax2.errorbar([0, 1],
-                 [trials[(trials['probabilityLeft'] == 0.8) & (trials['signed_contrast'] == 0)
-                         & (trials['laser_stimulation'] == 0) & (trials['laser_probability'] != 0.75)]['right_choice'].mean(),
-                  catch_trials[(catch_trials['probabilityLeft'] == 0.8) & (catch_trials['laser_stimulation'] == 0)]['right_choice'].mean()],
-                 [trials[(trials['probabilityLeft'] == 0.8) & (trials['signed_contrast'] == 0)
-                         & (trials['laser_stimulation'] == 0) & (trials['laser_probability'] != 0.75)]['right_choice'].sem(),
-                  catch_trials[(catch_trials['probabilityLeft'] == 0.8) & (catch_trials['laser_stimulation'] == 0)]['right_choice'].sem()],
-                 marker='o', label='No stim', color='b')
-    ax2.set(xticks=[0, 1], xticklabels=['Normal trials', 'Catch trials'], title='0% contrast trials')
+        ax2.errorbar([0, 1],
+                     [trials[(trials['probabilityLeft'] == 0.2) & (trials['signed_contrast'] == 0)
+                             & (trials['laser_stimulation'] == 1) & (trials['laser_probability'] != 0.25)]['right_choice'].mean(),
+                      catch_trials[(catch_trials['probabilityLeft'] == 0.2) & (catch_trials['laser_stimulation'] == 1)]['right_choice'].mean()],
+                     [trials[(trials['probabilityLeft'] == 0.2) & (trials['signed_contrast'] == 0)
+                             & (trials['laser_stimulation'] == 1) & (trials['laser_probability'] != 0.25)]['right_choice'].sem(),
+                      catch_trials[(catch_trials['probabilityLeft'] == 0.2) & (catch_trials['laser_stimulation'] == 1)]['right_choice'].sem()],
+                     marker='o', label='Stim', color=colors['right'], ls='--')
+        ax2.errorbar([0, 1],
+                     [trials[(trials['probabilityLeft'] == 0.2) & (trials['signed_contrast'] == 0)
+                             & (trials['laser_stimulation'] == 0) & (trials['laser_probability'] != 0.75)]['right_choice'].mean(),
+                      catch_trials[(catch_trials['probabilityLeft'] == 0.2) & (catch_trials['laser_stimulation'] == 0)]['right_choice'].mean()],
+                     [trials[(trials['probabilityLeft'] == 0.2) & (trials['signed_contrast'] == 0)
+                             & (trials['laser_stimulation'] == 0) & (trials['laser_probability'] != 0.75)]['right_choice'].sem(),
+                      catch_trials[(catch_trials['probabilityLeft'] == 0.2) & (catch_trials['laser_stimulation'] == 0)]['right_choice'].sem()],
+                     marker='o', label='No stim', color=colors['right'])
+        ax2.errorbar([0, 1],
+                     [trials[(trials['probabilityLeft'] == 0.8) & (trials['signed_contrast'] == 0)
+                             & (trials['laser_stimulation'] == 1) & (trials['laser_probability'] != 0.25)]['right_choice'].mean(),
+                      catch_trials[(catch_trials['probabilityLeft'] == 0.8) & (catch_trials['laser_stimulation'] == 1)]['right_choice'].mean()],
+                     [trials[(trials['probabilityLeft'] == 0.8) & (trials['signed_contrast'] == 0)
+                             & (trials['laser_stimulation'] == 1) & (trials['laser_probability'] != 0.25)]['right_choice'].sem(),
+                      catch_trials[(catch_trials['probabilityLeft'] == 0.8) & (catch_trials['laser_stimulation'] == 1)]['right_choice'].sem()],
+                     marker='o', label='Stim', color=colors['left'], ls='--')
+        ax2.errorbar([0, 1],
+                     [trials[(trials['probabilityLeft'] == 0.8) & (trials['signed_contrast'] == 0)
+                             & (trials['laser_stimulation'] == 0) & (trials['laser_probability'] != 0.75)]['right_choice'].mean(),
+                      catch_trials[(catch_trials['probabilityLeft'] == 0.8) & (catch_trials['laser_stimulation'] == 0)]['right_choice'].mean()],
+                     [trials[(trials['probabilityLeft'] == 0.8) & (trials['signed_contrast'] == 0)
+                             & (trials['laser_stimulation'] == 0) & (trials['laser_probability'] != 0.75)]['right_choice'].sem(),
+                      catch_trials[(catch_trials['probabilityLeft'] == 0.8) & (catch_trials['laser_stimulation'] == 0)]['right_choice'].sem()],
+                     marker='o', label='No stim', color=colors['left'])
+        ax2.set(xticks=[0, 1], xticklabels=['Normal trials', 'Catch trials'], title='0% contrast trials')
 
-    sns.despine(trim=True)
-    plt.tight_layout()
-    plt.savefig(join(fig_path, '%s_opto_behavior_psycurve' % nickname))
+        sns.despine(trim=True)
+        plt.tight_layout()
+        plt.savefig(join(fig_path, '%s_opto_behavior_psycurve' % nickname))
 
 # %% Plot
 colors = [sns.color_palette('colorblind')[0], sns.color_palette('colorblind')[7]]
 
 psy_avg_block_df = psy_df.groupby(['subject', 'opto_stim']).mean()
 psy_avg_block_df['lapse_both'] = psy_avg_block_df.loc[:, 'lapse_l':'lapse_r'].mean(axis=1)
+colors = figure_style(return_colors=True)
+colors = [colors['sert'], colors['wt']]
 f, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(10, 10), dpi=150)
 sns.lineplot(x='opto_stim', y='bias', hue='sert-cre', style='subject', estimator=None,
              data=bias_df[bias_df['catch_trial'] == 0], dashes=False,
              markers=['o']*int(bias_df.shape[0]/4), palette=colors, hue_order=[1, 0],
-             legend=False, ax=ax1)
+             legend=False, lw=2, ms=8, ax=ax1)
 ax1.set(xlabel='', xticks=[0, 1], xticklabels=['No stim', 'Stim'], ylabel='Bias', ylim=[0, 0.7])
 
 sns.lineplot(x='opto_stim', y='bias', hue='sert-cre', style='subject', estimator=None,
              data=bias_df[bias_df['catch_trial'] == 1], dashes=False,
              markers=['o']*int(bias_df.shape[0]/4), palette=colors, hue_order=[1, 0],
-             legend=False, ax=ax2)
+             legend=False, lw=2, ms=8, ax=ax2)
 ax2.set(xlabel='', xticks=[0, 1], xticklabels=['No stim', 'Stim'], ylabel='Bias', ylim=[0, 0.7],
         title='Catch trials')
 
 sns.lineplot(x='opto_stim', y='threshold', hue='sert-cre', style='subject', estimator=None,
              data=psy_df.groupby(['subject', 'opto_stim']).mean(), dashes=False,
              markers=['o']*int(bias_df.shape[0]/4), palette=colors, hue_order=[1, 0],
-             legend=False, ax=ax3)
+             legend=False, lw=2, ms=8, ax=ax3)
 ax3.set(xlabel='', xticks=[0, 1], xticklabels=['No stim', 'Stim'], ylabel='Threshold')
 
 sns.lineplot(x='opto_stim', y='lapse_both', hue='sert-cre', style='subject', estimator=None,
              data=psy_avg_block_df, dashes=False,
              markers=['o']*int(bias_df.shape[0]/4), palette=colors, hue_order=[1, 0],
-             legend=False, ax=ax4)
+             legend=False, lw=2, ms=8, ax=ax4)
 ax4.set(xlabel='', xticks=[0, 1], xticklabels=['No stim', 'Stim'], ylabel='Lapse rate')
 
 plt.tight_layout()

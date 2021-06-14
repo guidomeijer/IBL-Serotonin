@@ -76,12 +76,14 @@ for i, eid in enumerate(eids):
         print('Calculating significant neurons..')
         roc_auc, cluster_ids = roc_single_event(spikes[probe].times, spikes[probe].clusters,
                                                 opto_train_times, pre_time=PRE_TIME, post_time=POST_TIME)
+        roc_auc = 2 * (roc_auc - 0.5)  # scale between -1 and 1
         roc_auc_permut = np.zeros([PERMUTATIONS, len(np.unique(spikes[probe].clusters))])
         for k in range(PERMUTATIONS):
-            roc_auc_permut[k, :] = roc_single_event(
+            this_roc = roc_single_event(
                 spikes[probe].times, spikes[probe].clusters,
                 np.random.uniform(low=opto_times[0], high=opto_times[-1], size=opto_train_times.shape[0]),
                 pre_time=PRE_TIME, post_time=POST_TIME)[0]
+            roc_auc_permut[k, :] = 2 * (this_roc - 0.5)
         modulated = ((roc_auc > np.percentile(roc_auc_permut, 97.5, axis=0))
                        | (roc_auc < np.percentile(roc_auc_permut, 2.5, axis=0)))
         enhanced = roc_auc > np.percentile(roc_auc_permut, 97.5, axis=0)
@@ -92,4 +94,5 @@ for i, eid in enumerate(eids):
             'cluster_id': cluster_ids,
             'roc_auc': roc_auc, 'modulated': modulated, 'enhanced': enhanced, 'suppressed': suppressed}))
 
+    light_neurons.to_csv(join(save_path, 'light_modulated_neurons_no_histology.csv'))
 light_neurons.to_csv(join(save_path, 'light_modulated_neurons_no_histology.csv'))

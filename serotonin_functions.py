@@ -43,7 +43,13 @@ def figure_style(font_scale=2, despine=False, trim=True, return_colors=False):
         colors = {'sert': sns.color_palette('colorblind')[2],
                   'wt': sns.color_palette('colorblind')[7],
                   'left': sns.color_palette('colorblind')[1],
-                  'right': sns.color_palette('colorblind')[0]}
+                  'right': sns.color_palette('colorblind')[0],
+                  'enhanced': sns.color_palette('colorblind')[3],
+                  'suppressed': sns.color_palette('colorblind')[0],
+                  'no-modulation': sns.color_palette('colorblind')[7],
+                  'both-significant': sns.color_palette('colorblind')[2],
+                  'light-significant': sns.color_palette('colorblind')[0],
+                  'stim-significant': sns.color_palette('colorblind')[4]}
         return colors
 
 def query_sessions(selection='aligned', return_subjects=False, one=None):

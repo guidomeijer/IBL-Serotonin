@@ -56,8 +56,8 @@ plt.hlines(y=range(len(ordered_regions.index)), xmin=ordered_regions['perc_supp'
 plt.plot(ordered_regions['perc_supp'], range(len(ordered_regions.index)), 'o', color='red',
          markersize=10)
 ax1.plot([0, 0], ax1.get_ylim(), color=[0.5, 0.5, 0.5], ls='--')
-ax1.set(ylabel='', xlabel='Percentage of significant neurons',
-        xticklabels=np.concatenate((np.arange(80, 0, -20), np.arange(0, 81, 20))))
+ax1.set(ylabel='', xlabel='Percentage of significant neurons', xlim=[-101, 101],
+        xticklabels=np.concatenate((np.arange(100, 0, -25), np.arange(0, 101, 25))))
 plt.tight_layout()
 sns.despine(trim=True)
 plt.savefig(join(fig_path, 'light_modulated_neurons_per_region'))

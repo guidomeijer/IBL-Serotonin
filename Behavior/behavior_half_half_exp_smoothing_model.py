@@ -93,7 +93,7 @@ for i, nickname in enumerate(subjects['subject']):
                 block_switches = block_switches.append(pd.DataFrame(data={
                             'prior_stimside': priors_stimside[k][trans-PRE_TRIALS:trans+POST_TRIALS],
                             'prior_prevaction': priors_prevaction[k][trans-PRE_TRIALS:trans+POST_TRIALS],
-                            'trial': np.append(np.arange(-PRE_TRIALS, 0), np.arange(0, POST_TRIALS)),
+                            'trial': np.append(np.arange(-PRE_TRIALS, 0), np.arange(0, POST_TRIALS))[:priors_stimside[k][trans-PRE_TRIALS:trans+POST_TRIALS].shape[0]],
                             'change_to': prob_left[k][trans],
                             'opto': opto,
                             'sert_cre': subjects.loc[i, 'sert-cre'],

@@ -22,6 +22,7 @@ from oneibl.one import ONE
 one = ONE()
 
 # Settings
+OVERWRITE = False
 T_BEFORE = 1  # for plotting
 T_AFTER = 2
 PRE_TIME = [0.5, 0]  # for significance testing
@@ -35,16 +36,25 @@ save_path = join(save_path, '5HT')
 # Query sessions
 eids, _ = query_sessions(selection='all', one=one)
 
-stim_neurons = pd.DataFrame()
+if OVERWRITE:
+    stim_neurons = pd.DataFrame()
+else:
+    stim_neurons = pd.read_csv(join(save_path, 'stim_light_modulated_neurons_no_histology.csv'))
 for i, eid in enumerate(eids):
 
     # Get session details
     ses_details = one.get_details(eid)
     subject = ses_details['subject']
     date = ses_details['start_time'][:10]
+    if (subject in stim_neurons['subject'].values) and (date in stim_neurons['date'].values) and (OVERWRITE is False):
+        continue
 
     # Load trials dataframe
     trials = load_trials(eid, laser_stimulation=True, one=one)
+    if trials is None:
+        continue
+    if trials.shape[0] < 200:
+        continue
 
     # Load in spikes
     spikes, clusters, channels = bbone.load_spike_sorting_with_channel(eid, aligned=True, one=one)
@@ -61,9 +71,11 @@ for i, eid in enumerate(eids):
         roc_l_stim = roc_single_event(spikes[probe].times, spikes[probe].clusters,
                                       trials.loc[trials['signed_contrast'] == -1, 'stimOn_times'],
                                       pre_time=PRE_TIME, post_time=POST_TIME)[0]
+        roc_l_stim = 2 * (roc_l_stim - 0.5)
         roc_r_stim = roc_single_event(spikes[probe].times, spikes[probe].clusters,
                                       trials.loc[trials['signed_contrast'] == 1, 'stimOn_times'],
                                       pre_time=PRE_TIME, post_time=POST_TIME)[0]
+        roc_r_stim = 2 * (roc_r_stim - 0.5)
         roc_permut_l_stim = np.zeros([PERMUTATIONS, len(np.unique(spikes[probe].clusters))])
         roc_permut_r_stim = np.zeros([PERMUTATIONS, len(np.unique(spikes[probe].clusters))])
         for k in range(PERMUTATIONS):
@@ -81,22 +93,26 @@ for i, eid in enumerate(eids):
                                              trials.loc[trials['signed_contrast'] == -1, 'stimOn_times'],
                                              trials.loc[trials['signed_contrast'] == -1, 'laser_stimulation'],
                                              post_time=POST_TIME[1])[0]
+        roc_l_light = 2 * (roc_l_light - 0.5)
         roc_r_light = roc_between_two_events(spikes[probe].times, spikes[probe].clusters,
                                              trials.loc[trials['signed_contrast'] == 1, 'stimOn_times'],
                                              trials.loc[trials['signed_contrast'] == 1, 'laser_stimulation'],
                                              post_time=POST_TIME[1])[0]
+        roc_r_light = 2 * (roc_r_light - 0.5)
         roc_permut_l_light = np.zeros([PERMUTATIONS, len(np.unique(spikes[probe].clusters))])
         roc_permut_r_light = np.zeros([PERMUTATIONS, len(np.unique(spikes[probe].clusters))])
         for k in range(PERMUTATIONS):
             pseudo_laser = np.round(generate_pseudo_blocks(trials.shape[0], first5050=0))
-            roc_permut_l_light[k, :] = roc_between_two_events(
+            this_roc_permut_l_light = roc_between_two_events(
                 spikes[probe].times, spikes[probe].clusters,
                 trials.loc[trials['signed_contrast'] == -1, 'stimOn_times'],
                 pseudo_laser[trials['signed_contrast'] == -1], post_time=POST_TIME[1])[0]
-            roc_permut_r_light[k, :] = roc_between_two_events(
+            roc_permut_l_light[k, :] = 2 * (this_roc_permut_l_light - 0.5)
+            this_roc_permut_r_light = roc_between_two_events(
                 spikes[probe].times, spikes[probe].clusters,
                 trials.loc[trials['signed_contrast'] == 1, 'stimOn_times'],
                 pseudo_laser[trials['signed_contrast'] == 1], post_time=POST_TIME[1])[0]
+            roc_permut_r_light[k, :] = 2 * (this_roc_permut_r_light - 0.5)
 
         # Add results to df
         stim_neurons = stim_neurons.append(pd.DataFrame(data={
@@ -121,4 +137,5 @@ for i, eid in enumerate(eids):
             'enh_r_light': roc_r_light > np.percentile(roc_permut_r_light, 97.5, axis=0),
             'supp_r_light': roc_r_light < np.percentile(roc_permut_r_light, 2.5, axis=0)}))
 
+    stim_neurons.to_csv(join(save_path, 'stim_light_modulated_neurons_no_histology.csv'))
 stim_neurons.to_csv(join(save_path, 'stim_light_modulated_neurons_no_histology.csv'))

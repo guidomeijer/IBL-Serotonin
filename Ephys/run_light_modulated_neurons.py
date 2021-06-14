@@ -65,11 +65,9 @@ for i, eid in enumerate(eids):
     spikes, clusters, channels = bbone.load_spike_sorting_with_channel(eid, aligned=True, one=one)
 
     for p, probe in enumerate(spikes.keys()):
-        """
         if 'acronym' not in clusters[probe].keys():
             print(f'No brain regions found for {eid}')
             continue
-        """
 
         # Select spikes of passive period
         spikes[probe].clusters = spikes[probe].clusters[spikes[probe].times > opto_times[0]]
@@ -84,26 +82,23 @@ for i, eid in enumerate(eids):
         print('Calculating significant neurons..')
         roc_auc, cluster_ids = roc_single_event(spikes[probe].times, spikes[probe].clusters,
                                                 opto_train_times, pre_time=PRE_TIME, post_time=POST_TIME)
+        roc_auc = 2 * (roc_auc - 0.5)
         roc_auc_permut = np.zeros([PERMUTATIONS, len(np.unique(spikes[probe].clusters))])
         for k in range(PERMUTATIONS):
-            roc_auc_permut[k, :] = roc_single_event(
+            this_roc_auc_permut = roc_single_event(
                 spikes[probe].times, spikes[probe].clusters,
                 np.random.uniform(low=opto_times[0], high=opto_times[-1], size=opto_train_times.shape[0]),
                 pre_time=PRE_TIME, post_time=POST_TIME)[0]
+            roc_auc_permut[k, :] = 2 * (this_roc_auc_permut - 0.5)
         modulated = ((roc_auc > np.percentile(roc_auc_permut, 97.5, axis=0))
                        | (roc_auc < np.percentile(roc_auc_permut, 2.5, axis=0)))
         enhanced = roc_auc > np.percentile(roc_auc_permut, 97.5, axis=0)
         suppressed = roc_auc < np.percentile(roc_auc_permut, 2.5, axis=0)
-        """
+
         cluster_regions = remap(clusters[probe].atlas_id[cluster_ids])
         light_neurons = light_neurons.append(pd.DataFrame(data={
             'subject': subject, 'date': date, 'eid': eid, 'probe': probe,
             'region': cluster_regions, 'cluster_id': cluster_ids,
-            'roc_auc': roc_auc, 'modulated': modulated, 'enhanced': enhanced, 'suppressed': suppressed}))
-        """
-        light_neurons = light_neurons.append(pd.DataFrame(data={
-            'subject': subject, 'date': date, 'eid': eid, 'probe': probe,
-            'cluster_id': cluster_ids,
             'roc_auc': roc_auc, 'modulated': modulated, 'enhanced': enhanced, 'suppressed': suppressed}))
 
         # Plot light modulated units
@@ -132,4 +127,5 @@ for i, eid in enumerate(eids):
                                  f'{subject}_{date}_{probe}_neuron{cluster}'))
                 plt.close(p)
 
-light_neurons.to_csv(join(save_path, 'light_modulated_neurons_no_regions.csv'))
+    light_neurons.to_csv(join(save_path, 'light_modulated_neurons.csv'))
+light_neurons.to_csv(join(save_path, 'light_modulated_neurons.csv'))
