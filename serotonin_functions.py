@@ -10,7 +10,10 @@ import seaborn as sns
 import matplotlib
 import matplotlib.pyplot as plt
 from scipy.signal import filtfilt, butter
+from sklearn.utils import shuffle
 import pandas as pd
+from glob import glob
+from brainbox.io.spikeglx import spikeglx
 from brainbox.numerical import ismember
 from ibllib.atlas import BrainRegions
 from oneibl.one import ONE
@@ -205,7 +208,8 @@ def criteria_opto_eids(eids, max_lapse=0.2, max_bias=0.3, min_trials=200, one=No
     return use_eids
 
 
-def load_exp_smoothing_trials(eids, stimulated=None, rt_cutoff=0.2, after_probe_trials=0, one=None):
+def load_exp_smoothing_trials(eids, stimulated=None, rt_cutoff=0.2, after_probe_trials=0,
+                              pseudo=False, one=None):
     """
     Parameters
     ----------
@@ -221,6 +225,8 @@ def load_exp_smoothing_trials(eids, stimulated=None, rt_cutoff=0.2, after_probe_
         Only used if stimulated = 'rt'. Reaction time cutoff in seconds above which stimulated is 1
     after_probe_trials : int
         Only used if stimulated = 'probe'. How many trials after a probe trial are still counted.
+    pseudo : bool
+        Whether to use pseudo stimulated blocks or shuffled probes as control
     """
 
     if one is None:
@@ -236,15 +242,17 @@ def load_exp_smoothing_trials(eids, stimulated=None, rt_cutoff=0.2, after_probe_
             if stimulated == 'all':
                 stimulated_arr.append(trials['laser_stimulation'].values)
             elif stimulated == 'probe':
-                probe_trials = ((trials['laser_probability'] == 0.25) & (trials['laser_stimulation'] == 1)).values
+                probe_trials = ((trials['laser_stimulation'] == 1) & (trials['laser_probability'] <= .5)).values
+                if pseudo:
+                    probe_trials = shuffle(probe_trials)
                 for k, ind in enumerate(np.where(probe_trials == 1)[0]):
                     probe_trials[ind:ind + (after_probe_trials + 1)] = 1
                 stimulated_arr.append(probe_trials)
             elif stimulated == 'block':
                 block_trials = trials['laser_stimulation'].values
                 if 'laser_probability' in trials.columns:
-                    block_trials[trials['laser_probability'] == 0.25] = 0
-                    block_trials[trials['laser_probability'] == 0.75] = 1
+                    block_trials[(trials['laser_stimulation'] == 0) & (trials['laser_probability'] == .75)] = 1
+                    block_trials[(trials['laser_stimulation'] == 1) & (trials['laser_probability'] == .25)] = 0
                 stimulated_arr.append(block_trials)
             elif stimulated == 'rt':
                 stimulated_arr.append((trials['reaction_times'] > rt_cutoff).values)
@@ -291,6 +299,82 @@ def load_exp_smoothing_trials(eids, stimulated=None, rt_cutoff=0.2, after_probe_
         return actions, stimuli, stim_side, prob_left, stimulated, session_uuids
     else:
         return actions, stimuli, stim_side, prob_left, session_uuids
+
+
+def load_opto_times(eid, one=None):
+    if one is None:
+        one = ONE()
+
+     # Load in laser pulses
+    one.load(eid, dataset_types=['ephysData.raw.nidq', 'ephysData.raw.meta', 'ephysData.raw.ch',
+                                 'ephysData.raw.sync', 'ephysData.raw.timestamps'], download_only=True)
+    session_path = one.path_from_eid(eid)
+    nidq_file = glob(str(session_path.joinpath('raw_ephys_data/_spikeglx_ephysData_g*_t0.nidq.cbin')))[0]
+    sr = spikeglx.Reader(nidq_file)
+    offset = int((sr.shape[0] / sr.fs - 720) * sr.fs)
+    opto_trace = sr.read_sync_analog(slice(offset, offset + int(720 * sr.fs)))[:, 1]
+    opto_times = np.arange(offset, offset + len(opto_trace)) / sr.fs
+
+    # Get start times of pulse trains
+    opto_high_times = opto_times[opto_trace > 1]
+    if len(opto_high_times) == 0:
+        print(f'No pulses found for {eid}')
+        return []
+    else:
+        opto_train_times = opto_high_times[np.concatenate(([True], np.diff(opto_high_times) > 1))]
+        return opto_train_times
+
+
+def query_bwm_sessions(selection='all', return_subjects=False, one=None):
+    if one is None:
+        one = ONE()
+    if selection == 'all':
+        # Query all ephysChoiceWorld sessions
+        ins = one.alyx.rest('insertions', 'list',
+                        django='session__project__name__icontains,ibl_neuropixel_brainwide_01,'
+                               'session__qc__lt,50')
+    elif selection == 'aligned':
+        # Query all sessions with at least one alignment
+        ins = one.alyx.rest('insertions', 'list',
+                        django='session__project__name__icontains,ibl_neuropixel_brainwide_01,'
+                               'session__qc__lt,50,'
+                               'json__extended_qc__alignment_count__gt,0')
+    elif selection == 'resolved':
+        # Query all sessions with resolved alignment
+         ins = one.alyx.rest('insertions', 'list',
+                        django='session__project__name__icontains,ibl_neuropixel_brainwide_01,'
+                               'session__qc__lt,50,'
+                               'json__extended_qc__alignment_resolved,True')
+    elif selection == 'aligned-behavior':
+        # Query sessions with at least one alignment and that meet behavior criterion
+        ins = one.alyx.rest('insertions', 'list',
+                        django='session__project__name__icontains,ibl_neuropixel_brainwide_01,'
+                               'session__qc__lt,50,'
+                               'json__extended_qc__alignment_count__gt,0,'
+                               'session__extended_qc__behavior,1')
+    elif selection == 'resolved-behavior':
+        # Query sessions with resolved alignment and that meet behavior criterion
+        ins = one.alyx.rest('insertions', 'list',
+                        django='session__project__name__icontains,ibl_neuropixel_brainwide_01,'
+                               'session__qc__lt,50,'
+                               'json__extended_qc__alignment_resolved,True,'
+                               'session__extended_qc__behavior,1')
+    else:
+        ins = []
+
+    # Get list of eids and probes
+    all_eids = np.array([i['session'] for i in ins])
+    all_probes = np.array([i['name'] for i in ins])
+    all_subjects = np.array([i['session_info']['subject'] for i in ins])
+    eids, ind_unique = np.unique(all_eids, return_index=True)
+    subjects = all_subjects[ind_unique]
+    probes = []
+    for i, eid in enumerate(eids):
+        probes.append(all_probes[[s == eid for s in all_eids]])
+    if return_subjects:
+        return eids, probes, subjects
+    else:
+        return eids, probes
 
 
 def fit_psychfunc(stim_levels, n_trials, proportion):

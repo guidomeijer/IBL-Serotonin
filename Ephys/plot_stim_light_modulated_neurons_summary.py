@@ -122,4 +122,76 @@ plt.tight_layout(pad=2)
 sns.despine(trim=True)
 plt.savefig(join(fig_path, 'light_stim_mod_summary'))
 
+# %% Plot
+colors = figure_style(return_colors=True)
+f, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(15, 12), dpi=150)
+ax1.plot([0, 0], [-1, 1], color=[.5, .5, .5], ls='--')
+ax1.plot([-1, 1], [0, 0], color=[.5, .5, .5], ls='--')
+ax1.scatter(all_neurons.loc[(all_neurons['sert-cre'] == 1) & all_neurons['mod_0_stim'] & ~all_neurons['modulated'], 'roc_auc'],
+            all_neurons.loc[(all_neurons['sert-cre'] == 1) & all_neurons['mod_0_stim'] & ~all_neurons['modulated'], 'roc_0_stim'],
+            color=colors['stim-significant'])
+ax1.scatter(all_neurons.loc[(all_neurons['sert-cre'] == 1) & ~all_neurons['mod_0_stim'] & all_neurons['modulated'], 'roc_auc'],
+            all_neurons.loc[(all_neurons['sert-cre'] == 1) & ~all_neurons['mod_0_stim'] & all_neurons['modulated'], 'roc_0_stim'],
+            color=colors['light-significant'])
+ax1.scatter(all_neurons.loc[(all_neurons['sert-cre'] == 1) & all_neurons['mod_0_stim'] & all_neurons['modulated'], 'roc_auc'],
+            all_neurons.loc[(all_neurons['sert-cre'] == 1) & all_neurons['mod_0_stim'] & all_neurons['modulated'], 'roc_0_stim'],
+            color=colors['both-significant'])
+ax1.scatter(all_neurons.loc[(all_neurons['sert-cre'] == 1) & ~all_neurons['mod_0_stim'] & ~all_neurons['modulated'], 'roc_auc'],
+            all_neurons.loc[(all_neurons['sert-cre'] == 1) & ~all_neurons['mod_0_stim'] & ~all_neurons['modulated'], 'roc_0_stim'],
+            color=colors['no-modulation'])
+ax1.set(ylim=[-1.1, 1.1], xlim=[-1, 1], xlabel='Spontaneous 5-HT modulation', ylabel='0% contrast evoked response', title='SERT')
+
+ax2.plot([0, 0], [-1, 1], color=[.5, .5, .5], ls='--')
+ax2.plot([-1, 1], [0, 0], color=[.5, .5, .5], ls='--')
+ax2.scatter(all_neurons.loc[(all_neurons['sert-cre'] == 1) & all_neurons['mod_0_light'] & ~all_neurons['modulated'], 'roc_auc'],
+            all_neurons.loc[(all_neurons['sert-cre'] == 1) & all_neurons['mod_0_light'] & ~all_neurons['modulated'], 'roc_0_light'],
+            color=colors['stim-significant'], label='Only stim')
+ax2.scatter(all_neurons.loc[(all_neurons['sert-cre'] == 1) & ~all_neurons['mod_0_light'] & all_neurons['modulated'], 'roc_auc'],
+            all_neurons.loc[(all_neurons['sert-cre'] == 1) & ~all_neurons['mod_0_light'] & all_neurons['modulated'], 'roc_0_light'],
+            color=colors['light-significant'], label='Only spontaneous')
+ax2.scatter(all_neurons.loc[(all_neurons['sert-cre'] == 1) & all_neurons['mod_0_light'] & all_neurons['modulated'], 'roc_auc'],
+            all_neurons.loc[(all_neurons['sert-cre'] == 1) & all_neurons['mod_0_light'] & all_neurons['modulated'], 'roc_0_light'],
+            color=colors['both-significant'], label='Both significant')
+ax2.scatter(all_neurons.loc[(all_neurons['sert-cre'] == 1) & ~all_neurons['mod_0_light'] & ~all_neurons['modulated'], 'roc_auc'],
+            all_neurons.loc[(all_neurons['sert-cre'] == 1) & ~all_neurons['mod_0_light'] & ~all_neurons['modulated'], 'roc_0_light'],
+            color=colors['no-modulation'], label='None')
+ax2.set(ylim=[-1.1, 1.1], xlim=[-1, 1], xlabel='Spontaneous 5-HT modulation', ylabel='0% contrast evoked 5-HT modulation')
+ax2.legend(frameon=False, prop={'size': 20}, markerscale=2, loc='center left', bbox_to_anchor=(1, .5))
+
+ax3.plot([0, 0], [-1, 1], color=[.5, .5, .5], ls='--')
+ax3.plot([-1, 1], [0, 0], color=[.5, .5, .5], ls='--')
+ax3.scatter(all_neurons.loc[(all_neurons['sert-cre'] == 0) & all_neurons['mod_stim'] & ~all_neurons['modulated'], 'roc_auc'],
+            all_neurons.loc[(all_neurons['sert-cre'] == 0) & all_neurons['mod_stim'] & ~all_neurons['modulated'], 'roc_0_stim'],
+            color=colors['stim-significant'])
+ax3.scatter(all_neurons.loc[(all_neurons['sert-cre'] == 0) & ~all_neurons['mod_stim'] & all_neurons['modulated'], 'roc_auc'],
+            all_neurons.loc[(all_neurons['sert-cre'] == 0) & ~all_neurons['mod_stim'] & all_neurons['modulated'], 'roc_0_stim'],
+            color=colors['light-significant'])
+ax3.scatter(all_neurons.loc[(all_neurons['sert-cre'] == 0) & all_neurons['mod_stim'] & all_neurons['modulated'], 'roc_auc'],
+            all_neurons.loc[(all_neurons['sert-cre'] == 0) & all_neurons['mod_stim'] & all_neurons['modulated'], 'roc_0_stim'],
+            color=colors['both-significant'])
+ax3.scatter(all_neurons.loc[(all_neurons['sert-cre'] == 0) & ~all_neurons['mod_stim'] & ~all_neurons['modulated'], 'roc_auc'],
+            all_neurons.loc[(all_neurons['sert-cre'] == 0) & ~all_neurons['mod_stim'] & ~all_neurons['modulated'], 'roc_0_stim'],
+            color=colors['no-modulation'])
+ax3.set(ylim=[-1.1, 1.1], xlim=[-1, 1], xlabel='Spontaneous 5-HT modulation', ylabel='0% contrast evoked response', title='WT')
+
+ax4.plot([0, 0], [-1, 1], color=[.5, .5, .5], ls='--')
+ax4.plot([-1, 1], [0, 0], color=[.5, .5, .5], ls='--')
+ax4.scatter(all_neurons.loc[(all_neurons['sert-cre'] == 0) & all_neurons['mod_0_light'] & ~all_neurons['modulated'], 'roc_auc'],
+            all_neurons.loc[(all_neurons['sert-cre'] == 0) & all_neurons['mod_0_light'] & ~all_neurons['modulated'], 'roc_0_light'],
+            color=colors['stim-significant'], label='Only stim')
+ax4.scatter(all_neurons.loc[(all_neurons['sert-cre'] == 0) & ~all_neurons['mod_0_light'] & all_neurons['modulated'], 'roc_auc'],
+            all_neurons.loc[(all_neurons['sert-cre'] == 0) & ~all_neurons['mod_0_light'] & all_neurons['modulated'], 'roc_0_light'],
+            color=colors['light-significant'], label='Only spontaneous')
+ax4.scatter(all_neurons.loc[(all_neurons['sert-cre'] == 0) & all_neurons['mod_0_light'] & all_neurons['modulated'], 'roc_auc'],
+            all_neurons.loc[(all_neurons['sert-cre'] == 0) & all_neurons['mod_0_light'] & all_neurons['modulated'], 'roc_0_light'],
+            color=colors['both-significant'], label='Both significant')
+ax4.scatter(all_neurons.loc[(all_neurons['sert-cre'] == 0) & ~all_neurons['mod_0_light'] & ~all_neurons['modulated'], 'roc_auc'],
+            all_neurons.loc[(all_neurons['sert-cre'] == 0) & ~all_neurons['mod_0_light'] & ~all_neurons['modulated'], 'roc_0_light'],
+            color=colors['no-modulation'], label='None')
+ax4.set(ylim=[-1.1, 1.1], xlim=[-1, 1], xlabel='Spontaneous 5-HT modulation', ylabel='0% contrast evoked 5-HT modulation')
+ax4.legend(frameon=False, prop={'size': 20}, markerscale=2, loc='center left', bbox_to_anchor=(1, .5))
+
+plt.tight_layout(pad=2)
+sns.despine(trim=True)
+plt.savefig(join(fig_path, 'light_0_stim_mod_summary'))
 

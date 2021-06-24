@@ -17,7 +17,7 @@ from brainbox.task.closed_loop import roc_single_event
 from my_functions import figure_style
 import brainbox.io.one as bbone
 from brainbox.plot import peri_event_time_histogram
-from serotonin_functions import paths, remap, query_sessions
+from serotonin_functions import paths, remap, query_sessions, load_opto_times
 from oneibl.one import ONE
 one = ONE()
 
@@ -44,22 +44,8 @@ for i, eid in enumerate(eids):
     subject = ses_details['subject']
     date = ses_details['start_time'][:10]
 
-    # Load in laser pulses
-    one.load(eid, dataset_types=['ephysData.raw.nidq', 'ephysData.raw.meta', 'ephysData.raw.ch',
-                                 'ephysData.raw.sync', 'ephysData.raw.timestamps'], download_only=True)
-    session_path = one.path_from_eid(eid)
-    nidq_file = glob(str(session_path.joinpath('raw_ephys_data/_spikeglx_ephysData_g*_t0.nidq.cbin')))[0]
-    sr = spikeglx.Reader(nidq_file)
-    offset = int((sr.shape[0] / sr.fs - 720) * sr.fs)
-    opto_trace = sr.read_sync_analog(slice(offset, offset + int(720 * sr.fs)))[:, 1]
-    opto_times = np.arange(offset, offset + len(opto_trace)) / sr.fs
-
-    # Get start times of pulse trains
-    opto_high_times = opto_times[opto_trace > 1]
-    if len(opto_high_times) == 0:
-        print(f'No pulses found for {eid}')
-        continue
-    opto_train_times = opto_high_times[np.concatenate(([True], np.diff(opto_high_times) > 1))]
+    # Load in laser pulse times
+    opto_train_times = load_opto_times(eid, one=one)
 
     # Load in spikes
     spikes, clusters, channels = bbone.load_spike_sorting_with_channel(eid, aligned=True, one=one)
@@ -70,8 +56,9 @@ for i, eid in enumerate(eids):
             continue
 
         # Select spikes of passive period
-        spikes[probe].clusters = spikes[probe].clusters[spikes[probe].times > opto_times[0]]
-        spikes[probe].times = spikes[probe].times[spikes[probe].times > opto_times[0]]
+        start_passive = opto_train_times[0] - 360
+        spikes[probe].clusters = spikes[probe].clusters[spikes[probe].times > start_passive]
+        spikes[probe].times = spikes[probe].times[spikes[probe].times > start_passive]
 
         # Filter neurons that pass QC
         clusters_pass = np.where(clusters[probe]['metrics']['label'] == 1)[0]
@@ -87,7 +74,8 @@ for i, eid in enumerate(eids):
         for k in range(PERMUTATIONS):
             this_roc_auc_permut = roc_single_event(
                 spikes[probe].times, spikes[probe].clusters,
-                np.random.uniform(low=opto_times[0], high=opto_times[-1], size=opto_train_times.shape[0]),
+                np.random.uniform(low=start_passive, high=opto_train_times[-1],
+                                  size=opto_train_times.shape[0]),
                 pre_time=PRE_TIME, post_time=POST_TIME)[0]
             roc_auc_permut[k, :] = 2 * (this_roc_auc_permut - 0.5)
         modulated = ((roc_auc > np.percentile(roc_auc_permut, 97.5, axis=0))

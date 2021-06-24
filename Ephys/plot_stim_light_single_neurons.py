@@ -53,12 +53,12 @@ for i, eid in enumerate(np.unique(stim_neurons['eid'])):
 
         # Stimulus evoked light modulated neurons
         mod_l_neuron_ids = stim_neurons.loc[(stim_neurons['mod_l_light'] == True)
-                                            & (stim_neurons['mod_l_stim'] == True)
                                             & (stim_neurons['eid'] == eid)
                                             & (stim_neurons['probe'] == probe), 'cluster_id']
         for n, cluster in enumerate(mod_l_neuron_ids):
-            if not isdir(join(fig_path_light, f'{clusters[probe].acronym[cluster]}')):
-                mkdir(join(fig_path_light, f'{clusters[probe].acronym[cluster]}'))
+            acronym = clusters[probe].acronym[cluster].replace('/', '-')
+            if not isdir(join(fig_path_light, f'{acronym}')):
+                mkdir(join(fig_path_light, f'{acronym}'))
 
             # Plot PSTH
             figure_style()
@@ -70,6 +70,7 @@ for i, eid in enumerate(np.unique(stim_neurons['eid'])):
                 error_bars='sem', ax=ax,
                 pethline_kwargs={'color': 'black', 'lw': 2},
                 errbar_kwargs={'color': 'black', 'alpha': 0.3})
+            ylim_1 = ax.get_ylim()
             peri_event_time_histogram(
                 spikes[probe].times, spikes[probe].clusters,
                 trials.loc[(trials['signed_contrast'] == -1) & (trials['laser_stimulation'] == 1), 'stimOn_times'],
@@ -77,20 +78,19 @@ for i, eid in enumerate(np.unique(stim_neurons['eid'])):
                 error_bars='sem', ax=ax,
                 pethline_kwargs={'color': 'royalblue', 'lw': 2},
                 errbar_kwargs={'color': 'royalblue', 'alpha': 0.3})
-            ax.set(ylabel='spikes/s', xlabel='Time (s)', title='Left stimulus',
-                   yticks=np.linspace(0, np.round(ax.get_ylim()[1]), 3))
+            max_ylim = np.max(np.vstack([ylim_1, ax.get_ylim()]), axis=0)
+            ax.set(ylabel='spikes/s', xlabel='Time (s)', title='Left stimulus', ylim=max_ylim,
+                   yticks=np.linspace(0, np.round(max_ylim[1]), 3))
             ax.yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
             plt.tight_layout()
-            plt.savefig(join(fig_path_light, clusters[probe].acronym[cluster],
-                             f'{subject}_{date}_{probe}_neuron{cluster}_left-stim'))
+            plt.savefig(join(fig_path_light, acronym, f'{subject}_{date}_{probe}_neuron{cluster}_left-stim'))
             plt.close(p)
         mod_r_neuron_ids = stim_neurons.loc[(stim_neurons['mod_r_light'] == True)
-                                       & (stim_neurons['mod_r_stim'] == True)
-                                       & (stim_neurons['eid'] == eid)
-                                       & (stim_neurons['probe'] == probe), 'cluster_id']
+                                               & (stim_neurons['eid'] == eid)
+                                               & (stim_neurons['probe'] == probe), 'cluster_id']
         for n, cluster in enumerate(mod_l_neuron_ids):
-            if not isdir(join(fig_path_light, f'{clusters[probe].acronym[cluster]}')):
-                mkdir(join(fig_path_light, f'{clusters[probe].acronym[cluster]}'))
+            if not isdir(join(fig_path_light, f'{acronym}')):
+                mkdir(join(fig_path_light, f'{acronym}'))
 
             # Plot PSTH
             figure_style()
@@ -102,6 +102,7 @@ for i, eid in enumerate(np.unique(stim_neurons['eid'])):
                 error_bars='sem', ax=ax,
                 pethline_kwargs={'color': 'black', 'lw': 2},
                 errbar_kwargs={'color': 'black', 'alpha': 0.3})
+            ylim_1 = ax.get_ylim()
             peri_event_time_histogram(
                 spikes[probe].times, spikes[probe].clusters,
                 trials.loc[(trials['signed_contrast'] == 1) & (trials['laser_stimulation'] == 1), 'stimOn_times'],
@@ -109,12 +110,12 @@ for i, eid in enumerate(np.unique(stim_neurons['eid'])):
                 error_bars='sem', ax=ax,
                 pethline_kwargs={'color': 'royalblue', 'lw': 2},
                 errbar_kwargs={'color': 'royalblue', 'alpha': 0.3})
-            ax.set(ylabel='spikes/s', xlabel='Time (s)', title='Right stimulus',
-                   yticks=np.linspace(0, np.round(ax.get_ylim()[1]), 3))
+            max_ylim = np.max(np.vstack([ylim_1, ax.get_ylim()]), axis=0)
+            ax.set(ylabel='spikes/s', xlabel='Time (s)', title='Right stimulus', ylim=max_ylim,
+                   yticks=np.linspace(0, np.round(max_ylim[1]), 3))
             ax.yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
             plt.tight_layout()
-            plt.savefig(join(fig_path_light, clusters[probe].acronym[cluster],
-                             f'{subject}_{date}_{probe}_neuron{cluster}_right-stim'))
+            plt.savefig(join(fig_path_light, acronym, f'{subject}_{date}_{probe}_neuron{cluster}_right-stim'))
             plt.close(p)
 
         # Stimulus modulated neurons
@@ -122,32 +123,33 @@ for i, eid in enumerate(np.unique(stim_neurons['eid'])):
                                              & (stim_neurons['eid'] == eid)
                                              & (stim_neurons['probe'] == probe), 'cluster_id']
         for n, cluster in enumerate(stim_neuron_ids):
-            if not isdir(join(fig_path_stim, f'{clusters[probe].acronym[cluster]}')):
-                mkdir(join(fig_path_stim, f'{clusters[probe].acronym[cluster]}'))
+            if not isdir(join(fig_path_stim, f'{acronym}')):
+                mkdir(join(fig_path_stim, f'{acronym}'))
 
             # Plot PSTH
-            figure_style()
+            colors = figure_style(return_colors=True)
             p, ax = plt.subplots()
             peri_event_time_histogram(
                 spikes[probe].times, spikes[probe].clusters,
                 trials.loc[(trials['signed_contrast'] == -1), 'stimOn_times'],
                 cluster, t_before=T_BEFORE, t_after=T_AFTER, bin_size=BIN_SIZE,
                 error_bars='sem', ax=ax,
-                pethline_kwargs={'color': 'blue', 'lw': 2},
-                errbar_kwargs={'color': 'blue', 'alpha': 0.3})
+                pethline_kwargs={'color': colors['left'], 'lw': 2},
+                errbar_kwargs={'color': colors['left'], 'alpha': 0.3})
+            ylim_1 = ax.get_ylim()
             peri_event_time_histogram(
                 spikes[probe].times, spikes[probe].clusters,
                 trials.loc[(trials['signed_contrast'] == 1), 'stimOn_times'],
                 cluster, t_before=T_BEFORE, t_after=T_AFTER, bin_size=BIN_SIZE,
                 error_bars='sem', ax=ax,
-                pethline_kwargs={'color': 'orange', 'lw': 2},
-                errbar_kwargs={'color': 'orange', 'alpha': 0.3})
-            ax.set(ylabel='spikes/s', xlabel='Time (s)',
-                   yticks=np.linspace(0, np.round(ax.get_ylim()[1]), 3))
+                pethline_kwargs={'color': colors['right'], 'lw': 2},
+                errbar_kwargs={'color': colors['right'], 'alpha': 0.3})
+            max_ylim = np.max(np.vstack([ylim_1, ax.get_ylim()]), axis=0)
+            ax.set(ylabel='spikes/s', xlabel='Time (s)', ylim=max_ylim,
+                   yticks=np.linspace(0, np.round(max_ylim[1]), 3))
             ax.yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
             plt.tight_layout()
-            plt.savefig(join(fig_path_stim, clusters[probe].acronym[cluster],
-                             f'{subject}_{date}_{probe}_neuron{cluster}'))
+            plt.savefig(join(fig_path_stim, acronym, f'{subject}_{date}_{probe}_neuron{cluster}'))
             plt.close(p)
 
 

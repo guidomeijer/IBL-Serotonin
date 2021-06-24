@@ -17,7 +17,7 @@ from oneibl.one import ONE
 one = ONE()
 
 # Settings
-PLOT_SINGLE = False
+PLOT_SINGLE = True
 PREV_TRIALS = 0
 _, fig_path, save_path = paths()
 fig_path = join(fig_path, '5HT', 'opto-behavior')
@@ -110,7 +110,7 @@ for i, nickname in enumerate(subjects['subject']):
                 ax1.fill([block_switch[i], block_switch[i], block_switch[i+1], block_switch[i+1]],
                          [-4, 4, 4, -4], color=[1, 0.6, 0.6])
         ax1.plot(wMode[0], color='k', lw=3)
-        ax1.set(ylabel='Weight', xlabel='Trials', ylim=[-4, 4])
+        ax1.set(ylabel='Weight', xlabel='Trials', ylim=[-4, 4], xlim=[1000, 1500])
         sns.set(context='paper', font_scale=1.5, style='ticks')
         sns.despine(trim=True)
         plt.tight_layout(pad=2)

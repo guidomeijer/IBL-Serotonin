@@ -15,7 +15,7 @@ import seaborn as sns
 import torch
 from models.expSmoothing_stimside_SE import expSmoothing_stimside_SE as exp_stimside
 from models.expSmoothing_prevAction_SE import expSmoothing_prevAction_SE as exp_prev_action
-from serotonin_functions import paths, criteria_opto_eids, load_exp_smoothing_trials
+from serotonin_functions import paths, criteria_opto_eids, load_exp_smoothing_trials, figure_style
 from oneibl.one import ONE
 one = ONE()
 
@@ -130,7 +130,7 @@ for i, nickname in enumerate(subjects['subject']):
 
 
 # %% Plot
-sns.set(context='talk', style='ticks', font_scale=1.5)
+figure_style()
 f, ax1 = plt.subplots()
 sns.lineplot(x='model', y='accuracy', hue='sert-cre', style='subject', estimator=None,
              data=accuracy_df, dashes=False, markers=['o']*int(accuracy_df.shape[0]/2),
@@ -167,12 +167,12 @@ sns.despine(trim=True)
 plt.tight_layout()
 plt.savefig(join(fig_path, 'model_stimside_opto_behavior'))
 
-f, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(25, 10))
+f, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(15, 5), dpi=150)
 sns.lineplot(x='opto_stim', y='tau_pa', hue='sert-cre', style='subject', estimator=None,
              data=results_df, dashes=False, markers=['o']*int(results_df.shape[0]/2),
-             legend=False, ax=ax1)
-ax1.set(xlabel='', ylabel='Lenght of integration window (tau)',
-        title='Exponential smoothed previous actions model')
+             legend=False, lw=2, ms=8, ax=ax1)
+ax1.set(xlabel='', ylabel='Lenght of integration window (tau)')
+ax1.set(ylim=[0, 10])
 
 sns.lineplot(x='trial', y='prior_prevaction', data=block_switches[block_switches['sert_cre'] == 1],
              hue='change_to', style='opto', palette='colorblind', ax=ax2, ci=68)

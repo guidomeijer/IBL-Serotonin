@@ -20,7 +20,7 @@ from oneibl.one import ONE
 one = ONE()
 
 # Settings
-PROBE_TRIALS = 5
+PROBE_TRIALS = 1
 REMOVE_OLD_FIT = False
 POSTERIOR = 'posterior_mean'
 _, fig_path, save_path = paths()
@@ -34,21 +34,21 @@ block_switches = pd.DataFrame()
 for i, nickname in enumerate(subjects['subject']):
 
     # Query sessions
-    if subjects.loc[i, 'date_range_blocks'] == 'all':
+    if subjects.loc[i, 'date_range_probes'] == 'all':
         eids = one.search(subject=nickname, task_protocol='_iblrig_tasks_opto_biasedChoiceWorld')
-    elif subjects.loc[i, 'date_range_blocks'] == 'none':
+    elif subjects.loc[i, 'date_range_probes'] == 'none':
         continue
     else:
         eids = one.search(subject=nickname, task_protocol='_iblrig_tasks_opto_biasedChoiceWorld',
-                          date_range=[subjects.loc[i, 'date_range_blocks'][:10],
-                                      subjects.loc[i, 'date_range_blocks'][11:]])
+                          date_range=[subjects.loc[i, 'date_range_probes'][:10],
+                                      subjects.loc[i, 'date_range_probes'][11:]])
     #eids = criteria_opto_eids(eids, max_lapse=0.5, max_bias=0.5, min_trials=200, one=one)
     if len(eids) == 0:
         continue
 
     # Get trial data
     actions, stimuli, stim_side, prob_left, stimulated, session_uuids = load_exp_smoothing_trials(
-        eids, stimulated='probe', after_probe_trials=4, one=one)
+        eids, stimulated='probe', after_probe_trials=PROBE_TRIALS, pseudo=False, one=one)
     if len(session_uuids) == 0:
         continue
 
@@ -71,8 +71,8 @@ f, ax1 = plt.subplots(1, 1, figsize=(5, 5), dpi=150)
 
 sns.lineplot(x='opto_stim', y='tau', hue='sert-cre', style='subject', estimator=None,
              data=results_df, dashes=False, markers=['o']*int(results_df.shape[0]/2),
-             legend=False, ax=ax1)
-ax1.set(xlabel='', title='Probe trials', ylabel='Lenght of integration window (tau)')
+             legend=False, lw=2, ms=8, ax=ax1)
+ax1.set(xlabel='', title='Probe trials', ylabel='Lenght of integration window (tau)', ylim=[0, 10])
 
 sns.despine(trim=True)
 plt.tight_layout()
