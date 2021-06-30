@@ -80,13 +80,13 @@ for i, nickname in enumerate(subjects['subject']):
 
 
 # %% Plot
-figure_style()
+colors = figure_style(return_colors=True)
 f, ax1 = plt.subplots(1, 1, figsize=(5, 5), dpi=150)
 
 sns.lineplot(x='opto_stim', y='bias', hue='sert-cre', style='subject', estimator=None,
              data=results_df, dashes=False, markers=['o']*int(results_df.shape[0]/2),
-             legend=False, lw=2, ms=8, ax=ax1)
-ax1.set(xlabel='', title='Probe trials', ylabel='Lenght of integration window (tau)')
+             legend=False, lw=2, ms=8, palette=[colors['wt'], colors['sert']], ax=ax1)
+ax1.set(xlabel='', title='Probe trials', ylabel='Bias')
 
 sns.despine(trim=True)
 plt.tight_layout()

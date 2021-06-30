@@ -12,27 +12,31 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from scipy.stats import zscore
 import seaborn as sns
-from my_functions import (load_trials, butter_filter, paths, px_to_mm, pupil_features)
+from serotonin_functions import (load_trials, butter_filter, paths, px_to_mm, pupil_features)
 from oneibl.one import ONE
 one = ONE()
 
 # Settings
-TIME_BINS = np.arange(-1, 2, 0.1)
+TIME_BINS = np.arange(-1, 3, 0.1)
 BIN_SIZE = 0.1
-_, fig_path, _ = paths()
-fig_path = join(fig_path, '5HT', 'opto-pupil')
+_, fig_path, save_path = paths()
+fig_path = join(fig_path, 'opto-pupil')
 
-subjects = pd.read_csv('subjects.csv')
-subjects = subjects[subjects['subject'] == 'ZFM-01867'].reset_index(drop=True)
+subjects = pd.read_csv(join('..', 'subjects.csv'))
+#subjects = subjects[subjects['subject'] == 'ZFM-01867'].reset_index(drop=True)
 results_df = pd.DataFrame()
 for i, nickname in enumerate(subjects['subject']):
+    print(f'Processing {nickname}..')
 
     # Query sessions
-    if subjects.loc[i, 'date_range'] == 'all':
+    if subjects.loc[i, 'date_range_probes'] == 'all':
         eids = one.search(subject=nickname, task_protocol='_iblrig_tasks_opto_biasedChoiceWorld')
+    elif subjects.loc[i, 'date_range_probes'] == 'none':
+        continue
     else:
         eids = one.search(subject=nickname, task_protocol='_iblrig_tasks_opto_biasedChoiceWorld',
-                          date_range=[subjects.loc[i, 'date_range'][:10], subjects.loc[i, 'date_range'][11:]])
+                          date_range=[subjects.loc[i, 'date_range_probes'][:10],
+                                      subjects.loc[i, 'date_range_probes'][11:]])
 
     # Loop over sessions
     pupil_size = pd.DataFrame()
@@ -97,28 +101,21 @@ for i, nickname in enumerate(subjects['subject']):
     # Plot this animal
     if pupil_size.shape[0] > 0:
         f, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5), sharey=True, dpi=300)
-        lineplt = sns.lineplot(x='time', y='diameter', hue='laser',
-                               data=pupil_size[(pupil_size['laser_prob'] == 1)
-                                               | (pupil_size['laser_prob'] == 0)],
+        lineplt = sns.lineplot(x='time', y='diameter', hue='laser', data=pupil_size,
                                palette='colorblind', ci=68, ax=ax1)
-        ax1.set(title='%s, sert: %d' % (nickname, subjects.loc[i, 'sert-cre']),
+        ax1.set(title='%s, sert: %d, only probes sessions' % (nickname, subjects.loc[i, 'sert-cre']),
                 ylabel='z-scored pupil diameter', xlabel='Time relative to trial start(s)')
 
         handles, labels = ax1.get_legend_handles_labels()
         ax1.legend(handles=handles, labels=['No stim', 'Stim'], frameon=False)
 
-        sns.lineplot(x='time', y='diameter', hue='laser',
-                     data=pupil_size[(pupil_size['laser_prob'] != 1)
-                                     & (pupil_size['laser_prob'] != 0)],
-                     palette='colorblind', ci=68, legend=None, ax=ax2)
-        ax2.set(xlabel='Time relative to trial start(s)',
-                title='Catch trials')
-
         plt.tight_layout()
         sns.despine(trim=True)
-        plt.savefig(join(fig_path, f'{nickname}_pupil_opto'))
+        plt.savefig(join(fig_path, f'{nickname}_pupil_opto_probes'))
 
         # Add to overall dataframe
         results_df = results_df.append(pupil_size[pupil_size['laser'] == 0].groupby(['time', 'laser']).mean())
         results_df = results_df.append(pupil_size[pupil_size['laser'] == 1].groupby(['time', 'laser']).mean())
         results_df['nickname'] = nickname
+
+results_df.to_pickle(join(save_path, 'pupil_opto_probes.p'))
