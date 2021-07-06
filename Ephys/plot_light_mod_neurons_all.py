@@ -24,9 +24,9 @@ SMOOTHING = 0.025
 
 # Paths
 _, fig_path, save_path = paths()
-fig_path_light = join(fig_path, '5HT', 'light-modulated-neurons')
-save_path = join(save_path, '5HT')
-fig_path = join(fig_path, '5HT', 'light-mod-neurons-overview-per-region')
+fig_path_light = join(fig_path, 'light-modulated-neurons')
+save_path = join(save_path)
+fig_path = join(fig_path, 'light-mod-neurons-overview-per-region')
 
 # Load in results
 light_neurons = pd.read_csv(join(save_path, 'light_modulated_neurons.csv'))

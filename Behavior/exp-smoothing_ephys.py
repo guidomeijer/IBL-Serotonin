@@ -25,9 +25,12 @@ PRE_TRIALS = 5
 POST_TRIALS = 16
 POSTERIOR = 'posterior_mean'
 _, fig_path, save_path = paths()
-fig_path = join(fig_path, '5HT', 'opto-behavior-ephys')
+fig_path = join(fig_path, 'opto-behavior-ephys')
 
 subjects = pd.read_csv(join('..', 'subjects.csv'))
+
+# Only use ZFM-02384 for now
+subjects = subjects[subjects['subject'] == 'ZFM-02184'].reset_index(drop=True)
 
 results_df = pd.DataFrame()
 block_switches = pd.DataFrame()
@@ -42,7 +45,7 @@ for i, nickname in enumerate(subjects['subject']):
 
     # Get trial data
     actions, stimuli, stim_side, prob_left, stimulated, session_uuids = load_exp_smoothing_trials(
-        eids, laser_stimulation=True, one=one)
+        eids, stimulated='all', one=one)
 
     # Fit models
     model = exp_stimside('./model_fit_results/', session_uuids, '%s' % nickname,
@@ -120,7 +123,7 @@ f, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(25, 10))
 sns.lineplot(x='opto_stim', y='tau_ss', hue='sert-cre', style='subject', estimator=None,
              data=results_df, dashes=False, markers=['o']*int(results_df.shape[0]/2),
              legend=False, ax=ax1)
-ax1.set(xlabel='', ylabel='Lenght of integration window (tau)')
+ax1.set(xlabel='', ylabel='Length of integration window (tau)', title='Stimulus sides model')
 
 sns.lineplot(x='trial', y='prior_stimside', data=block_switches[block_switches['sert_cre'] == 1],
              hue='change_to', style='opto', palette='colorblind', ax=ax2, ci=68)
@@ -149,8 +152,8 @@ f, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(25, 10))
 sns.lineplot(x='opto_stim', y='tau_pa', hue='sert-cre', style='subject', estimator=None,
              data=results_df, dashes=False, markers=['o']*int(results_df.shape[0]/2),
              legend=False, ax=ax1)
-ax1.set(xlabel='', ylabel='Lenght of integration window (tau)',
-        title='Exponential smoothed previous actions model')
+ax1.set(xlabel='', ylabel='Length of integration window (tau)',
+        title='Previous actions model')
 
 sns.lineplot(x='trial', y='prior_prevaction', data=block_switches[block_switches['sert_cre'] == 1],
              hue='change_to', style='opto', palette='colorblind', ax=ax2, ci=68)

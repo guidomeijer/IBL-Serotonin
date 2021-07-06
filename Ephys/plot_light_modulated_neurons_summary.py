@@ -18,8 +18,6 @@ N_BINS = 50
 
 # Paths
 _, fig_path, save_path = paths()
-fig_path = join(fig_path, '5HT')
-save_path = join(save_path, '5HT')
 
 # Load in results
 if HISTOLOGY:
@@ -54,8 +52,15 @@ ax2.set(xlim=[-1, 1], xlabel='Modulation index', ylabel='Neuron count', title='W
 
 summary_df = all_neurons.groupby('subject').sum()
 summary_df['n_neurons'] = all_neurons.groupby('subject').size()
+summary_df['perc_mod'] = (summary_df['modulated'] / summary_df['n_neurons']) * 100
+summary_df['sert-cre'] = (summary_df['sert-cre'] > 0).astype(int)
 
+sns.swarmplot(x='sert-cre', y='perc_mod', data=summary_df, ax=ax3,
+              palette=[colors['wt'], colors['sert']], s=10)
+ax3.set(ylabel='Light modulated neurons (%)', xlabel='', xticklabels=['WT', 'SERT'], ylim=[0, 70])
 
 plt.tight_layout(pad=2)
 sns.despine(trim=True)
 plt.savefig(join(fig_path, 'opto_modulation_summary'))
+
+

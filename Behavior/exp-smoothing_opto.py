@@ -25,7 +25,7 @@ PRE_TRIALS = 5
 POST_TRIALS = 16
 POSTERIOR = 'posterior_mean'
 _, fig_path, save_path = paths()
-fig_path = join(fig_path, '5HT', 'opto-behavior')
+fig_path = join(fig_path, 'opto-behavior')
 
 subjects = pd.read_csv(join('..', 'subjects.csv'))
 

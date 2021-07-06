@@ -16,7 +16,7 @@ from glob import glob
 from brainbox.io.spikeglx import spikeglx
 from brainbox.numerical import ismember
 from ibllib.atlas import BrainRegions
-from oneibl.one import ONE
+from one.api import ONE
 
 
 def paths():
@@ -97,22 +97,22 @@ def query_sessions(selection='aligned', return_subjects=False, one=None):
 def load_trials(eid, laser_stimulation=False, invert_choice=False, invert_stimside=False, one=None):
     if one is None:
         one = ONE()
-    trials = pd.DataFrame()
+    data, _ = one.load_datasets(eid, datasets=[
+        '_ibl_trials.stimOn_times.npy', '_ibl_trials.feedback_times.npy',
+        '_ibl_trials.goCue_times.npy', '_ibl_trials.probabilityLeft.npy',
+        '_ibl_trials.contrastLeft.npy', '_ibl_trials.contrastRight.npy',
+        '_ibl_trials.feedbackType.npy', '_ibl_trials.choice.npy',
+        '_ibl_trials.feedback_times.npy', '_ibl_trials.firstMovement_times.npy'])
+    trials = pd.DataFrame(data=np.vstack(data).T, columns=[
+        'stimOn_times', 'feedback_times', 'goCue_times', 'probabilityLeft', 'contrastLeft',
+        'contrastRight', 'feedbackType', 'choice', 'feedback_times', 'firstMovement_times'])
+    if trials.shape[0] == 0:
+        return
     if laser_stimulation:
-        (trials['stimOn_times'], trials['feedback_times'], trials['goCue_times'],
-         trials['probabilityLeft'], trials['contrastLeft'], trials['contrastRight'],
-         trials['feedbackType'], trials['choice'],
-         trials['feedback_times'], trials['firstMovement_times'], trials['laser_stimulation'],
-         trials['laser_probability']) = one.load(
-                             eid, dataset_types=['trials.stimOn_times', 'trials.feedback_times',
-                                                 'trials.goCue_times', 'trials.probabilityLeft',
-                                                 'trials.contrastLeft', 'trials.contrastRight',
-                                                 'trials.feedbackType', 'trials.choice',
-                                                 'trials.feedback_times', 'trials.firstMovement_times',
-                                                 '_ibl_trials.laser_stimulation',
-                                                 '_ibl_trials.laser_probability'])
-        if trials.shape[0] == 0:
-            return
+        data, _ = one.load_datasets(eid, datasets=['_ibl_trials.laser_stimulation.npy',
+                                                   '_ibl_trials.laser_probability.npy'])
+        trials['laser_stimulation'] = data[0]
+        trials['laser_probability'] = data[1]
         if trials.loc[0, 'laser_stimulation'] is None:
             trials = trials.drop(columns=['laser_stimulation'])
         if trials.loc[0, 'laser_probability'] is None:
@@ -120,20 +120,6 @@ def load_trials(eid, laser_stimulation=False, invert_choice=False, invert_stimsi
         else:
             trials['catch'] = ((trials['laser_stimulation'] == 0) & (trials['laser_probability'] == 0.75)
                                | (trials['laser_stimulation'] == 1) & (trials['laser_probability'] == 0.25)).astype(int)
-
-    else:
-       (trials['stimOn_times'], trials['feedback_times'], trials['goCue_times'],
-         trials['probabilityLeft'], trials['contrastLeft'], trials['contrastRight'],
-         trials['feedbackType'], trials['choice'], trials['firstMovement_times'],
-         trials['feedback_times']) = one.load(
-                             eid, dataset_types=['trials.stimOn_times', 'trials.feedback_times',
-                                                 'trials.goCue_times', 'trials.probabilityLeft',
-                                                 'trials.contrastLeft', 'trials.contrastRight',
-                                                 'trials.feedbackType', 'trials.choice',
-                                                 'trials.firstMovement_times',
-                                                 'trials.feedback_times'])
-    if trials.shape[0] == 0:
-        return
     trials['signed_contrast'] = trials['contrastRight']
     trials.loc[trials['signed_contrast'].isnull(), 'signed_contrast'] = -trials['contrastLeft']
     trials['correct'] = trials['feedbackType']
@@ -229,6 +215,9 @@ def load_exp_smoothing_trials(eids, stimulated=None, rt_cutoff=0.2, after_probe_
         Whether to use pseudo stimulated blocks or shuffled probes as control
     """
 
+    if isinstance(stimulated, str):
+        assert stimulated in ['all', 'probe', 'block', 'rt']
+
     if one is None:
         one=ONE()
     stimuli_arr, actions_arr, stim_sides_arr, prob_left_arr, stimulated_arr, session_uuids = [], [], [], [], [], []
@@ -305,9 +294,15 @@ def load_opto_times(eid, one=None):
     if one is None:
         one = ONE()
 
-     # Load in laser pulses
-    one.load(eid, dataset_types=['ephysData.raw.nidq', 'ephysData.raw.meta', 'ephysData.raw.ch',
-                                 'ephysData.raw.sync', 'ephysData.raw.timestamps'], download_only=True)
+    # Load in laser pulses
+    try:
+        one.load_datasets(eid, datasets=[
+            '_spikeglx_ephysData_g0_t0.nidq.cbin', '_spikeglx_ephysData_g0_t0.nidq.meta',
+            '_spikeglx_ephysData_g0_t0.nidq.ch'], download_only=True)
+    except:
+        one.load_datasets(eid, datasets=[
+            '_spikeglx_ephysData_g1_t0.nidq.cbin', '_spikeglx_ephysData_g1_t0.nidq.meta',
+            '_spikeglx_ephysData_g1_t0.nidq.ch'], download_only=True)
     session_path = one.path_from_eid(eid)
     nidq_file = glob(str(session_path.joinpath('raw_ephys_data/_spikeglx_ephysData_g*_t0.nidq.cbin')))[0]
     sr = spikeglx.Reader(nidq_file)

@@ -19,20 +19,20 @@ from brainbox.task.closed_loop import (roc_single_event, roc_between_two_events,
 import brainbox.io.one as bbone
 from brainbox.plot import peri_event_time_histogram
 from serotonin_functions import paths, remap, query_sessions, load_trials, figure_style
-from oneibl.one import ONE
+from one.api import ONE
 one = ONE()
 
 # Settings
-OVERWRITE = True
+OVERWRITE = False
 T_BEFORE = 1  # for plotting
 T_AFTER = 2
 PRE_TIME = [0.5, 0]  # for significance testing
 POST_TIME = [0, 0.5]
 BIN_SIZE = 0.05
-PERMUTATIONS = 5
+PERMUTATIONS = 500
 _, fig_path, save_path = paths()
-fig_path = join(fig_path, '5HT', 'light-modulated-neurons')
-save_path = join(save_path, '5HT')
+fig_path = join(fig_path, 'light-modulated-neurons')
+save_path = join(save_path)
 
 # Query sessions
 eids, _ = query_sessions(selection='all', one=one)
@@ -61,9 +61,14 @@ for i, eid in enumerate(eids):
     spikes, clusters, channels = bbone.load_spike_sorting_with_channel(eid, aligned=True, one=one)
 
     for p, probe in enumerate(spikes.keys()):
+        if spikes[probe] is None:
+            continue
 
         # Filter neurons that pass QC
-        clusters_pass = np.where(clusters[probe]['metrics']['label'] == 1)[0]
+        if 'metrics' in clusters[probe].keys():
+            clusters_pass = np.where(clusters[probe]['metrics']['label'] == 1)[0]
+        else:
+            clusters_pass = np.unique(spikes[probe].clusters)
         spikes[probe].times = spikes[probe].times[np.isin(spikes[probe].clusters, clusters_pass)]
         spikes[probe].clusters = spikes[probe].clusters[np.isin(spikes[probe].clusters, clusters_pass)]
 

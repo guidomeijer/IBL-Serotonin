@@ -5,7 +5,7 @@ Created on Tue Feb  9 09:03:38 2021
 
 @author: guido
 """
-from my_functions import load_exp_smoothing_trials
+from serotonin_functions import load_exp_smoothing_trials
 import pandas as pd
 import numpy as np
 from oneibl.one import ONE

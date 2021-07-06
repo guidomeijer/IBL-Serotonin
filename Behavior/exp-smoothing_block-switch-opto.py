@@ -50,7 +50,7 @@ for i, nickname in enumerate(subjects['subject']):
     actions, stimuli, stim_side, prob_left, stimulated, session_uuids = load_exp_smoothing_trials(
         eids, stimulated='block', one=one)
 
-  # Make array of after block switch trials
+    # Make array of after block switch trials
     block_switch = np.zeros(prob_left.shape)
     for k in range(prob_left.shape[0]):
         ses_length = np.sum(prob_left[k] != 0)
