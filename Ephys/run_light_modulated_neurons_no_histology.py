@@ -22,11 +22,11 @@ from one.api import ONE
 one = ONE()
 
 # Settings
-OVERWRITE = False
+OVERWRITE = True
 PRE_TIME = [0.5, 0]  # for significance testing
 POST_TIME = [0, 0.5]
 BIN_SIZE = 0.05
-PERMUTATIONS = 500
+PERMUTATIONS = 100
 _, fig_path, save_path = paths()
 fig_path = join(fig_path, 'light-modulated-neurons')
 save_path = join(save_path)
@@ -46,6 +46,7 @@ for i, eid in enumerate(eids):
     ses_details = one.get_details(eid)
     subject = ses_details['subject']
     date = ses_details['start_time'][:10]
+    print(f'Processing {subject} || {date}')
 
     # Load in laser pulses
     opto_train_times = load_opto_times(eid, one=one)

@@ -54,6 +54,10 @@ for i, nickname in enumerate(subjects['subject']):
             continue
         if 'laser_probability' not in trials.columns.values:
             trials['laser_probability'] = trials['laser_stimulation']
+
+        video = one.load_object(eid, 'leftCamera')
+        asd
+
         try:
             video_data = one.load_datasets(eid, datasets=['_ibl_leftCamera.dlc.*',
                                                           '_ibl_leftCamera.times.*'])[0]

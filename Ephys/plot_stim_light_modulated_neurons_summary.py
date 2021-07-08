@@ -18,8 +18,8 @@ N_BINS = 50
 
 # Paths
 _, fig_path, save_path = paths()
-fig_path = join(fig_path, '5HT')
-save_path = join(save_path, '5HT')
+fig_path = join(fig_path)
+save_path = join(save_path)
 
 # Load in results
 if HISTOLOGY:
@@ -37,7 +37,7 @@ for i, nickname in enumerate(np.unique(all_neurons['subject'])):
     all_neurons.loc[all_neurons['subject'] == nickname, 'sert-cre'] = subjects.loc[subjects['subject'] == nickname, 'sert-cre'].values[0]
 
 # Drop ZFM-02180 for now
-all_neurons = all_neurons.loc[all_neurons['subject'] != 'ZFM-02180']
+all_neurons = all_neurons.loc[all_neurons['subject'] != 'ZFM-02184']
 
 # Get max of left or right stim modulation
 all_neurons['roc_light'] = all_neurons[['roc_l_light', 'roc_r_light']].values[

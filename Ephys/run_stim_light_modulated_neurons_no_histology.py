@@ -51,14 +51,21 @@ for i, eid in enumerate(eids):
         continue
 
     # Load trials dataframe
-    trials = load_trials(eid, laser_stimulation=True, one=one)
+    try:
+        trials = load_trials(eid, laser_stimulation=True, one=one)
+    except:
+        print('cannot load trials')
+        continue
     if trials is None:
         continue
     if trials.shape[0] < 200:
         continue
 
     # Load in spikes
-    spikes, clusters, channels = bbone.load_spike_sorting_with_channel(eid, aligned=True, one=one)
+    try:
+        spikes, clusters, channels = bbone.load_spike_sorting_with_channel(eid, aligned=True, one=one)
+    except:
+        continue
 
     for p, probe in enumerate(spikes.keys()):
         if spikes[probe] is None:

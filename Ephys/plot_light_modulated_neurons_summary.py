@@ -31,7 +31,7 @@ for i, nickname in enumerate(np.unique(all_neurons['subject'])):
     all_neurons.loc[all_neurons['subject'] == nickname, 'sert-cre'] = subjects.loc[subjects['subject'] == nickname, 'sert-cre'].values[0]
 
 # Drop ZFM-02180 for now
-all_neurons = all_neurons.loc[all_neurons['subject'] != 'ZFM-02180']
+all_neurons = all_neurons.loc[all_neurons['subject'] != 'ZFM-02184']
 
 # %%
 colors = figure_style(return_colors=True)
