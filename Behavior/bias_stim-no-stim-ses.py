@@ -13,50 +13,38 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from datetime import datetime
-from models.expSmoothing_stimside import expSmoothing_stimside as exp_stimside
-from models.expSmoothing_prevAction import expSmoothing_prevAction as exp_prev_action
 from serotonin_functions import paths, criteria_opto_eids, load_trials, figure_style
-from oneibl.one import ONE
+from one.api import ONE
 one = ONE()
 
 # Settings
-REMOVE_OLD_FIT = False
-POSTERIOR = 'posterior_mean'
+N_SESSIONS = 5
 _, fig_path, save_path = paths()
-fig_path = join(fig_path, '5HT', 'opto-behavior')
+fig_path = join(fig_path, 'opto-behavior')
 
 subjects = pd.read_csv(join('..', 'subjects.csv'))
 subjects = subjects[~((subjects['date_range_blocks'] == 'none') & (subjects['date_range_probes'] == 'none')
                      & (subjects['date_range_half'] == 'none'))].reset_index(drop=True)
 
 results_df = pd.DataFrame()
-block_switches = pd.DataFrame()
 for i, nickname in enumerate(subjects['subject']):
 
     # Stimulated sessions
-    eids, details = one.search(subject=nickname, task_protocol='_iblrig_tasks_opto_biasedChoiceWorld',
-                               details=True)
-    #eids = eids[-5:]
-    #details = details[-5:]
-
-    stim_dates = [datetime.strptime(i, '%Y-%m-%d') for i in [j['start_time'][:10] for j in details]]
+    eids, details = one.search(subject=nickname,
+                               task_protocol='_iblrig_tasks_opto_biasedChoiceWorld', details=True)
+    stim_dates = [i['date'] for i in details]
     trials = pd.DataFrame()
-    ses_count = 0
-    for j, eid in enumerate(eids):
-        these_trials = load_trials(eid, laser_stimulation=True, one=one)
-        if these_trials is not None:
-            these_trials['session'] = ses_count
-            trials = trials.append(these_trials, ignore_index=True)
-            ses_count = ses_count + 1
-    if len(trials) == 0:
-        continue
-    bias = np.abs(trials[(trials['probabilityLeft'] == 0.8)
-                               & (trials['signed_contrast'] == 0)].mean()
-                        - trials[(trials['probabilityLeft'] == 0.2)
-                                 & (trials['signed_contrast'] == 0)].mean())['right_choice']
-    results_df = results_df.append(pd.DataFrame(index=[results_df.shape[0] + 1], data={
-        'bias': bias, 'sessions': 'stim',
-        'sert-cre': subjects.loc[i, 'sert-cre'], 'subject': nickname}))
+    stim_ses = np.arange(len(eids), len(eids) - N_SESSIONS, -1)
+
+    for j, ind in enumerate(stim_ses):
+        trials = load_trials(eids[ind], one=one)
+        bias = np.abs(trials[(trials['probabilityLeft'] == 0.8)
+                             & (trials['signed_contrast'] == 0)].mean()
+                      - trials[(trials['probabilityLeft'] == 0.2)
+                               & (trials['signed_contrast'] == 0)].mean())['right_choice']
+        results_df = results_df.append(pd.DataFrame(index=[results_df.shape[0] + 1], data={
+            'bias': bias, 'stim': 1, 'session': j, 'date': stim_dates[j],
+            'sert-cre': subjects.loc[i, 'sert-cre'], 'subject': nickname}))
 
     # Pre unstimulated sessions
     eids, details = one.search(subject=nickname, task_protocol='_iblrig_tasks_biasedChoiceWorld',
