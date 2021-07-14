@@ -19,25 +19,15 @@ one = ONE()
 # Settings
 PLOT_SINGLE_ANIMALS = True
 _, fig_path, _ = paths()
-fig_path = join(fig_path, 'opto-behavior')
+fig_path = join(fig_path, 'opto-ephys-behavior')
 subjects = pd.read_csv(join('..', 'subjects.csv'))
-
-# testing
-#subjects = subjects[subjects['subject'] == 'ZFM-01867'].reset_index(drop=True)
+subjects = subjects[subjects['include_ephys'] == 1].reset_index(drop=True)
 
 bias_df, lapse_df, psy_df = pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
 for i, nickname in enumerate(subjects['subject']):
 
     # Query sessions
-    if subjects.loc[i, 'date_range_blocks_good'] == 'all':
-        eids = one.search(subject=nickname, task_protocol='_iblrig_tasks_opto_biasedChoiceWorld')
-    elif subjects.loc[i, 'date_range_blocks_good'] == 'none':
-        continue
-    else:
-        eids = one.search(subject=nickname, task_protocol='_iblrig_tasks_opto_biasedChoiceWorld',
-                          date_range=[subjects.loc[i, 'date_range_blocks_good'][:10],
-                                      subjects.loc[i, 'date_range_blocks_good'][11:]])
-    #eids = criteria_opto_eids(eids, max_lapse=0.3, max_bias=0.5, min_trials=300, one=one)
+    eids = one.search(subject=nickname, task_protocol='_iblrig_tasks_opto_ephysChoiceWorld')
 
     # Get trials DataFrame
     trials = pd.DataFrame()

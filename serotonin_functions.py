@@ -28,7 +28,7 @@ def paths():
     SAVE_PATH = '/path/to/save/data'
 
     """
-    from paths import DATA_PATH, FIG_PATH, SAVE_PATH
+    from serotonin_paths import DATA_PATH, FIG_PATH, SAVE_PATH
     return DATA_PATH, FIG_PATH, SAVE_PATH
 
 

@@ -18,6 +18,7 @@ from one.api import ONE
 one = ONE()
 
 # Settings
+BASELINE = 3
 _, fig_path, save_path = paths()
 fig_path = join(fig_path, 'opto-behavior')
 
@@ -27,6 +28,7 @@ subjects = subjects[~((subjects['date_range_blocks'] == 'none') & (subjects['dat
 
 results_df = pd.DataFrame()
 for i, nickname in enumerate(subjects['subject']):
+    print(f'Processing {nickname}')
     # Query all sessions
     eids, details = one.search(subject=nickname,
                                task_protocol=['_iblrig_tasks_opto_biasedChoiceWorld',
@@ -54,6 +56,12 @@ for i, nickname in enumerate(subjects['subject']):
             'session': rel_ses[j], 'date': details[j]['date'],
             'sert-cre': subjects.loc[i, 'sert-cre'], 'subject': nickname}))
 
+    # Subtract baseline
+    results_df.loc[results_df['subject'] == nickname, 'bias_baseline'] = (
+        (results_df.loc[results_df['subject'] == nickname, 'bias']
+        - (results_df.loc[(results_df['subject'] == nickname)
+                         & (results_df['session'].between(-BASELINE, -1)), 'bias'].mean())))
+
 # %% Plot
 colors = figure_style(return_colors=True)
 f, ax1 = plt.subplots(1, 1, figsize=(5, 5), dpi=150)
@@ -69,7 +77,7 @@ sns.lineplot(x='session', y='bias', hue='sert-cre', style='subject', dashes=Fals
 """
 sns.lineplot(x='session', y='bias', hue='sert-cre', ci=68,
              data=results_df, legend=False, lw=2, ms=8, palette=[colors['wt'], colors['sert']], ax=ax1)
-#ax1.set(xlabel='', title='Probe trials', ylabel='Bias')
+#ax1.set(xlabel='', title='Probe trials', ylabel='Bia's')
 ax1.set(xlim=[-10, 20])
 
 sns.despine(trim=True)

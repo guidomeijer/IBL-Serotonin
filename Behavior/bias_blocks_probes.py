@@ -12,16 +12,11 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-import torch
-from models.expSmoothing_stimside_SE import expSmoothing_stimside_SE as exp_stimside
-from models.expSmoothing_prevAction_SE import expSmoothing_prevAction_SE as exp_prev_action
 from serotonin_functions import paths, criteria_opto_eids, load_trials, figure_style
-from oneibl.one import ONE
+from one.api import ONE
 one = ONE()
 
 # Settings
-REMOVE_OLD_FIT = False
-POSTERIOR = 'posterior_mean'
 _, fig_path, save_path = paths()
 fig_path = join(fig_path, 'opto-behavior')
 
