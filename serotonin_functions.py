@@ -376,7 +376,7 @@ def fit_psychfunc(stim_levels, n_trials, proportion):
     # Fit a psychometric function with two lapse rates
     #
     # Returns vector pars with [bias, threshold, lapselow, lapsehigh]
-    from ibl_pipeline.utils import psychofit as psy
+    import psychofit as psy
     assert(stim_levels.shape == n_trials.shape == proportion.shape)
     if stim_levels.max() <= 1:
         stim_levels = stim_levels * 100
@@ -390,7 +390,7 @@ def fit_psychfunc(stim_levels, n_trials, proportion):
 
 
 def plot_psychometric(trials, ax, **kwargs):
-    from ibl_pipeline.utils import psychofit as psy
+    import psychofit as psy
     if trials['signed_contrast'].max() <= 1:
         trials['signed_contrast'] = trials['signed_contrast'] * 100
 
