@@ -44,29 +44,43 @@ for i, nickname in enumerate(subjects['subject']):
     trials = pd.DataFrame()
     ses_count = 0
     for j, eid in enumerate(eids):
-        these_trials = load_trials(eid, laser_stimulation=True, one=one)
-        if these_trials is not None:
+        try:
+            these_trials = load_trials(eid, laser_stimulation=True, one=one)
             these_trials['session'] = ses_count
             trials = trials.append(these_trials, ignore_index=True)
             ses_count = ses_count + 1
+        except:
+            pass
     if len(trials) == 0:
         continue
     if 'laser_probability' not in trials.columns:
         trials['laser_probability'] = trials['laser_stimulation'].copy()
 
-    bias_no_stim = np.abs(trials[(trials['probabilityLeft'] == 0.8)
-                               & (trials['signed_contrast'] == 0)
-                               & (trials['laser_stimulation'] == 0)].mean()
-                        - trials[(trials['probabilityLeft'] == 0.2)
-                                 & (trials['signed_contrast'] == 0)
-                                 & (trials['laser_stimulation'] == 0)].mean())['right_choice']
-    bias_stim = np.abs(trials[(trials['probabilityLeft'] == 0.8)
-                               & (trials['signed_contrast'] == 0)
-                               & (trials['laser_stimulation'] == 1)].mean()
-                        - trials[(trials['probabilityLeft'] == 0.2)
-                                 & (trials['signed_contrast'] == 0)
-                                 & (trials['laser_stimulation'] == 1)].mean())['right_choice']
+    bias_block_ns = np.abs(trials[(trials['probabilityLeft'] == 0.8)
+                                  & (trials['laser_probability'] == 0.75)
+                                  & (trials['laser_stimulation'] == 0)].mean()
+                           - trials[(trials['probabilityLeft'] == 0.2)
+                                    & (trials['laser_probability'] == 0.75)
+                                    & (trials['laser_stimulation'] == 0)].mean())['right_choice']
+    bias_block_s = np.abs(trials[(trials['probabilityLeft'] == 0.8)
+                                 & (trials['laser_probability'] == 0.75)
+                                 & (trials['laser_stimulation'] == 1)].mean()
+                          - trials[(trials['probabilityLeft'] == 0.2)
+                                   & (trials['laser_probability'] == 0.75)
+                                   & (trials['laser_stimulation'] == 1)].mean())['right_choice']
 
+    bias_probe_ns = np.abs(trials[(trials['probabilityLeft'] == 0.8)
+                                  & (trials['laser_probability'] == 0.25)
+                                  & (trials['laser_stimulation'] == 0)].mean()
+                           - trials[(trials['probabilityLeft'] == 0.2)
+                                    & (trials['laser_probability'] == 0.25)
+                                    & (trials['laser_stimulation'] == 0)].mean())['right_choice']
+    bias_probe_s = np.abs(trials[(trials['probabilityLeft'] == 0.8)
+                                 & (trials['laser_probability'] == 0.25)
+                                 & (trials['laser_stimulation'] == 1)].mean()
+                          - trials[(trials['probabilityLeft'] == 0.2)
+                                   & (trials['laser_probability'] == 0.25)
+                                   & (trials['laser_stimulation'] == 1)].mean())['right_choice']
 
     results_df = results_df.append(pd.DataFrame(data={'bias': [bias_no_stim, bias_stim],
                                                       'opto_stim': ['no stim', 'stim'],

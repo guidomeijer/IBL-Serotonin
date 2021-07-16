@@ -44,8 +44,7 @@ for i, nickname in enumerate(subjects):
                 trials = trials.append(these_trials, ignore_index=True)
                 ses_loaded += 1
             except:
-                # do nothing
-                ses_loaded=ses_loaded
+                pass
         last_ses = trials['date'].max()
         print(f'Last session loaded for {nickname}: {last_ses}')
 

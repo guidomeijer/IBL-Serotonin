@@ -43,33 +43,29 @@ for i, nickname in enumerate(subjects['subject']):
     trials = pd.DataFrame()
     ses_count = 0
     for j, eid in enumerate(eids):
-        these_trials = load_trials(eid, laser_stimulation=True, one=one)
-        if these_trials is not None:
+        try:
+            these_trials = load_trials(eid, laser_stimulation=True, one=one)
             these_trials['session'] = ses_count
             trials = trials.append(these_trials, ignore_index=True)
             ses_count = ses_count + 1
-    if len(trials) == 0:
-        continue
+        except:
+            pass
     if 'laser_probability' not in trials.columns:
         trials['laser_probability'] = trials['laser_stimulation'].copy()
 
     # Get bias shift
     bias_no_stim = np.abs(trials[(trials['probabilityLeft'] == 0.8)
-                                 & (trials['signed_contrast'] == 0)
                                  & (trials['laser_stimulation'] == 0)
-                                 & (trials['laser_probability'] != 0.75)].mean()
+                                 & (trials['laser_probability'] == 0.25)].mean()
                           - trials[(trials['probabilityLeft'] == 0.2)
-                                   & (trials['signed_contrast'] == 0)
                                    & (trials['laser_stimulation'] == 0)
-                                   & (trials['laser_probability'] != 0.75)].mean())['right_choice']
+                                   & (trials['laser_probability'] == 0.25)].mean())['right_choice']
     bias_stim = np.abs(trials[(trials['probabilityLeft'] == 0.8)
-                              & (trials['signed_contrast'] == 0)
                               & (trials['laser_stimulation'] == 1)
-                              & (trials['laser_probability'] != 0.25)].mean()
+                              & (trials['laser_probability'] == 0.75)].mean()
                        - trials[(trials['probabilityLeft'] == 0.2)
-                                & (trials['signed_contrast'] == 0)
                                 & (trials['laser_stimulation'] == 1)
-                                & (trials['laser_probability'] != 0.25)].mean())['right_choice']
+                                & (trials['laser_probability'] == 0.75)].mean())['right_choice']
     bias_catch_stim = np.abs(trials[(trials['probabilityLeft'] == 0.8)
                                     & (trials['laser_stimulation'] == 1)
                                     & (trials['laser_probability'] == 0.25)].mean()
@@ -83,13 +79,13 @@ for i, nickname in enumerate(subjects['subject']):
                                          & (trials['laser_stimulation'] == 0)
                                          & (trials['laser_probability'] == 0.75)].mean())['right_choice']
     # Get RT
-    rt_no_stim = trials[(trials['signed_contrast'] == 0) & (trials['laser_stimulation'] == 0)
-                        & (trials['laser_probability'] != 0.75)].median()['reaction_times']
-    rt_stim = trials[(trials['signed_contrast'] == 0) & (trials['laser_stimulation'] == 1)
-                     & (trials['laser_probability'] != 0.25)].median()['reaction_times']
-    rt_catch_no_stim = trials[(trials['signed_contrast'] == 0) & (trials['laser_stimulation'] == 0)
-                              & (trials['laser_probability'] == 0.75)].median()['reaction_times']
-    rt_catch_stim = trials[(trials['signed_contrast'] == 0) & (trials['laser_stimulation'] == 1)
+    rt_no_stim = trials[(trials['laser_stimulation'] == 0)
+                        & (trials['laser_probability'] == 0.25)].median()['reaction_times']
+    rt_stim = trials[(trials['laser_stimulation'] == 1)
+                     & (trials['laser_probability'] == 0.75)].median()['reaction_times']
+    rt_catch_no_stim = trials[(trials['laser_stimulation'] == 0)
+                              & (trials['laser_probability'] == 0.25)].median()['reaction_times']
+    rt_catch_stim = trials[(trials['laser_stimulation'] == 1)
                            & (trials['laser_probability'] == 0.25)].median()['reaction_times']
     bias_df = bias_df.append(pd.DataFrame(data={
         'subject': nickname, 'sert-cre': subjects.loc[i, 'sert-cre'],
