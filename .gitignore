@@ -6,3 +6,5 @@ Pharmacology/model_fit_results/
 __pycache__/
 
 paths.py
+
+serotonin_paths.py
