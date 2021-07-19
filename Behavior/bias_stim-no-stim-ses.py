@@ -63,20 +63,37 @@ for i, nickname in enumerate(subjects['subject']):
                          & (results_df['session'].between(-BASELINE, -1)), 'bias'].mean())))
 
 # %% Plot
-colors = figure_style(return_colors=True)
-f, ax1 = plt.subplots(1, 1, figsize=(5, 5), dpi=150)
+colors, dpi = figure_style()
+f, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(7, 3.5), dpi=dpi)
 """
 sns.lineplot(x='session', y='bias', hue='sert-cre', style='subject', estimator=None,
              data=results_df, dashes=False, markers=['o']*int(results_df.shape[0]/2),
              legend=False, lw=2, ms=8, palette=[colors['wt'], colors['sert']], ax=ax1)
-"""
-"""
+
 sns.lineplot(x='session', y='bias', hue='sert-cre', style='subject', dashes=False,
              estimator=None,
              data=results_df, legend=False, lw=2, ms=8, palette=[colors['wt'], colors['sert']], ax=ax1)
 """
 sns.lineplot(x='session', y='bias', hue='sert-cre', ci=68,
-             data=results_df, legend=False, lw=2, ms=8, palette=[colors['wt'], colors['sert']], ax=ax1)
+             data=results_df[results_df['sert-cre'] == 1], legend=False, lw=2, ms=8,
+             palette=[colors['sert']], ax=ax1)
+
+for i, nickname in enumerate(results_df.loc[results_df['sert-cre'] == 1, 'subject'].unique()):
+    ax2.plot([0, 1], [results_df.loc[(results_df['subject'] == nickname)
+                                     & (results_df['session'].between(-3, -1)), 'bias'].mean(),
+                      results_df.loc[(results_df['subject'] == nickname)
+                                     & (results_df['session'].between(0, 2)), 'bias'].mean()],
+             color = 'k')
+ax2.set(ylim=[0, 0.5])
+
+for i, nickname in enumerate(results_df.loc[results_df['sert-cre'] == 1, 'subject'].unique()):
+    ax3.plot([0, 1], [results_df.loc[(results_df['subject'] == nickname)
+                                     & (results_df['session'].between(-3, -1)), 'bias'].mean(),
+                      results_df.loc[(results_df['subject'] == nickname)
+                                     & (results_df['session'].between(3, 5)), 'bias'].mean()],
+             color = 'k')
+ax3.set(ylim=[0, 0.5])
+
 #ax1.set(xlabel='', title='Probe trials', ylabel='Bia's')
 ax1.set(xlim=[-10, 20])
 

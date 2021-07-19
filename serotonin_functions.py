@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 from scipy.signal import filtfilt, butter
 from sklearn.utils import shuffle
 import pandas as pd
+import tkinter as tk
 from glob import glob
 from brainbox.io.spikeglx import spikeglx
 from brainbox.numerical import ismember
@@ -32,28 +33,40 @@ def paths():
     return DATA_PATH, FIG_PATH, SAVE_PATH
 
 
-def figure_style(font_scale=2, despine=False, trim=True, return_colors=False):
+def figure_style():
     """
     Set style for plotting figures
     """
-    sns.set(style="ticks", context="paper", font_scale=font_scale)
+    sns.set(style="ticks", context="paper",
+            font="Arial",
+            rc={"font.size": 9,
+                "axes.titlesize": 8,
+                "axes.labelsize": 7,
+                "lines.linewidth": 1,
+                "xtick.labelsize": 7,
+                "ytick.labelsize": 7,
+                "savefig.transparent": True,
+                "xtick.major.size": 2.5,
+                "ytick.major.size": 2.5,
+                "xtick.minor.size": 2,
+                "ytick.minor.size": 2,
+                })
     matplotlib.rcParams['pdf.fonttype'] = 42
     matplotlib.rcParams['ps.fonttype'] = 42
-    if despine:
-        sns.despine(trim=trim)
-        plt.tight_layout()
-    if return_colors:
-        colors = {'sert': sns.color_palette('colorblind')[2],
-                  'wt': sns.color_palette('colorblind')[7],
-                  'left': sns.color_palette('colorblind')[1],
-                  'right': sns.color_palette('colorblind')[0],
-                  'enhanced': sns.color_palette('colorblind')[3],
-                  'suppressed': sns.color_palette('colorblind')[0],
-                  'no-modulation': sns.color_palette('colorblind')[7],
-                  'both-significant': sns.color_palette('colorblind')[2],
-                  'light-significant': sns.color_palette('colorblind')[0],
-                  'stim-significant': sns.color_palette('colorblind')[4]}
-        return colors
+    colors = {'sert': sns.color_palette('colorblind')[2],
+              'wt': sns.color_palette('colorblind')[7],
+              'left': sns.color_palette('colorblind')[1],
+              'right': sns.color_palette('colorblind')[0],
+              'enhanced': sns.color_palette('colorblind')[3],
+              'suppressed': sns.color_palette('colorblind')[0],
+              'no-modulation': sns.color_palette('colorblind')[7],
+              'both-significant': sns.color_palette('colorblind')[2],
+              'light-significant': sns.color_palette('colorblind')[0],
+              'stim-significant': sns.color_palette('colorblind')[4]}
+    screen_width = tk.Tk().winfo_screenwidth()
+    dpi = screen_width / 10
+    return colors, dpi
+
 
 def query_sessions(selection='aligned', return_subjects=False, one=None):
     if one is None:
