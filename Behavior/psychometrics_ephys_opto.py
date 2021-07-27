@@ -29,6 +29,9 @@ for i, nickname in enumerate(subjects['subject']):
     # Query sessions
     eids = one.search(subject=nickname, task_protocol='_iblrig_tasks_opto_ephysChoiceWorld')
 
+    # Apply behavioral critria
+    eids = criteria_opto_eids(eids)
+
     # Get trials DataFrame
     trials = pd.DataFrame()
     ses_count = 0

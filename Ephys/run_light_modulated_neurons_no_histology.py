@@ -22,7 +22,7 @@ from one.api import ONE
 one = ONE()
 
 # Settings
-OVERWRITE = True
+OVERWRITE = False
 PRE_TIME = [0.5, 0]  # for significance testing
 POST_TIME = [0, 0.5]
 BIN_SIZE = 0.05
@@ -48,8 +48,12 @@ for i, eid in enumerate(eids):
     date = ses_details['start_time'][:10]
     print(f'Processing {subject} || {date}')
 
-    # Load in laser pulses
-    opto_train_times = load_opto_times(eid, one=one)
+    # Load in laser
+    try:
+        opto_train_times = load_opto_times(eid, one=one)
+    except:
+        print('Could not load laser pulses')
+        continue
 
     # Load in spikes
     spikes, clusters, channels = bbone.load_spike_sorting_with_channel(eid, aligned=True, one=one)

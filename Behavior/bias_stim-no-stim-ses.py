@@ -18,7 +18,7 @@ from one.api import ONE
 one = ONE()
 
 # Settings
-BASELINE = 3
+BASELINE = 10
 _, fig_path, save_path = paths()
 fig_path = join(fig_path, 'opto-behavior')
 
@@ -95,9 +95,9 @@ for i, nickname in enumerate(results_df.loc[results_df['sert-cre'] == 1, 'subjec
 ax3.set(ylim=[0, 0.5])
 
 #ax1.set(xlabel='', title='Probe trials', ylabel='Bia's')
-ax1.set(xlim=[-10, 20])
+ax1.set(xlim=[-8, 20])
 
-sns.despine(trim=True)
+#sns.despine(trim=True)
 plt.tight_layout()
 plt.savefig(join(fig_path, 'stim-no-stim-bias'))
 

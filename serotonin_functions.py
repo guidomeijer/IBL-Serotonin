@@ -19,10 +19,14 @@ from brainbox.numerical import ismember
 from ibllib.atlas import BrainRegions
 from one.api import ONE
 
+# This is the date at which I fixed a crucial bug in the laser driver, all optogenetics data
+# from before this date is not to be trusted
+DATE_GOOD_OPTO = '2021-07-01'
+
 
 def paths():
     """
-    Make a file in the root of the repository called 'paths.py' with in it:
+    Make a file in the root of the repository called 'serotonin_paths.py' with in it:
 
     DATA_PATH = '/path/to/Flatiron/data'
     FIG_PATH = '/path/to/save/figures'

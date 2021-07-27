@@ -10,7 +10,7 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 from os.path import join
-from serotonin_functions import paths, figure_style, get_full_region_name
+from serotonin_functions import paths, figure_style
 
 # Settings
 HISTOLOGY = False
@@ -31,7 +31,7 @@ for i, nickname in enumerate(np.unique(all_neurons['subject'])):
     all_neurons.loc[all_neurons['subject'] == nickname, 'sert-cre'] = subjects.loc[subjects['subject'] == nickname, 'sert-cre'].values[0]
 
 # testing
-all_neurons = all_neurons.loc[all_neurons['subject'] == 'ZFM-01507']
+all_neurons = all_neurons.loc[all_neurons['subject'] == 'ZFM-02183']
 
 # %%
 colors = figure_style(return_colors=True)

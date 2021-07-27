@@ -12,13 +12,15 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from scipy.stats import zscore
 import seaborn as sns
-from serotonin_functions import (load_trials, butter_filter, paths, px_to_mm, pupil_features)
+from serotonin_functions import (load_trials, butter_filter, paths, px_to_mm, pupil_features,
+                                 DATE_GOOD_OPTO)
 from one.api import ONE
 one = ONE()
 
 # Settings
 TIME_BINS = np.arange(-1, 3, 0.1)
 BIN_SIZE = 0.1
+BASELINE = 0.5
 _, fig_path, _ = paths()
 fig_path = join(fig_path, 'opto-pupil')
 
@@ -29,14 +31,8 @@ for i, nickname in enumerate(subjects['subject']):
     print(f'Processing {nickname}..')
 
     # Query sessions
-    if subjects.loc[i, 'date_range_blocks_good'] == 'all':
-        eids = one.search(subject=nickname, task_protocol='_iblrig_tasks_opto_biasedChoiceWorld')
-    elif subjects.loc[i, 'date_range_blocks_good'] == 'none':
-        continue
-    else:
-        eids = one.search(subject=nickname, task_protocol='_iblrig_tasks_opto_biasedChoiceWorld',
-                          date_range=[subjects.loc[i, 'date_range_blocks_good'][:10],
-                                      subjects.loc[i, 'date_range_blocks_good'][11:]])
+    eids = one.search(subject=nickname, task_protocol='_iblrig_tasks_opto_biasedChoiceWorld',
+                      date_range=[DATE_GOOD_OPTO, '2025-01-01'])
 
     # Loop over sessions
     pupil_size = pd.DataFrame()
@@ -55,17 +51,12 @@ for i, nickname in enumerate(subjects['subject']):
         if 'laser_probability' not in trials.columns.values:
             trials['laser_probability'] = trials['laser_stimulation']
 
-        video = one.load_object(eid, 'leftCamera')
-        asd
-
+        # Load in camera timestamps and DLC output
         try:
-            video_data = one.load_datasets(eid, datasets=['_ibl_leftCamera.dlc.*',
-                                                          '_ibl_leftCamera.times.*'])[0]
+            video_times = one.load_dataset(eid, dataset='_ibl_leftCamera.times.npy')
+            video_dlc = pd.read_parquet(join(one.eid2path(eid), 'alf', '_ibl_leftCamera.dlc.pqt'))
         except:
-            continue
-        video_dlc = video_data[0]
-        video_times = video_data[1]
-        if video_dlc is None:
+            print('Could not load video and/or DLC data')
             continue
 
         # Assume frames were dropped at the end
@@ -95,13 +86,15 @@ for i, nickname in enumerate(subjects['subject']):
         diameter_filt = butter_filter(diameter, lowpass_freq=0.5, order=1, fs=int(fs))
         diameter_zscore = zscore(diameter_filt)
 
-        # Get trial triggered pupil diameter
+        # Get trial triggered baseline subtracted pupil diameter
         for t, trial_start in enumerate(trials['goCue_times']):
             this_diameter = np.array([np.nan] * TIME_BINS.shape[0])
+            baseline = np.mean(diameter_zscore[(video_times > (trial_start - BASELINE))
+                                               & (video_times < trial_start)])
             for b, time_bin in enumerate(TIME_BINS):
                 this_diameter[b] = np.mean(diameter_zscore[
                     (video_times > (trial_start + time_bin) - (BIN_SIZE / 2))
-                    & (video_times < (trial_start + time_bin) + (BIN_SIZE / 2))])
+                    & (video_times < (trial_start + time_bin) + (BIN_SIZE / 2))]) - baseline
             pupil_size = pupil_size.append(pd.DataFrame(data={
                 'diameter': this_diameter, 'eid': eid, 'subject': nickname, 'trial': t,
                 'sert': subjects.loc[i, 'sert-cre'], 'laser': trials.loc[t, 'laser_stimulation'],

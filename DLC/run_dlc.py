@@ -15,5 +15,6 @@ session = one.search(task_protocol='_iblrig_tasks_opto_biasedChoiceWorld')
 
 for eid in session:
     print(f'Processing session {eid}')
-    status = run_session(eid, machine='guido', cams=['left'], one=one, frames=10000)
+    status = run_session(eid, machine='guido', cams=['left'], one=one, frames=10000, clobber=True,
+                         overwrite=False)
 

@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from serotonin_functions import load_trials, plot_psychometric, fit_psychfunc, figure_style
 from one.api import ONE
-one = ONE()
+one = ONE(silent=True)
 
 # Settings
 N_SESSIONS = 3
