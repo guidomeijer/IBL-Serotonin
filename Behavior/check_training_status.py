@@ -90,17 +90,19 @@ for i, nickname in enumerate(subjects):
             this_n_ses = N_SESSIONS
         trials = pd.DataFrame()
         ses_loaded = 0
-        j = -1
-        while ses_loaded < N_SESSIONS:
-            j += 1
-            ses_date = str(details[j]['date'])
+        j = 0
+        while (ses_loaded < this_n_ses) & (j <= len(eids)):
             try:
+                ses_date = str(details[j]['date'])
                 these_trials = load_trials(eids[j], one=one)
                 these_trials['date'] = ses_date
                 trials = trials.append(these_trials, ignore_index=True)
                 ses_loaded += 1
             except:
                 pass
+            j += 1
+        if len(trials) == 0:
+            continue
         last_ses = trials['date'].max()
         print(f'Last session loaded for {nickname}: {last_ses}')
         perc_correct = (trials.loc[np.abs(trials['signed_contrast']) >= 0.5, 'correct'].sum()
@@ -115,6 +117,8 @@ for i, nickname in enumerate(subjects):
             axs[i].text(-35, 0.85, f'{nickname}\nin biased', fontsize=7)
 
         # Plot psychometric curve
+        plot_psychometric(trials[trials['probabilityLeft'] == 0.5], ax=axs[i],
+                          color=[.5, .5, .5])
         plot_psychometric(trials[trials['probabilityLeft'] == 0.8], ax=axs[i],
                           color=colors['left'])
         plot_psychometric(trials[trials['probabilityLeft'] == 0.2], ax=axs[i],
@@ -136,17 +140,19 @@ for i, nickname in enumerate(subjects):
             this_n_ses = N_SESSIONS
         trials = pd.DataFrame()
         ses_loaded = 0
-        j = -1
-        while ses_loaded < N_SESSIONS:
-            j += 1
-            ses_date = str(details[j]['date'])
+        j = 0
+        while (ses_loaded < N_SESSIONS) & (j <= len(eids)):
             try:
+                ses_date = str(details[j]['date'])
                 these_trials = load_trials(eids[j], one=one)
                 these_trials['date'] = ses_date
                 trials = trials.append(these_trials, ignore_index=True)
                 ses_loaded += 1
             except:
                 pass
+            j += 1
+        if len(trials) == 0:
+            continue
         last_ses = trials['date'].max()
         print(f'Last session loaded for {nickname}: {last_ses}')
         perc_correct = (trials.loc[np.abs(trials['signed_contrast']) >= 0.5, 'correct'].sum()
