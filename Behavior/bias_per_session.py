@@ -18,6 +18,7 @@ from one.api import ONE
 one = ONE()
 
 # Settings
+BASELINE = 10
 _, fig_path, save_path = paths()
 fig_path = join(fig_path, 'opto-behavior')
 
@@ -28,10 +29,18 @@ subjects = subjects[~((subjects['date_range_blocks'] == 'none') & (subjects['dat
 results_df = pd.DataFrame()
 for i, nickname in enumerate(subjects['subject']):
     print(f'Processing {nickname}')
-    # Query all stimulated sessions
+    # Query all sessions
     eids, details = one.search(subject=nickname,
                                task_protocol=['_iblrig_tasks_opto_biasedChoiceWorld',
                                               '_iblrig_tasks_biasedChoiceWorld'], details=True)
+    all_dates = [i['date'] for i in details]
+
+    # Find first stimulated session
+    _, stim_details = one.search(subject=nickname,
+                                 task_protocol=['_iblrig_tasks_opto_biasedChoiceWorld'],
+                                 details=True)
+    stim_dates = [i['date'] for i in stim_details]
+    rel_ses = -(np.arange(len(all_dates)) - all_dates.index(np.min(stim_dates)))
 
     for j, eid in enumerate(eids):
         try:
@@ -91,4 +100,8 @@ ax1.set(xlim=[-8, 20])
 #sns.despine(trim=True)
 plt.tight_layout()
 plt.savefig(join(fig_path, 'stim-no-stim-bias'))
+
+colors, dpi = figure_style()
+f, ax1 = plt.subplots(1, 1, figsize=(3.5, 3.5), dpi=dpi)
+sns.swarmplot(x='sert-cre', y='bias', data=results_df.groupby('subject').mean(), ax=ax1)
 

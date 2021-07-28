@@ -126,15 +126,19 @@ def load_trials(eid, laser_stimulation=False, invert_choice=False, invert_stimsi
     if trials.shape[0] == 0:
         return
     if laser_stimulation:
-        data, _ = one.load_datasets(eid, datasets=['_ibl_trials.laser_stimulation.npy',
-                                                   '_ibl_trials.laser_probability.npy'])
-        trials['laser_stimulation'] = data[0]
-        trials['laser_probability'] = data[1]
+        trials['laser_stimulation'] = one.load_dataset(eid, dataset='_ibl_trials.laser_stimulation.npy')
+        try:
+            trials['laser_probability'] = one.load_dataset(eid, dataset='_ibl_trials.laser_probability.npy')
+        except:
+            pass
+        """
         if trials.loc[0, 'laser_stimulation'] is None:
             trials = trials.drop(columns=['laser_stimulation'])
         if trials.loc[0, 'laser_probability'] is None:
             trials = trials.drop(columns=['laser_probability'])
         else:
+        """
+        if 'laser_probability' in trials.columns:
             trials['catch'] = ((trials['laser_stimulation'] == 0) & (trials['laser_probability'] == 0.75)
                                | (trials['laser_stimulation'] == 1) & (trials['laser_probability'] == 0.25)).astype(int)
     trials['signed_contrast'] = trials['contrastRight']
@@ -184,13 +188,13 @@ def get_full_region_name(acronyms):
         return full_region_names
 
 
-def criteria_opto_eids(eids, max_lapse=0.2, max_bias=0.3, min_trials=200, one=None):
+def behavioral_criterion(eids, max_lapse=0.2, max_bias=0.3, min_trials=200, one=None):
     if one is None:
         one = ONE()
     use_eids = []
     for j, eid in enumerate(eids):
         try:
-            trials = load_trials(eid, laser_stimulation=True, one=one)
+            trials = load_trials(eid, one=one)
             lapse_l = 1 - (np.sum(trials.loc[trials['signed_contrast'] == -1, 'choice'] == 1)
                            / trials.loc[trials['signed_contrast'] == -1, 'choice'].shape[0])
             lapse_r = 1 - (np.sum(trials.loc[trials['signed_contrast'] == 1, 'choice'] == -1)
@@ -199,10 +203,8 @@ def criteria_opto_eids(eids, max_lapse=0.2, max_bias=0.3, min_trials=200, one=No
                                  / np.shape(trials.loc[trials['signed_contrast'] == 0, 'choice'] == 1)[0]))
             details = one.get_details(eid)
             if ((lapse_l < max_lapse) & (lapse_r < max_lapse) & (trials.shape[0] > min_trials)
-                    & (bias < max_bias) & ('laser_stimulation' in trials.columns)):
+                    & (bias < max_bias)):
                 use_eids.append(eid)
-            elif 'laser_stimulation' not in trials.columns:
-                print('No laser_stimulation data for %s %s' % (details['subject'], details['start_time'][:10]))
             else:
                 print('%s %s excluded (n_trials: %d, lapse_l: %.2f, lapse_r: %.2f, bias: %.2f)'
                       % (details['subject'], details['start_time'][:10], trials.shape[0], lapse_l, lapse_r, bias))

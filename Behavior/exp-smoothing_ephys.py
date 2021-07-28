@@ -15,8 +15,8 @@ import seaborn as sns
 import torch
 from models.expSmoothing_stimside_SE import expSmoothing_stimside_SE as exp_stimside
 from models.expSmoothing_prevAction_SE import expSmoothing_prevAction_SE as exp_prev_action
-from serotonin_functions import paths, criteria_opto_eids, load_exp_smoothing_trials
-from oneibl.one import ONE
+from serotonin_functions import paths, behavioral_criterion, load_exp_smoothing_trials
+from one.api import ONE
 one = ONE()
 
 # Settings
@@ -29,8 +29,6 @@ fig_path = join(fig_path, 'opto-behavior-ephys')
 
 subjects = pd.read_csv(join('..', 'subjects.csv'))
 
-# Only use ZFM-02384 for now
-subjects = subjects[subjects['subject'] == 'ZFM-02184'].reset_index(drop=True)
 
 results_df = pd.DataFrame()
 block_switches = pd.DataFrame()
@@ -38,8 +36,7 @@ for i, nickname in enumerate(subjects['subject']):
 
     # Query sessions
     eids = one.search(subject=nickname, task_protocol='_iblrig_tasks_opto_ephysChoiceWorld')
-
-    #eids = criteria_opto_eids(eids, max_lapse=0.5, max_bias=0.5, min_trials=200, one=one)
+    eids = behavioral_criterion(eids, one=one)
     if len(eids) == 0:
         continue
 

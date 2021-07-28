@@ -15,32 +15,32 @@ import seaborn as sns
 from datetime import datetime
 from models.expSmoothing_stimside import expSmoothing_stimside as exp_stimside
 from models.expSmoothing_prevAction import expSmoothing_prevAction as exp_prev_action
-from serotonin_functions import paths, criteria_opto_eids, load_exp_smoothing_trials, figure_style
-from oneibl.one import ONE
+from serotonin_functions import paths, behavioral_criterion, load_exp_smoothing_trials, figure_style
+from one.api import ONE
 one = ONE()
 
 # Settings
 REMOVE_OLD_FIT = False
 POSTERIOR = 'posterior_mean'
 _, fig_path, save_path = paths()
-fig_path = join(fig_path, '5HT', 'opto-behavior')
+fig_path = join(fig_path, 'opto-behavior')
 
 subjects = pd.read_csv(join('..', 'subjects.csv'))
-subjects = subjects[~((subjects['date_range_blocks'] == 'none') & (subjects['date_range_probes'] == 'none')
-                     & (subjects['date_range_half'] == 'none'))].reset_index(drop=True)
 
 results_df = pd.DataFrame()
 block_switches = pd.DataFrame()
 for i, nickname in enumerate(subjects['subject']):
 
     # Stimulated sessions
-    eids, details = one.search(subject=nickname, task_protocol='_iblrig_tasks_opto_biasedChoiceWorld',
-                               details=True)
-    eids = eids[-5:]
-    details = details[-5:]
+    eids = one.search(subject=nickname, task_protocol='_iblrig_tasks_opto_biasedChoiceWorld')
+    eids = behavioral_criterion(eids, one=one)
+    if len(eids) == 0:
+        continue
+    details = [one.get_details(i) for i in eids]
 
     stim_dates = [datetime.strptime(i, '%Y-%m-%d') for i in [j['start_time'][:10] for j in details]]
-    #eids = criteria_opto_eids(eids, max_lapse=0.5, max_bias=0.5, min_trials=400, one=one)
+    if len(eids) > 10:
+        eids = eids[:10]
     actions, stimuli, stim_side, prob_left, session_uuids = load_exp_smoothing_trials(eids, one=one)
     model = exp_prev_action('./model_fit_results/', session_uuids, '%s_stim_ses' % nickname,
                             actions, stimuli, stim_side)
@@ -51,8 +51,9 @@ for i, nickname in enumerate(subjects['subject']):
         'sert-cre': subjects.loc[i, 'sert-cre'], 'subject': nickname}))
 
     # Pre unstimulated sessions
-    eids, details = one.search(subject=nickname, task_protocol='_iblrig_tasks_biasedChoiceWorld',
-                               details=True)
+    eids = one.search(subject=nickname, task_protocol='_iblrig_tasks_biasedChoiceWorld')
+    eids = behavioral_criterion(eids, one=one)
+    details = [one.get_details(i) for i in eids]
     no_stim_dates = [datetime.strptime(i, '%Y-%m-%d') for i in [j['start_time'][:10] for j in details]]
     pre_dates = [i for i in no_stim_dates if i < np.min(stim_dates)]
     eids = one.search(subject=nickname, task_protocol='_iblrig_tasks_biasedChoiceWorld',
@@ -67,8 +68,8 @@ for i, nickname in enumerate(subjects['subject']):
         'sert-cre': subjects.loc[i, 'sert-cre'], 'subject': nickname}))
 
 # %% Plot
-colors = figure_style(return_colors=True)
-f, ax1 = plt.subplots(1, 1, figsize=(5, 5))
+colors, dpi = figure_style()
+f, ax1 = plt.subplots(1, 1, figsize=(5, 5), dpi=dpi)
 sns.lineplot(x='sessions', y='tau_pa', hue='sert-cre', style='subject', estimator=None,
              data=results_df, dashes=False, palette=[colors['wt'], colors['sert']],
              legend=False, ax=ax1)

@@ -15,8 +15,9 @@ import seaborn as sns
 import torch
 from models.expSmoothing_stimside_SE import expSmoothing_stimside_SE as exp_stimside
 from models.expSmoothing_prevAction_SE import expSmoothing_prevAction_SE as exp_prev_action
-from serotonin_functions import paths, criteria_opto_eids, load_exp_smoothing_trials, figure_style
-from oneibl.one import ONE
+from serotonin_functions import (paths, criteria_opto_eids, load_exp_smoothing_trials, figure_style,
+                                 DATE_GOOD_OPTO)
+from one.api import ONE
 one = ONE()
 
 # Settings
@@ -36,6 +37,7 @@ for i, nickname in enumerate(subjects['subject']):
 
     # Query sessions
     eids = one.search(subject=nickname, task_protocol='_iblrig_tasks_opto_biasedChoiceWorld')
+    eids = criteria_opto_eids(eids, one=one)
     if len(eids) == 0:
         continue
 
