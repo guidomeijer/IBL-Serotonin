@@ -12,15 +12,15 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from psytrack.hyperOpt import hyperOpt
-from serotonin_functions import paths, criteria_opto_eids, load_trials, figure_style
-from oneibl.one import ONE
+from serotonin_functions import paths, behavioral_criterion, load_trials, figure_style
+from one.api import ONE
 one = ONE()
 
 # Settings
-PLOT_SINGLE = True
+PLOT_SINGLE = False
 PREV_TRIALS = 0
 _, fig_path, save_path = paths()
-fig_path = join(fig_path, '5HT', 'opto-behavior')
+fig_path = join(fig_path, 'opto-behavior')
 
 subjects = pd.read_csv(join('..', 'subjects.csv'))
 
@@ -28,25 +28,19 @@ results_df = pd.DataFrame()
 for i, nickname in enumerate(subjects['subject']):
 
     # Query sessions
-    if subjects.loc[i, 'date_range_blocks'] == 'all':
-        eids = one.search(subject=nickname, task_protocol='_iblrig_tasks_opto_biasedChoiceWorld')
-    elif subjects.loc[i, 'date_range_blocks'] == 'none':
-        continue
-    else:
-        eids = one.search(subject=nickname, task_protocol='_iblrig_tasks_opto_biasedChoiceWorld',
-                          date_range=[subjects.loc[i, 'date_range_blocks'][:10],
-                                      subjects.loc[i, 'date_range_blocks'][11:]])
-    #eids = criteria_opto_eids(eids, max_lapse=0.5, max_bias=0.5, min_trials=200, one=one)
+    eids = one.search(subject=nickname, task_protocol='_iblrig_tasks_opto_biasedChoiceWorld')
+    eids = behavioral_criterion(eids, max_lapse=0.5, max_bias=0.5, min_trials=200, one=one)
     if len(eids) == 0:
         continue
 
     # Get trial data
     contrast_l, contrast_r, prob_l, correct, choice, opto_stim, day_length = np.empty(0), np.empty(0), np.empty(0), np.empty(0), np.empty(0), np.empty(0), np.empty(0)
     for k, eid in enumerate(eids):
-        trials = load_trials(eid, laser_stimulation=True, one=one)
-        if trials is None:
-            continue
-        if 'laser_stimulation' not in trials.columns:
+        try:
+            trials = load_trials(eid, laser_stimulation=True, one=one)
+            if 'laser_stimulation' not in trials.columns:
+                continue
+        except:
             continue
         contrast_l = np.append(contrast_l, trials.loc[trials['choice'] != 0, 'contrastLeft'])
         contrast_r = np.append(contrast_r, trials.loc[trials['choice'] != 0, 'contrastRight'])
@@ -118,8 +112,8 @@ for i, nickname in enumerate(subjects['subject']):
 
 # %% Plot summary
 
-colors = figure_style(return_colors=True)
-f, ax1 = plt.subplots(1, 1, figsize=(4, 5), dpi=150)
+colors, dpi = figure_style()
+f, ax1 = plt.subplots(1, 1, figsize=(3.5, 3.5), dpi=dpi)
 sns.stripplot(x='sert-cre', y='volatility', data=results_df, s=8,
               palette=[colors['wt'], colors['sert']], ax=ax1)
 ax1.set(ylabel='Volatility', xlabel='', ylim=[0, 1], xticks=[0, 1], xticklabels=['WT', 'Sert-Cre'])

@@ -31,11 +31,11 @@ for i, nickname in enumerate(np.unique(all_neurons['subject'])):
     all_neurons.loc[all_neurons['subject'] == nickname, 'sert-cre'] = subjects.loc[subjects['subject'] == nickname, 'sert-cre'].values[0]
 
 # testing
-all_neurons = all_neurons.loc[all_neurons['subject'] == 'ZFM-02183']
+#all_neurons = all_neurons.loc[all_neurons['subject'] == 'ZFM-02183']
 
 # %%
-colors = figure_style(return_colors=True)
-f, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(12, 12), dpi=150)
+colors, dpi = figure_style()
+f, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(12, 12), dpi=dpi)
 ax1.hist([all_neurons.loc[(all_neurons['sert-cre'] == 1) & (all_neurons['modulated'] == 0), 'roc_auc'],
           all_neurons.loc[(all_neurons['sert-cre'] == 1) & (all_neurons['enhanced'] == 1), 'roc_auc'],
           all_neurons.loc[(all_neurons['sert-cre'] == 1) & (all_neurons['suppressed'] == 1), 'roc_auc']],

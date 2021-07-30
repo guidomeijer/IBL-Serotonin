@@ -22,11 +22,11 @@ from one.api import ONE
 one = ONE()
 
 # Settings
-OVERWRITE = False
+OVERWRITE = True
 PRE_TIME = [0.5, 0]  # for significance testing
 POST_TIME = [0, 0.5]
 BIN_SIZE = 0.05
-PERMUTATIONS = 100
+PERMUTATIONS = 500
 _, fig_path, save_path = paths()
 fig_path = join(fig_path, 'light-modulated-neurons')
 save_path = join(save_path)
