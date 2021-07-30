@@ -11,7 +11,7 @@ from os.path import join
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from serotonin_functions import (load_trials, plot_psychometric, paths, behavior_criterion,
+from serotonin_functions import (load_trials, plot_psychometric, paths, behavioral_criterion,
                                  fit_psychfunc, figure_style, DATE_GOOD_OPTO)
 from one.api import ONE
 one = ONE()

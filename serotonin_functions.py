@@ -14,6 +14,7 @@ from sklearn.utils import shuffle
 import pandas as pd
 import tkinter as tk
 from glob import glob
+from datetime import datetime
 from brainbox.io.spikeglx import spikeglx
 from brainbox.numerical import ismember
 from ibllib.atlas import BrainRegions
@@ -111,18 +112,18 @@ def query_sessions(selection='aligned', return_subjects=False, one=None):
         return eids, probes
 
 
-def load_trials(eid, laser_stimulation=False, invert_choice=False, invert_stimside=False, one=None):
-    if one is None:
-        one = ONE()
+def load_trials(eid, laser_stimulation=False, invert_choice=False, invert_stimside=False,
+                patch_old_opto=True, one=None):
+    one = one or ONE()
     data, _ = one.load_datasets(eid, datasets=[
         '_ibl_trials.stimOn_times.npy', '_ibl_trials.feedback_times.npy',
         '_ibl_trials.goCue_times.npy', '_ibl_trials.probabilityLeft.npy',
         '_ibl_trials.contrastLeft.npy', '_ibl_trials.contrastRight.npy',
         '_ibl_trials.feedbackType.npy', '_ibl_trials.choice.npy',
-        '_ibl_trials.feedback_times.npy', '_ibl_trials.firstMovement_times.npy'])
+        '_ibl_trials.firstMovement_times.npy'])
     trials = pd.DataFrame(data=np.vstack(data).T, columns=[
         'stimOn_times', 'feedback_times', 'goCue_times', 'probabilityLeft', 'contrastLeft',
-        'contrastRight', 'feedbackType', 'choice', 'feedback_times', 'firstMovement_times'])
+        'contrastRight', 'feedbackType', 'choice', 'firstMovement_times'])
     if trials.shape[0] == 0:
         return
     if laser_stimulation:
@@ -131,13 +132,6 @@ def load_trials(eid, laser_stimulation=False, invert_choice=False, invert_stimsi
             trials['laser_probability'] = one.load_dataset(eid, dataset='_ibl_trials.laser_probability.npy')
         except:
             pass
-        """
-        if trials.loc[0, 'laser_stimulation'] is None:
-            trials = trials.drop(columns=['laser_stimulation'])
-        if trials.loc[0, 'laser_probability'] is None:
-            trials = trials.drop(columns=['laser_probability'])
-        else:
-        """
         if 'laser_probability' in trials.columns:
             trials['catch'] = ((trials['laser_stimulation'] == 0) & (trials['laser_probability'] == 0.75)
                                | (trials['laser_stimulation'] == 1) & (trials['laser_probability'] == 0.25)).astype(int)
@@ -160,6 +154,17 @@ def load_trials(eid, laser_stimulation=False, invert_choice=False, invert_stimsi
     if invert_stimside:
         trials['stim_side'] = -trials['stim_side']
         trials['signed_contrast'] = -trials['signed_contrast']
+
+    # Patch datasets that contained a bug in the laser driver code
+    ses_date = datetime.strptime(one.get_details(eid)['start_time'][:10], '%Y-%m-%d')
+    if ((ses_date < datetime.strptime(DATE_GOOD_OPTO, '%Y-%m-%d'))
+            and patch_old_opto and laser_stimulation):
+
+        # The bug flipped laser on and off pulses after a long reaction time trial
+        bug_trial = ((trials.loc[trials['laser_stimulation'] == 1, 'feedback_times']
+                      - trials.loc[trials['laser_stimulation'] == 1, 'stimOn_times']) > 10).idxmax()
+        trials = trials[:bug_trial]
+
     return trials
 
 
