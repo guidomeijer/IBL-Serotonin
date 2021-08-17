@@ -13,7 +13,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from datetime import datetime
-from serotonin_functions import paths, behavioral_criterion, load_trials, figure_style
+from serotonin_functions import (paths, behavioral_criterion, load_trials, figure_style,
+                                 behavioral_criterion)
 from one.api import ONE
 one = ONE()
 
@@ -42,6 +43,9 @@ for i, nickname in enumerate(subjects['subject']):
     stim_dates = [i['date'] for i in stim_details]
     rel_ses = -(np.arange(len(all_dates)) - all_dates.index(np.min(stim_dates)))
 
+    # Apply behavioral criterion
+    # behavioral_criterion
+
     for j, eid in enumerate(eids):
         try:
             trials = load_trials(eid, one=one)
@@ -64,7 +68,7 @@ for i, nickname in enumerate(subjects['subject']):
 
 # %% Plot
 colors, dpi = figure_style()
-f, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(7, 3.5), dpi=dpi)
+f, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4, figsize=(7, 2), dpi=dpi)
 """
 sns.lineplot(x='session', y='bias', hue='sert-cre', style='subject', estimator=None,
              data=results_df, dashes=False, markers=['o']*int(results_df.shape[0]/2),
@@ -75,33 +79,34 @@ sns.lineplot(x='session', y='bias', hue='sert-cre', style='subject', dashes=Fals
              data=results_df, legend=False, lw=2, ms=8, palette=[colors['wt'], colors['sert']], ax=ax1)
 """
 sns.lineplot(x='session', y='bias', hue='sert-cre', ci=68,
-             data=results_df[results_df['sert-cre'] == 1], legend=False, lw=2, ms=8,
+             data=results_df[results_df['sert-cre'] == 1], legend=False,
              palette=[colors['sert']], ax=ax1)
+ax1.set(ylabel='Bias', xlabel='Days relative to first opto day', ylim=[0, 0.61], xlim=[-10, 20])
 
 for i, nickname in enumerate(results_df.loc[results_df['sert-cre'] == 1, 'subject'].unique()):
     ax2.plot([0, 1], [results_df.loc[(results_df['subject'] == nickname)
                                      & (results_df['session'].between(-3, -1)), 'bias'].mean(),
                       results_df.loc[(results_df['subject'] == nickname)
                                      & (results_df['session'].between(0, 2)), 'bias'].mean()],
-             color = 'k')
-ax2.set(ylim=[0, 0.5])
+             color='gray', marker='o')
+ax2.set(ylabel='Bias', ylim=[0, 0.61], xticks=[0, 1], xticklabels=['-3 to -1', '0 to 2'],
+        xlabel='Days')
 
 for i, nickname in enumerate(results_df.loc[results_df['sert-cre'] == 1, 'subject'].unique()):
     ax3.plot([0, 1], [results_df.loc[(results_df['subject'] == nickname)
                                      & (results_df['session'].between(-3, -1)), 'bias'].mean(),
                       results_df.loc[(results_df['subject'] == nickname)
                                      & (results_df['session'].between(3, 5)), 'bias'].mean()],
-             color = 'k')
-ax3.set(ylim=[0, 0.5])
+             color='gray', marker='o')
+ax3.set(ylabel='Bias', ylim=[0, 0.61], xticks=[0, 1], xticklabels=['-3 to -1', '3 to 5'],
+        xlabel='Days')
 
-#ax1.set(xlabel='', title='Probe trials', ylabel='Bia's')
-ax1.set(xlim=[-8, 20])
+sns.swarmplot(x='sert-cre', y='bias', data=results_df[results_df['session'] > 0].groupby('subject').mean(), ax=ax4)
+ax4.set(ylabel='Bias during stimulated days', xticks=[0, 1], xticklabels=['WT', 'SERT'], xlabel='',
+        ylim=[0, 0.61])
 
-#sns.despine(trim=True)
+sns.despine(trim=True)
 plt.tight_layout()
 plt.savefig(join(fig_path, 'stim-no-stim-bias'))
 
-colors, dpi = figure_style()
-f, ax1 = plt.subplots(1, 1, figsize=(3.5, 3.5), dpi=dpi)
-sns.swarmplot(x='sert-cre', y='bias', data=results_df.groupby('subject').mean(), ax=ax1)
 

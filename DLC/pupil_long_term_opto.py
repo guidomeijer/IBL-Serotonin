@@ -13,12 +13,12 @@ from dlc_functions import get_dlc_XYs, get_pupil_diameter
 import matplotlib.pyplot as plt
 from scipy.stats import zscore
 import seaborn as sns
-from serotonin_functions import load_trials, paths, query_opto_sessions
+from serotonin_functions import load_trials, paths, DATE_GOOD_OPTO
 from one.api import ONE
 one = ONE()
 
 # Settings
-TIME_BINS = np.arange(-1, 3, 0.1)
+TIME_WIN = [2, 3]
 BIN_SIZE = 0.1
 BASELINE = 0.5
 _, fig_path, _ = paths()
@@ -31,7 +31,7 @@ for i, nickname in enumerate(subjects['subject']):
     print(f'Processing {nickname}..')
 
     # Query sessions
-    eids = query_opto_sessions(nickname, one=one)
+    eids = one.search(subject=nickname, task_protocol='_iblrig_tasks_opto_biasedChoiceWorld')
 
     # Loop over sessions
     pupil_size = pd.DataFrame()
@@ -45,6 +45,8 @@ for i, nickname in enumerate(subjects['subject']):
                 continue
             if 'laser_stimulation' not in trials.columns.values:
                 continue
+            if 'laser_probability' not in trials.columns.values:
+                trials['laser_probability'] = trials['laser_stimulation']
         except:
             print('could not load trials')
 
@@ -55,26 +57,20 @@ for i, nickname in enumerate(subjects['subject']):
             print('Could not load video and/or DLC data')
             continue
 
+        # Get pupil diameter
+        diameter = get_pupil_diameter(XYs)
+        diameter_zscore = zscore(diameter)
+
         # If the difference between timestamps and video frames is too large, skip
-        if np.abs(video_times.shape[0]
-                  - XYs['pupil_left_r'].shape[len(XYs['pupil_left_r'].shape) - 1]) > 100:
+        if np.abs(diameter.shape[0] - video_times.shape[0]) > 100:
             print('Timestamp mismatch, skipping..')
             continue
 
-        # Get pupil diameter
-        diameter = get_pupil_diameter(XYs)
-
         # Assume frames were dropped at the end
-        if video_times.shape[0] > diameter.shape[0]:
-            video_times = video_times[:diameter.shape[0]]
-        elif diameter.shape[0] > video_times.shape[0]:
-            diameter = diameter[:video_times.shape[0]]
-
-        # z-score pupil
-        diameter_zscore = zscore(diameter)
+        video_times = video_times[:diameter.shape[0]]
 
         # Get trial triggered baseline subtracted pupil diameter
-        for t, trial_start in enumerate(trials['stimOn_times']):
+        for t, trial_start in enumerate(trials['goCue_times']):
             this_diameter = np.array([np.nan] * TIME_BINS.shape[0])
             baseline_subtracted = np.array([np.nan] * TIME_BINS.shape[0])
             baseline = np.mean(diameter_zscore[(video_times > (trial_start - BASELINE))
@@ -83,12 +79,12 @@ for i, nickname in enumerate(subjects['subject']):
                 this_diameter[b] = np.mean(diameter_zscore[
                     (video_times > (trial_start + time_bin) - (BIN_SIZE / 2))
                     & (video_times < (trial_start + time_bin) + (BIN_SIZE / 2))])
-                baseline_subtracted[b] = np.mean(diameter_zscore[
+                this_diameter[b] = np.mean(diameter_zscore[
                     (video_times > (trial_start + time_bin) - (BIN_SIZE / 2))
                     & (video_times < (trial_start + time_bin) + (BIN_SIZE / 2))]) - baseline
             pupil_size = pupil_size.append(pd.DataFrame(data={
                 'diameter': this_diameter, 'baseline_subtracted': baseline_subtracted, 'eid': eid,
-                'subject': nickname, 'trial': t, 'contrast': trials.loc[t, 'signed_contrast'],
+                'subject': nickname, 'trial': t,
                 'sert': subjects.loc[i, 'sert-cre'], 'laser': trials.loc[t, 'laser_stimulation'],
                 'laser_prob': trials.loc[t, 'laser_probability'],
                 'time': TIME_BINS}))
@@ -96,9 +92,9 @@ for i, nickname in enumerate(subjects['subject']):
     # Plot this animal
     if pupil_size.shape[0] > 0:
         f, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5), sharey=True, dpi=300)
-        lineplt = sns.lineplot(x='time', y='baseline_subtracted', hue='laser',
-                               data=pupil_size[((pupil_size['laser_prob'] == 0.75) & (pupil_size['laser'] == 1))
-                                               | ((pupil_size['laser_prob'] == 0.25) & (pupil_size['laser'] == 0))],
+        lineplt = sns.lineplot(x='time', y='diameter', hue='laser',
+                               data=pupil_size[(pupil_size['laser_prob'] == 1)
+                                               | (pupil_size['laser_prob'] == 0)],
                                palette='colorblind', ci=68, ax=ax1)
         ax1.set(title='%s, sert: %d' % (nickname, subjects.loc[i, 'sert-cre']),
                 ylabel='z-scored pupil diameter', xlabel='Time relative to trial start(s)')
@@ -106,9 +102,9 @@ for i, nickname in enumerate(subjects['subject']):
         handles, labels = ax1.get_legend_handles_labels()
         ax1.legend(handles=handles, labels=['No stim', 'Stim'], frameon=False)
 
-        sns.lineplot(x='time', y='baseline_subtracted', hue='laser',
-                     data=pupil_size[((pupil_size['laser_prob'] == 0.75) & (pupil_size['laser'] == 0))
-                                               | ((pupil_size['laser_prob'] == 0.25) & (pupil_size['laser'] == 1))],
+        sns.lineplot(x='time', y='diameter', hue='laser',
+                     data=pupil_size[(pupil_size['laser_prob'] != 1)
+                                     & (pupil_size['laser_prob'] != 0)],
                      palette='colorblind', ci=68, legend=None, ax=ax2)
         ax2.set(xlabel='Time relative to trial start(s)',
                 title='Catch trials')

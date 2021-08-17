@@ -12,7 +12,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from serotonin_functions import (load_trials, plot_psychometric, paths, behavioral_criterion,
-                                 fit_psychfunc, figure_style, DATE_GOOD_OPTO)
+                                 fit_psychfunc, figure_style, query_opto_sessions)
 from one.api import ONE
 one = ONE()
 
@@ -23,26 +23,31 @@ fig_path = join(fig_path, 'opto-behavior')
 subjects = pd.read_csv(join('..', 'subjects.csv'))
 
 # testing
-#subjects = subjects[subjects['subject'] == 'ZFM-01867'].reset_index(drop=True)
+#subjects = subjects[subjects['subject'] == 'ZFM-02601'].reset_index(drop=True)
 
 bias_df, lapse_df, psy_df = pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
 for i, nickname in enumerate(subjects['subject']):
 
     # Query sessions
-    eids = one.search(subject=nickname, task_protocol='_iblrig_tasks_opto_biasedChoiceWorld',
-                      date_range=[DATE_GOOD_OPTO, '2025-01-01'])
+    eids = query_opto_sessions(nickname, one=one)
+
+    # Exclude the first 2 opto sessions
+    eids = eids[:-2]
+
+    # Apply behavioral criterion
+    eids = behavioral_criterion(eids, one=one)
     if len(eids) == 0:
         continue
-
-    # Apply behavioral criterium
-    eids = behavior_criterion(eids)
 
     # Get trials DataFrame
     trials = pd.DataFrame()
     ses_count = 0
     for j, eid in enumerate(eids):
         try:
-            these_trials = load_trials(eid, laser_stimulation=True, one=one)
+            if subjects.loc[i, 'sert-cre'] == 1:
+                these_trials = load_trials(eid, laser_stimulation=True, one=one)
+            else:
+                these_trials = load_trials(eid, laser_stimulation=True, patch_old_opto=False, one=one)
             these_trials['session'] = ses_count
             trials = trials.append(these_trials, ignore_index=True)
             ses_count = ses_count + 1
@@ -50,8 +55,6 @@ for i, nickname in enumerate(subjects['subject']):
             pass
     if len(trials) == 0:
         continue
-    if 'laser_probability' not in trials.columns:
-        trials['laser_probability'] = trials['laser_stimulation'].copy()
 
     # Get bias shift
     bias_no_stim = np.abs(trials[(trials['probabilityLeft'] == 0.8)
@@ -155,7 +158,7 @@ for i, nickname in enumerate(subjects['subject']):
     # Plot
     if PLOT_SINGLE_ANIMALS:
         colors, dpi = figure_style()
-        f, (ax1, ax2) = plt.subplots(1, 2, figsize=(20, 10), dpi=dpi, sharey=True)
+        f, (ax1, ax2) = plt.subplots(1, 2, figsize=(4, 2), dpi=dpi, sharey=True)
 
         # plot_psychometric(trials[trials['probabilityLeft'] == 0.5], ax=ax1, color='k')
         plot_psychometric(trials[(trials['probabilityLeft'] == 0.8)

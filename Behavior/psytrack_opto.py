@@ -12,7 +12,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from psytrack.hyperOpt import hyperOpt
-from serotonin_functions import paths, behavioral_criterion, load_trials, figure_style
+from serotonin_functions import (paths, behavioral_criterion, load_trials, figure_style,
+                                 query_opto_sessions)
 from one.api import ONE
 one = ONE()
 
@@ -28,8 +29,8 @@ results_df = pd.DataFrame()
 for i, nickname in enumerate(subjects['subject']):
 
     # Query sessions
-    eids = one.search(subject=nickname, task_protocol='_iblrig_tasks_opto_biasedChoiceWorld')
-    eids = behavioral_criterion(eids, max_lapse=0.5, max_bias=0.5, min_trials=200, one=one)
+    eids = query_opto_sessions(nickname, one=one)
+    eids = behavioral_criterion(eids, one=one)
     if len(eids) == 0:
         continue
 
@@ -37,7 +38,7 @@ for i, nickname in enumerate(subjects['subject']):
     contrast_l, contrast_r, prob_l, correct, choice, opto_stim, day_length = np.empty(0), np.empty(0), np.empty(0), np.empty(0), np.empty(0), np.empty(0), np.empty(0)
     for k, eid in enumerate(eids):
         try:
-            trials = load_trials(eid, laser_stimulation=True, one=one)
+            trials = load_trials(eid, laser_stimulation=True, patch_old_opto=False, one=one)
             if 'laser_stimulation' not in trials.columns:
                 continue
         except:

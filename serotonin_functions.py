@@ -9,7 +9,6 @@ import numpy as np
 import seaborn as sns
 import matplotlib
 import matplotlib.pyplot as plt
-from scipy.signal import filtfilt, butter
 from sklearn.utils import shuffle
 import pandas as pd
 import tkinter as tk
@@ -23,6 +22,9 @@ from one.api import ONE
 # This is the date at which I fixed a crucial bug in the laser driver, all optogenetics data
 # from before this date is not to be trusted
 DATE_GOOD_OPTO = '2021-07-01'
+
+# This is the date at which light shielding was added so that the mouse couldn't see the opto stim
+DATE_LIGHT_SHIELD = '2021-06-08'
 
 
 def paths():
@@ -44,18 +46,24 @@ def figure_style():
     """
     sns.set(style="ticks", context="paper",
             font="Arial",
-            rc={"font.size": 9,
-                "axes.titlesize": 8,
-                "axes.labelsize": 7,
-                "lines.linewidth": 1,
-                "xtick.labelsize": 7,
-                "ytick.labelsize": 7,
-                "savefig.transparent": True,
-                "xtick.major.size": 2.5,
-                "ytick.major.size": 2.5,
-                "xtick.minor.size": 2,
-                "ytick.minor.size": 2,
-                })
+            rc={"font.size": 7,
+                 "axes.titlesize": 8,
+                 "axes.labelsize": 7,
+                 "axes.linewidth": 0.5,
+                 "lines.linewidth": 1,
+                 "lines.markersize": 3,
+                 "xtick.labelsize": 7,
+                 "ytick.labelsize": 7,
+                 "savefig.transparent": True,
+                 "xtick.major.size": 2.5,
+                 "ytick.major.size": 2.5,
+                 "xtick.major.width": 0.5,
+                 "ytick.major.width": 0.5,
+                 "xtick.minor.size": 2,
+                 "ytick.minor.size": 2,
+                 "xtick.minor.width": 0.5,
+                 "ytick.minor.width": 0.5
+                 })
     matplotlib.rcParams['pdf.fonttype'] = 42
     matplotlib.rcParams['ps.fonttype'] = 42
     colors = {'sert': sns.color_palette('colorblind')[2],
@@ -73,7 +81,15 @@ def figure_style():
     return colors, dpi
 
 
-def query_sessions(selection='aligned', return_subjects=False, one=None):
+def query_opto_sessions(subject, one=None):
+    one = one or ONE()
+    sessions = one.alyx.rest('sessions', 'list', subject=subject,
+                             task_protocol='_iblrig_tasks_opto_biasedChoiceWorld',
+                             project='serotonin_inference')
+    return [sess['url'][-36:] for sess in sessions]
+
+
+def query_ephys_sessions(selection='aligned', return_subjects=False, one=None):
     if one is None:
         one = ONE()
     if selection == 'all':
@@ -126,17 +142,20 @@ def load_trials(eid, laser_stimulation=False, invert_choice=False, invert_stimsi
         'contrastRight', 'feedbackType', 'choice', 'firstMovement_times'])
     if trials.shape[0] == 0:
         return
+    trials['signed_contrast'] = trials['contrastRight']
+    trials.loc[trials['signed_contrast'].isnull(), 'signed_contrast'] = -trials['contrastLeft']
     if laser_stimulation:
         trials['laser_stimulation'] = one.load_dataset(eid, dataset='_ibl_trials.laser_stimulation.npy')
         try:
             trials['laser_probability'] = one.load_dataset(eid, dataset='_ibl_trials.laser_probability.npy')
-        except:
-            pass
-        if 'laser_probability' in trials.columns:
             trials['catch'] = ((trials['laser_stimulation'] == 0) & (trials['laser_probability'] == 0.75)
                                | (trials['laser_stimulation'] == 1) & (trials['laser_probability'] == 0.25)).astype(int)
-    trials['signed_contrast'] = trials['contrastRight']
-    trials.loc[trials['signed_contrast'].isnull(), 'signed_contrast'] = -trials['contrastLeft']
+        except:
+            trials['laser_probability'] = trials['laser_stimulation'].copy()
+            trials.loc[(trials['signed_contrast'] == 0)
+                       & (trials['laser_stimulation'] == 0), 'laser_probability'] = 0.25
+            trials.loc[(trials['signed_contrast'] == 0)
+                       & (trials['laser_stimulation'] == 1), 'laser_probability'] = 0.75
     trials['correct'] = trials['feedbackType']
     trials.loc[trials['correct'] == -1, 'correct'] = 0
     trials['right_choice'] = -trials['choice']
@@ -163,6 +182,7 @@ def load_trials(eid, laser_stimulation=False, invert_choice=False, invert_stimsi
         # The bug flipped laser on and off pulses after a long reaction time trial
         bug_trial = ((trials.loc[trials['laser_stimulation'] == 1, 'feedback_times']
                       - trials.loc[trials['laser_stimulation'] == 1, 'stimOn_times']) > 10).idxmax()
+        print(f'Patching buggy opto data, excluding {trials.shape[0] - bug_trial} trials')
         trials = trials[:bug_trial]
 
     return trials
@@ -193,7 +213,7 @@ def get_full_region_name(acronyms):
         return full_region_names
 
 
-def behavioral_criterion(eids, max_lapse=0.2, max_bias=0.3, min_trials=200, one=None):
+def behavioral_criterion(eids, max_lapse=0.25, max_bias=0.4, min_trials=1, one=None):
     if one is None:
         one = ONE()
     use_eids = []
@@ -219,7 +239,7 @@ def behavioral_criterion(eids, max_lapse=0.2, max_bias=0.3, min_trials=200, one=
 
 
 def load_exp_smoothing_trials(eids, stimulated=None, rt_cutoff=0.2, after_probe_trials=0,
-                              pseudo=False, one=None):
+                              pseudo=False, patch_old_opto=True, min_trials=100, one=None):
     """
     Parameters
     ----------
@@ -249,9 +269,13 @@ def load_exp_smoothing_trials(eids, stimulated=None, rt_cutoff=0.2, after_probe_
         try:
             # Load in trials vectors
             if stimulated is not None and stimulated != 'rt':
-                trials = load_trials(eid, invert_stimside=True, laser_stimulation=True, one=one)
+                trials = load_trials(eid, invert_stimside=True, laser_stimulation=True,
+                                     patch_old_opto=patch_old_opto, one=one)
             else:
-                trials = load_trials(eid, invert_stimside=True, laser_stimulation=False, one=one)
+                trials = load_trials(eid, invert_stimside=True, laser_stimulation=False,
+                                     patch_old_opto=patch_old_opto, one=one)
+            if trials.shape[0] < min_trials:
+                continue
             if stimulated == 'all':
                 stimulated_arr.append(trials['laser_stimulation'].values)
             elif stimulated == 'probe':

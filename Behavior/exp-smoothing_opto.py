@@ -16,13 +16,14 @@ import torch
 from models.expSmoothing_stimside_SE import expSmoothing_stimside_SE as exp_stimside
 from models.expSmoothing_prevAction_SE import expSmoothing_prevAction_SE as exp_prev_action
 from serotonin_functions import (paths, behavioral_criterion, load_exp_smoothing_trials, figure_style,
-                                 DATE_GOOD_OPTO)
+                                 query_opto_sessions)
 from one.api import ONE
 one = ONE()
 
 # Settings
 REMOVE_OLD_FIT = False
 POSTERIOR = 'posterior_mean'
+STIM = 'block'
 _, fig_path, save_path = paths()
 fig_path = join(fig_path, 'opto-behavior')
 
@@ -33,8 +34,8 @@ accuracy_df = pd.DataFrame()
 for i, nickname in enumerate(subjects['subject']):
 
     # Query sessions
-    eids = one.search(subject=nickname, task_protocol='_iblrig_tasks_opto_biasedChoiceWorld',
-                      date_range=[DATE_GOOD_OPTO, '2025-01-01'])
+    eids = query_opto_sessions(nickname, one=one)
+    #eids = eids[:-2]
     eids = behavioral_criterion(eids, one=one)
     if len(eids) == 0:
         continue
@@ -42,18 +43,22 @@ for i, nickname in enumerate(subjects['subject']):
         eids = eids[:10]
 
     # Get trial data
-    actions, stimuli, stim_side, prob_left, stimulated, session_uuids = load_exp_smoothing_trials(
-        eids, stimulated='all', one=one)
+    if subjects.loc[i, 'sert-cre'] == 1:
+        actions, stimuli, stim_side, prob_left, stimulated, session_uuids = load_exp_smoothing_trials(
+            eids, stimulated=STIM, patch_old_opto=True, one=one)
+    else:
+        actions, stimuli, stim_side, prob_left, stimulated, session_uuids = load_exp_smoothing_trials(
+            eids, stimulated=STIM, patch_old_opto=False, one=one)
 
     # Fit model
-    model = exp_prev_action('./model_fit_results/', session_uuids, '%s_block' % nickname,
+    model = exp_prev_action('./model_fit_results/', session_uuids, '%s_%s' % (nickname, STIM),
                             actions, stimuli, stim_side, torch.tensor(stimulated))
     model.load_or_train(nb_steps=2000, remove_old=REMOVE_OLD_FIT)
     param_prevaction = model.get_parameters(parameter_type=POSTERIOR)
     priors = model.compute_signal(signal='prior', act=actions, stim=stimuli, side=stim_side)['prior']
 
     # Fit model
-    model = exp_stimside('./model_fit_results/', session_uuids, '%s_block' % nickname,
+    model = exp_stimside('./model_fit_results/', session_uuids, '%s_%s' % (nickname, STIM),
                          actions, stimuli, stim_side, torch.tensor(stimulated))
     model.load_or_train(nb_steps=2000, remove_old=REMOVE_OLD_FIT)
     param_stimside = model.get_parameters(parameter_type=POSTERIOR)
@@ -69,21 +74,24 @@ for i, nickname in enumerate(subjects['subject']):
 # %% Plot
 
 colors, dpi = figure_style()
-f, (ax1, ax2) = plt.subplots(1, 2, figsize=(7, 3.5), dpi=dpi)
+f, (ax1, ax2) = plt.subplots(1, 2, figsize=(6, 3), dpi=dpi)
 sns.lineplot(x='opto_stim', y='tau_pa', hue='sert-cre', style='subject', estimator=None,
              data=results_df, dashes=False, markers=['o']*int(results_df.shape[0]/2),
-             legend='brief', palette=[colors['wt'], colors['sert']], lw=2, ms=8, ax=ax1)
+             legend='brief', palette=[colors['wt'], colors['sert']], lw=1, ms=4, ax=ax1)
 handles, labels = ax1.get_legend_handles_labels()
 labels = ['', 'WT', 'SERT']
-ax1.legend(handles[:3], labels[:3], frameon=False, prop={'size': 20}, loc='center left', bbox_to_anchor=(1, .5))
-ax1.set(xlabel='', ylabel='Length of integration window (tau)')
+ax1.legend(handles[:3], labels[:3], frameon=False, prop={'size': 7}, loc='center left', bbox_to_anchor=(1, .5))
+ax1.set(xlabel='', ylabel='Length of integration window (tau)', title='Previous actions',
+        ylim=[2, 12])
 
 sns.lineplot(x='opto_stim', y='tau_ss', hue='sert-cre', style='subject', estimator=None,
              data=results_df, dashes=False, markers=['o']*int(results_df.shape[0]/2),
-             legend='brief', palette=[colors['wt'], colors['sert']], lw=2, ms=8, ax=ax2)
+             legend='brief', palette=[colors['wt'], colors['sert']], lw=1, ms=4, ax=ax2)
 handles, labels = ax2.get_legend_handles_labels()
 labels = ['', 'WT', 'SERT']
-ax2.legend(handles[:3], labels[:3], frameon=False, prop={'size': 20}, loc='center left', bbox_to_anchor=(1, .5))
-ax2.set(xlabel='', ylabel='Length of integration window (tau)')
+ax2.legend(handles[:3], labels[:3], frameon=False, prop={'size': 7}, loc='center left', bbox_to_anchor=(1, .5))
+ax2.set(xlabel='', ylabel='Length of integration window (tau)', title='Stimulus sides')
 
-plt.savefig(join(fig_path, 'exp-smoothing_opto'))
+sns.despine(trim=True)
+plt.tight_layout()
+plt.savefig(join(fig_path, f'exp-smoothing_opto_{STIM}'))

@@ -15,16 +15,17 @@ import seaborn as sns
 import torch
 from models.expSmoothing_stimside_SE import expSmoothing_stimside_SE as exp_stimside
 from models.expSmoothing_prevAction_SE import expSmoothing_prevAction_SE as exp_prev_action
-from serotonin_functions import paths, criteria_opto_eids, load_exp_smoothing_trials, figure_style
-from oneibl.one import ONE
+from serotonin_functions import (paths, behavioral_criterion, load_exp_smoothing_trials,
+                                 figure_style, query_opto_sessions)
+from one.api import ONE
 one = ONE()
 
 # Settings
 TRIALS_AFTER_SWITCH = 20
-REMOVE_OLD_FIT = False
+REMOVE_OLD_FIT = True
 POSTERIOR = 'posterior_mean'
 _, fig_path, save_path = paths()
-fig_path = join(fig_path, '5HT', 'opto-behavior')
+fig_path = join(fig_path, 'opto-behavior')
 
 subjects = pd.read_csv(join('..', 'subjects.csv'))
 
@@ -34,15 +35,8 @@ block_switches = pd.DataFrame()
 for i, nickname in enumerate(subjects['subject']):
 
     # Query sessions
-    if subjects.loc[i, 'date_range_blocks'] == 'all':
-        eids = one.search(subject=nickname, task_protocol='_iblrig_tasks_opto_biasedChoiceWorld')
-    elif subjects.loc[i, 'date_range_blocks'] == 'none':
-        continue
-    else:
-        eids = one.search(subject=nickname, task_protocol='_iblrig_tasks_opto_biasedChoiceWorld',
-                          date_range=[subjects.loc[i, 'date_range_blocks'][:10],
-                                      subjects.loc[i, 'date_range_blocks'][11:]])
-    #eids = criteria_opto_eids(eids, max_lapse=0.5, max_bias=0.5, min_trials=200, one=one)
+    eids = query_opto_sessions(nickname, one=one)
+    eids = behavioral_criterion(eids, one=one)
     if len(eids) == 0:
         continue
 
@@ -73,8 +67,8 @@ for i, nickname in enumerate(subjects['subject']):
 
 # %% Plot
 
-colors = figure_style(return_colors=True)
-f, ax1 = plt.subplots(1, 1, figsize=(5, 5), dpi=150)
+colors, dpi = figure_style()
+f, ax1 = plt.subplots(1, 1, figsize=(5, 5), dpi=dpi)
 sns.lineplot(x='after-switch', y='tau', hue='sert-cre', style='subject', estimator=None,
              data=results_df.sort_values('after-switch', ascending=False),
              dashes=False, markers=['o']*int(results_df.shape[0]/2),

@@ -20,7 +20,7 @@ from one.api import ONE
 one = ONE()
 
 # Settings
-REMOVE_OLD_FIT = False
+REMOVE_OLD_FIT = True
 PRE_TRIALS = 5
 POST_TRIALS = 16
 POSTERIOR = 'posterior_mean'
@@ -42,7 +42,7 @@ for i, nickname in enumerate(subjects['subject']):
 
     # Get trial data
     actions, stimuli, stim_side, prob_left, stimulated, session_uuids = load_exp_smoothing_trials(
-        eids, stimulated='all', one=one)
+        eids, stimulated='block', one=one)
 
     # Fit models
     model = exp_stimside('./model_fit_results/', session_uuids, '%s' % nickname,
