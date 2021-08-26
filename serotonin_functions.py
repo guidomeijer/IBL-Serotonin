@@ -354,8 +354,8 @@ def load_opto_times(eid, one=None):
     session_path = one.path_from_eid(eid)
     nidq_file = glob(str(session_path.joinpath('raw_ephys_data/_spikeglx_ephysData_g*_t0.nidq.cbin')))[0]
     sr = spikeglx.Reader(nidq_file)
-    offset = int((sr.shape[0] / sr.fs - 720) * sr.fs)
-    opto_trace = sr.read_sync_analog(slice(offset, offset + int(720 * sr.fs)))[:, 1]
+    offset = int((sr.shape[0] / sr.fs - 1800) * sr.fs)
+    opto_trace = sr.read_sync_analog(slice(offset, offset + int(1800 * sr.fs)))[:, 1]
     opto_times = np.arange(offset, offset + len(opto_trace)) / sr.fs
 
     # Get start times of pulse trains
@@ -365,6 +365,8 @@ def load_opto_times(eid, one=None):
         return []
     else:
         opto_train_times = opto_high_times[np.concatenate(([True], np.diff(opto_high_times) > 1))]
+        assert np.sum(np.diff(opto_train_times) > 300) == 1, 'Could not find passive laser pulses'
+        opto_train_times = opto_train_times[np.where(np.diff(opto_train_times) > 300)[0][0]+1:]
         return opto_train_times
 
 

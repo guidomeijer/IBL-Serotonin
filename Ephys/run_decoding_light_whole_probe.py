@@ -25,18 +25,15 @@ one = ONE()
 PLOT = False
 T_BEFORE = 1  # for plotting
 T_AFTER = 2
-PRE_TIME = [0.5, 0]  # for significance testing
-POST_TIME = [0, 0.5]
 BIN_SIZE = 0.05
-PERMUTATIONS = 500
 _, fig_path, save_path = paths()
-fig_path = join(fig_path, 'light-modulated-neurons')
-save_path = join(save_path,)
+fig_path = join(fig_path, '5HT', 'decoding_opto_pulses')
+save_path = join(save_path, '5HT')
 
 # Query sessions
-eids, _ = query_ephys_sessions(one=one)
+eids, _ = query_ephys_sessions(selection='all', one=one)
 
-light_neurons = pd.DataFrame()
+decoding_df = pd.DataFrame()
 for i, eid in enumerate(eids):
 
     # Get session details
@@ -61,11 +58,7 @@ for i, eid in enumerate(eids):
         spikes[probe].times = spikes[probe].times[spikes[probe].times > start_passive]
 
         # Filter neurons that pass QC
-        if 'metrics' in clusters[probe].keys():
-            clusters_pass = np.where(clusters[probe]['metrics']['label'] == 1)[0]
-        else:
-            print('No neuron QC, using all units')
-            clusters_pass = np.unique(spikes[probe].clusters)
+        clusters_pass = np.where(clusters[probe]['metrics']['label'] == 1)[0]
         spikes[probe].times = spikes[probe].times[np.isin(spikes[probe].clusters, clusters_pass)]
         spikes[probe].clusters = spikes[probe].clusters[np.isin(spikes[probe].clusters, clusters_pass)]
 

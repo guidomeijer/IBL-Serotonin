@@ -21,11 +21,11 @@ for i in range(DAYS):
 
 # Query subjects
 subjects = pd.DataFrame(one.alyx.get(
-    '/subjects?&alive=True&water_restricted=True&responsible_user={USER}'))
+    f'/subjects?&alive=True&water_restricted=True&responsible_user={USER}'))
 sub = subjects['nickname'].unique()
 
 for s in sub:
-    userresponse = input('Post adlib Citric Acid Water to mouse {s} for {DAYS} days? (y/n) ')
+    userresponse = input(f'Post adlib Citric Acid Water to mouse {s} for {DAYS} days? (y/n) ')
     if userresponse.lower() == 'y':
         for dat in dates:
 
