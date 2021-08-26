@@ -351,7 +351,7 @@ def load_opto_times(eid, one=None):
         one.load_datasets(eid, datasets=[
             '_spikeglx_ephysData_g1_t0.nidq.cbin', '_spikeglx_ephysData_g1_t0.nidq.meta',
             '_spikeglx_ephysData_g1_t0.nidq.ch'], download_only=True)
-    session_path = one.path_from_eid(eid)
+    session_path = one.eid2path(eid)
     nidq_file = glob(str(session_path.joinpath('raw_ephys_data/_spikeglx_ephysData_g*_t0.nidq.cbin')))[0]
     sr = spikeglx.Reader(nidq_file)
     offset = int((sr.shape[0] / sr.fs - 1800) * sr.fs)

@@ -17,8 +17,8 @@ MIN_NEURONS = 5
 
 # Paths
 _, fig_path, save_path = paths()
-fig_path = join(fig_path, '5HT')
-save_path = join(save_path, '5HT')
+fig_path = join(fig_path)
+save_path = join(save_path)
 
 # Load in results
 light_neurons = pd.read_csv(join(save_path, 'light_modulated_neurons.csv'))

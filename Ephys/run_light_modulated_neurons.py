@@ -43,9 +43,19 @@ for i, eid in enumerate(eids):
     ses_details = one.get_details(eid)
     subject = ses_details['subject']
     date = ses_details['start_time'][:10]
+    print(f'Starting {subject}, {date}')
 
     # Load in laser pulse times
-    opto_train_times = load_opto_times(eid, one=one)
+    try:
+        opto_train_times = load_opto_times(eid, one=one)
+    except:
+        print('Session does not have passive laser pulses')
+        continue
+    if len(opto_train_times) == 0:
+        print('Did not find ANY laser pulses!')
+        continue
+    else:
+        print(f'Found {len(opto_train_times)} passive laser pulses')
 
     # Load in spikes
     spikes, clusters, channels = bbone.load_spike_sorting_with_channel(eid, aligned=True, one=one)
