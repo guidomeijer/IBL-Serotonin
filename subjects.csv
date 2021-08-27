@@ -3,9 +3,9 @@ ZFM-01804,1,No probe trials. Mouse had infection. ,No histology,0,all,none,none
 ZFM-01802,1,,Expression in ventral part of DRN.,0,2021-02-22/2021-02-26,none,none
 ZFM-01864,0,,No expression.,0,all,none,none
 ZFM-01507,1,Only 1 passive ephys session. ,Expression in dorsal part of DRN.,0,none,none,none
-ZFM-01867,0,,,0,all,none,none
+ZFM-01867,0,"Really bad behavior during recordings, exclude",No expression.,0,all,none,none
 ZFM-02184,1,,,1,all,2021-06-08/2021-06-09,2021-06-16/2021-06-25
-ZFM-02180,1,Did not learn the task and had infection. Only did recordings.,,0,none,none,none
+ZFM-02180,1,Did not learn the task and had infection. Only did recordings.,Expression in left part of DRN.,0,none,none,none
 ZFM-02183,1,,,1,none,2021-06-14/2021-06-14,2021-06-16/2021-06-25
 ZFM-02181,0,,,1,none,none,2021-06-16/2021-06-25
 ZFM-02601,1,,,1,none,none,none

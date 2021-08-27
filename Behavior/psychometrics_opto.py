@@ -17,13 +17,13 @@ from one.api import ONE
 one = ONE()
 
 # Settings
-PLOT_SINGLE_ANIMALS = True
+PLOT_SINGLE_ANIMALS = False
 _, fig_path, _ = paths()
 fig_path = join(fig_path, 'opto-behavior')
 subjects = pd.read_csv(join('..', 'subjects.csv'))
 
 # testing
-#subjects = subjects[subjects['subject'] == 'ZFM-02601'].reset_index(drop=True)
+#subjects = subjects[subjects['subject'] == 'ZFM-02600'].reset_index(drop=True)
 
 bias_df, lapse_df, psy_df = pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
 for i, nickname in enumerate(subjects['subject']):

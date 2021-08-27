@@ -27,6 +27,9 @@ subjects = pd.read_csv(join('..', 'subjects.csv'))
 subjects = subjects[~((subjects['date_range_blocks'] == 'none') & (subjects['date_range_probes'] == 'none')
                      & (subjects['date_range_half'] == 'none'))].reset_index(drop=True)
 
+
+subjects = subjects[subjects['subject'] != 'ZFM-02602'].reset_index(drop=True)
+
 results_df = pd.DataFrame()
 for i, nickname in enumerate(subjects['subject']):
     print(f'Processing {nickname}')
@@ -41,6 +44,8 @@ for i, nickname in enumerate(subjects['subject']):
                                  task_protocol=['_iblrig_tasks_opto_biasedChoiceWorld'],
                                  details=True)
     stim_dates = [i['date'] for i in stim_details]
+    if len(stim_dates) == 0:
+        continue
     rel_ses = -(np.arange(len(all_dates)) - all_dates.index(np.min(stim_dates)))
 
     # Apply behavioral criterion

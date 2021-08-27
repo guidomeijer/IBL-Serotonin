@@ -20,7 +20,7 @@ from one.api import ONE
 one = ONE()
 
 # Settings
-REMOVE_OLD_FIT = True
+REMOVE_OLD_FIT = False
 PRE_TRIALS = 5
 POST_TRIALS = 16
 POSTERIOR = 'posterior_mean'

@@ -22,6 +22,8 @@ _, fig_path, _ = paths()
 fig_path = join(fig_path, 'opto-behavior-ephys')
 subjects = pd.read_csv(join('..', 'subjects.csv'))
 
+subjects = subjects[subjects['subject'] == 'ZFM-01867'].reset_index(drop=True)
+
 bias_df, lapse_df, psy_df = pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
 for i, nickname in enumerate(subjects['subject']):
 

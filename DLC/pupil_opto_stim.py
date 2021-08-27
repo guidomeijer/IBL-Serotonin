@@ -25,7 +25,7 @@ _, fig_path, _ = paths()
 fig_path = join(fig_path, 'opto-pupil')
 
 subjects = pd.read_csv(join('..', 'subjects.csv'))
-#subjects = subjects[subjects['subject'] == 'ZFM-02601'].reset_index(drop=True)
+subjects = subjects[subjects['subject'] == 'ZFM-02600'].reset_index(drop=True)
 results_df = pd.DataFrame()
 for i, nickname in enumerate(subjects['subject']):
     print(f'Processing {nickname}..')

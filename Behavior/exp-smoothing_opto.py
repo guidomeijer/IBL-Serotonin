@@ -35,7 +35,7 @@ for i, nickname in enumerate(subjects['subject']):
 
     # Query sessions
     eids = query_opto_sessions(nickname, one=one)
-    #eids = eids[:-2]
+    eids = eids[:-2]  # exclude first two opto sessions
     eids = behavioral_criterion(eids, one=one)
     if len(eids) == 0:
         continue
