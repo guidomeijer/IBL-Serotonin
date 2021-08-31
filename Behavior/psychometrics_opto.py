@@ -35,8 +35,8 @@ for i, nickname in enumerate(subjects['subject']):
     eids = eids[:-2]
 
     # Apply behavioral criterion
-    eids = behavioral_criterion(eids, one=one)
-    if len(eids) == 0:
+    eids = behavioral_criterion(eids, min_trials=400, one=one)
+    if len(eids) < 2:
         continue
 
     # Get trials DataFrame
@@ -221,13 +221,12 @@ for i, nickname in enumerate(subjects['subject']):
         plt.savefig(join(fig_path, '%s_opto_behavior_psycurve' % nickname))
 
 # %% Plot
-colors = [sns.color_palette('colorblind')[0], sns.color_palette('colorblind')[7]]
 
 psy_avg_block_df = psy_df.groupby(['subject', 'opto_stim']).mean()
 psy_avg_block_df['lapse_both'] = psy_avg_block_df.loc[:, 'lapse_l':'lapse_r'].mean(axis=1)
 colors, dpi = figure_style()
 colors = [colors['sert'], colors['wt']]
-f, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(3.5, 3.5), dpi=dpi)
+f, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(2, 3, figsize=(6, 3.5), dpi=dpi)
 sns.lineplot(x='opto_stim', y='bias', hue='sert-cre', style='subject', estimator=None,
              data=bias_df[bias_df['catch_trial'] == 0], dashes=False,
              markers=['o']*int(bias_df.shape[0]/4), palette=colors, hue_order=[1, 0],
@@ -241,22 +240,40 @@ sns.lineplot(x='opto_stim', y='bias', hue='sert-cre', style='subject', estimator
 ax2.set(xlabel='', xticks=[0, 1], xticklabels=['No stim', 'Stim'], ylabel='Bias', ylim=[0, 0.7],
         title='Catch trials')
 
+delta_block = (bias_df.loc[(bias_df['opto_stim'] == 1) & (bias_df['catch_trial'] == 0), 'bias'].values -
+               bias_df.loc[(bias_df['opto_stim'] == 0) & (bias_df['catch_trial'] == 0), 'bias'].values)
+delta_probe = (bias_df.loc[(bias_df['opto_stim'] == 1) & (bias_df['catch_trial'] == 1), 'bias'].values -
+               bias_df.loc[(bias_df['opto_stim'] == 0) & (bias_df['catch_trial'] == 1), 'bias'].values)
+sert_cre = bias_df.loc[(bias_df['opto_stim'] == 1) & (bias_df['catch_trial'] == 0), 'sert-cre'].values
+ax3.plot([0, 0], [-0.2, 0.2], ls='--', color='gray')
+ax3.plot([-0.2, 0.2], [0, 0], ls='--', color='gray')
+ax3.scatter(delta_block[sert_cre == 1], delta_probe[sert_cre ==1], color=colors[0])
+ax3.scatter(delta_block[sert_cre == 0], delta_probe[sert_cre ==0], color=colors[1])
+ax3.set(xlim=(-0.2, 0.2), ylim=(-0.2, 0.2), xlabel='Bias change block trials', ylabel='Bias change probe trials')
+
 sns.lineplot(x='opto_stim', y='threshold', hue='sert-cre', style='subject', estimator=None,
              data=psy_df.groupby(['subject', 'opto_stim']).mean(), dashes=False,
              markers=['o']*int(bias_df.shape[0]/4), palette=colors, hue_order=[1, 0],
-             legend=False, lw=1, ms=4, ax=ax3)
-ax3.set(xlabel='', xticks=[0, 1], xticklabels=['No stim', 'Stim'], ylabel='Threshold')
+             legend=False, lw=1, ms=4, ax=ax4)
+ax4.set(xlabel='', xticks=[0, 1], xticklabels=['No stim', 'Stim'], ylabel='Threshold')
 
 sns.lineplot(x='opto_stim', y='lapse_both', hue='sert-cre', style='subject', estimator=None,
              data=psy_avg_block_df, dashes=False,
              markers=['o']*int(bias_df.shape[0]/4), palette=colors, hue_order=[1, 0],
-             legend=False, lw=1, ms=4, ax=ax4)
-ax4.set(xlabel='', xticks=[0, 1], xticklabels=['No stim', 'Stim'], ylabel='Lapse rate')
+             legend=False, lw=1, ms=4, ax=ax5)
+ax5.set(xlabel='', xticks=[0, 1], xticklabels=['No stim', 'Stim'], ylabel='Lapse rate')
+
+sns.lineplot(x='opto_stim', y='rt', hue='sert-cre', style='subject', estimator=None,
+             data=bias_df[bias_df['catch_trial'] == 0], dashes=False,
+             markers=['o']*int(bias_df.shape[0]/4), palette=colors, hue_order=[1, 0],
+             legend=False, lw=1, ms=4, ax=ax6)
+ax6.set(xlabel='', xticks=[0, 1], xticklabels=['No stim', 'Stim'], ylabel='Median reaction time')
 
 plt.tight_layout()
 sns.despine(trim=True)
 plt.savefig(join(fig_path, 'summary_psycurve'))
 
+# %%
 f, (ax1, ax2) = plt.subplots(1, 2, figsize=(7, 3.5), dpi=dpi)
 delta_lapse_l_l_s = (psy_df.loc[(psy_df['opto_stim'] == 1) & (psy_df['prob_left'] == 0.8)
                                 & (psy_df['sert-cre'] == 1), 'lapse_l'].values

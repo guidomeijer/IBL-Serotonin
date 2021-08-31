@@ -22,13 +22,14 @@ from one.api import ONE
 one = ONE()
 
 # Settings
-PLOT = False
+PLOT = True
 T_BEFORE = 1  # for plotting
 T_AFTER = 2
 PRE_TIME = [0.5, 0]  # for significance testing
 POST_TIME = [0, 0.5]
 BIN_SIZE = 0.05
 PERMUTATIONS = 500
+ARTIFACT_CUTOFF = 0.9  # ROC auc higher than this means a light artifact neuron
 _, fig_path, save_path = paths()
 fig_path = join(fig_path, 'light-modulated-neurons')
 save_path = join(save_path,)
@@ -84,6 +85,7 @@ for i, eid in enumerate(eids):
         roc_auc, cluster_ids = roc_single_event(spikes[probe].times, spikes[probe].clusters,
                                                 opto_train_times, pre_time=PRE_TIME, post_time=POST_TIME)
         roc_auc = 2 * (roc_auc - 0.5)
+
         roc_auc_permut = np.zeros([PERMUTATIONS, len(np.unique(spikes[probe].clusters))])
         for k in range(PERMUTATIONS):
             this_roc_auc_permut = roc_single_event(
@@ -92,6 +94,7 @@ for i, eid in enumerate(eids):
                                   size=opto_train_times.shape[0]),
                 pre_time=PRE_TIME, post_time=POST_TIME)[0]
             roc_auc_permut[k, :] = 2 * (this_roc_auc_permut - 0.5)
+
         modulated = ((roc_auc > np.percentile(roc_auc_permut, 97.5, axis=0))
                        | (roc_auc < np.percentile(roc_auc_permut, 2.5, axis=0)))
         enhanced = roc_auc > np.percentile(roc_auc_permut, 97.5, axis=0)

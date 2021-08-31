@@ -17,7 +17,7 @@ from brainbox.task.closed_loop import roc_single_event
 from my_functions import figure_style
 import brainbox.io.one as bbone
 from brainbox.plot import peri_event_time_histogram
-from serotonin_functions import paths, remap, query_sessions, load_opto_times
+from serotonin_functions import paths, remap, query_ephys_sessions, load_opto_times
 from one.api import ONE
 one = ONE()
 
@@ -32,7 +32,7 @@ fig_path = join(fig_path, 'light-modulated-neurons')
 save_path = join(save_path)
 
 # Query sessions
-eids, _ = query_sessions(selection='all', one=one)
+eids, _ = query_ephys_sessions(selection='all', one=one)
 
 if OVERWRITE:
     light_neurons = pd.DataFrame()
@@ -48,12 +48,17 @@ for i, eid in enumerate(eids):
     date = ses_details['start_time'][:10]
     print(f'Processing {subject} || {date}')
 
-    # Load in laser
+    # Load in laser pulse times
     try:
         opto_train_times = load_opto_times(eid, one=one)
     except:
-        print('Could not load laser pulses')
+        print('Session does not have passive laser pulses')
         continue
+    if len(opto_train_times) == 0:
+        print('Did not find ANY laser pulses!')
+        continue
+    else:
+        print(f'Found {len(opto_train_times)} passive laser pulses')
 
     # Load in spikes
     spikes, clusters, channels = bbone.load_spike_sorting_with_channel(eid, aligned=True, one=one)
@@ -73,6 +78,9 @@ for i, eid in enumerate(eids):
         else:
             print('Neuron QC metrics not found, using all neurons')
             clusters_pass = np.unique(spikes[probe].clusters)
+        if len(clusters_pass) == 0:
+            print('No neurons passed QC')
+            continue
         spikes[probe].times = spikes[probe].times[np.isin(spikes[probe].clusters, clusters_pass)]
         spikes[probe].clusters = spikes[probe].clusters[np.isin(spikes[probe].clusters, clusters_pass)]
 

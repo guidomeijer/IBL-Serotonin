@@ -16,7 +16,7 @@ from atlaselectrophysiology import rendering
 ba = atlas.AllenAtlas(25)
 
 # Load in recording target coordinates
-rec_targets = pd.read_csv(join(pathlib.Path(__file__).parent.absolute(), 'recording_targets.csv'))
+rec_targets = pd.read_csv(join(pathlib.Path(__file__).parent.absolute(), '..', 'recording_targets.csv'))
 
 # Convert to meters
 rec_targets[['ML', 'AP', 'DV', 'depth']] = rec_targets[['ML', 'AP', 'DV', 'depth']].divide(1000000)

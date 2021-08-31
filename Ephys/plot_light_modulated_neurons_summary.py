@@ -15,6 +15,7 @@ from serotonin_functions import paths, figure_style
 # Settings
 HISTOLOGY = False
 N_BINS = 50
+ARTIFACT_ROC = 0.9
 
 # Paths
 _, fig_path, save_path = paths()
@@ -30,24 +31,25 @@ subjects = pd.read_csv(join('..', 'subjects.csv'))
 for i, nickname in enumerate(np.unique(all_neurons['subject'])):
     all_neurons.loc[all_neurons['subject'] == nickname, 'sert-cre'] = subjects.loc[subjects['subject'] == nickname, 'sert-cre'].values[0]
 
+# Exclude artifact neurons
+all_neurons = all_neurons[all_neurons['roc_auc'] < ARTIFACT_ROC]
+
 # testing
 #all_neurons = all_neurons.loc[all_neurons['subject'] == 'ZFM-02183']
 
 # %%
 colors, dpi = figure_style()
-f, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(12, 12), dpi=dpi)
-ax1.hist([all_neurons.loc[(all_neurons['sert-cre'] == 1) & (all_neurons['modulated'] == 0), 'roc_auc'],
-          all_neurons.loc[(all_neurons['sert-cre'] == 1) & (all_neurons['enhanced'] == 1), 'roc_auc'],
+f, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(7, 4), dpi=dpi)
+ax1.hist([all_neurons.loc[(all_neurons['sert-cre'] == 1) & (all_neurons['enhanced'] == 1), 'roc_auc'],
           all_neurons.loc[(all_neurons['sert-cre'] == 1) & (all_neurons['suppressed'] == 1), 'roc_auc']],
          N_BINS, density=True, histtype='bar', stacked=True,
-         color=[colors['no-modulation'], colors['enhanced'], colors['suppressed']])
+         color=[colors['enhanced'], colors['suppressed']])
 ax1.set(xlim=[-1, 1], xlabel='Modulation index', ylabel='Neuron count', title='SERT')
 
-ax2.hist([all_neurons.loc[(all_neurons['sert-cre'] == 0) & (all_neurons['modulated'] == 0), 'roc_auc'],
-          all_neurons.loc[(all_neurons['sert-cre'] == 0) & (all_neurons['enhanced'] == 1), 'roc_auc'],
+ax2.hist([all_neurons.loc[(all_neurons['sert-cre'] == 0) & (all_neurons['enhanced'] == 1), 'roc_auc'],
           all_neurons.loc[(all_neurons['sert-cre'] == 0) & (all_neurons['suppressed'] == 1), 'roc_auc']],
          int(N_BINS/2), density=True, histtype='bar', stacked=True,
-         color=[colors['no-modulation'], colors['enhanced'], colors['suppressed']])
+         color=[colors['enhanced'], colors['suppressed']])
 ax2.set(xlim=[-1, 1], xlabel='Modulation index', ylabel='Neuron count', title='WT')
 
 summary_df = all_neurons.groupby('subject').sum()
@@ -56,8 +58,8 @@ summary_df['perc_mod'] = (summary_df['modulated'] / summary_df['n_neurons']) * 1
 summary_df['sert-cre'] = (summary_df['sert-cre'] > 0).astype(int)
 
 sns.swarmplot(x='sert-cre', y='perc_mod', data=summary_df, ax=ax3,
-              palette=[colors['wt'], colors['sert']], s=10)
-ax3.set(ylabel='Light modulated neurons (%)', xlabel='', xticklabels=['WT', 'SERT'], ylim=[0, 70])
+              palette=[colors['wt'], colors['sert']])
+ax3.set(ylabel='Light modulated neurons (%)', xlabel='', xticklabels=['WT', 'SERT'], ylim=[0, 20])
 
 plt.tight_layout(pad=2)
 sns.despine(trim=True)

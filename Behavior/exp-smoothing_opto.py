@@ -23,7 +23,7 @@ one = ONE()
 # Settings
 REMOVE_OLD_FIT = False
 POSTERIOR = 'posterior_mean'
-STIM = 'block'
+STIM = 'all'
 _, fig_path, save_path = paths()
 fig_path = join(fig_path, 'opto-behavior')
 

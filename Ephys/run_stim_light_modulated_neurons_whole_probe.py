@@ -18,12 +18,12 @@ from brainbox.task.closed_loop import (roc_single_event, roc_between_two_events,
                                        generate_pseudo_session)
 import brainbox.io.one as bbone
 from brainbox.plot import peri_event_time_histogram
-from serotonin_functions import paths, remap, query_sessions, load_trials, figure_style
+from serotonin_functions import paths, remap, query_ephys_sessions, load_trials, figure_style
 from one.api import ONE
 one = ONE()
 
 # Settings
-OVERWRITE = False
+OVERWRITE = True
 T_BEFORE = 1  # for plotting
 T_AFTER = 2
 PRE_TIME = [0.5, 0]  # for significance testing
@@ -35,7 +35,7 @@ fig_path = join(fig_path, 'light-modulated-neurons')
 save_path = join(save_path)
 
 # Query sessions
-eids, _ = query_sessions(selection='all', one=one)
+eids, _ = query_ephys_sessions(selection='all', one=one)
 
 if OVERWRITE:
     stim_neurons = pd.DataFrame(columns=['subject', 'date'])

@@ -17,8 +17,8 @@ from brainbox.task.closed_loop import (roc_single_event, roc_between_two_events,
                                        generate_pseudo_stimuli, generate_pseudo_blocks)
 import brainbox.io.one as bbone
 from brainbox.plot import peri_event_time_histogram
-from serotonin_functions import paths, remap, query_sessions, load_trials, figure_style
-from oneibl.one import ONE
+from serotonin_functions import paths, remap, query_ephys_sessions, load_trials, figure_style
+from one.api import ONE
 one = ONE()
 
 # Settings
@@ -33,7 +33,7 @@ fig_path = join(fig_path, '5HT', 'light-modulated-neurons')
 save_path = join(save_path, '5HT')
 
 # Query sessions
-eids, _ = query_sessions(one=one)
+eids, _ = query_ephys_sessions(one=one)
 
 stim_neurons = pd.DataFrame()
 for i, eid in enumerate(eids):
