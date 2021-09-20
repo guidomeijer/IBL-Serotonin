@@ -17,9 +17,9 @@ from one.api import ONE
 one = ONE()
 
 # Settings
-PLOT_SINGLE_ANIMALS = False
+PLOT_SINGLE_ANIMALS = True
 _, fig_path, _ = paths()
-fig_path = join(fig_path, 'Behavior', 'Psychometrics')
+fig_path = join(fig_path, 'Behavior', 'Psychometrics', 'no-stim-ses')
 subjects = pd.read_csv(join('..', 'subjects.csv'))
 
 # testing
@@ -36,7 +36,7 @@ for i, nickname in enumerate(subjects['subject']):
 
     # Apply behavioral criterion
     eids = behavioral_criterion(eids, one=one)
-    if len(eids) == 0:
+    if len(eids) < 2:
         continue
 
     # Get trials DataFrame

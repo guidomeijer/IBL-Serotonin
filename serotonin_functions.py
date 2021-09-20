@@ -156,6 +156,7 @@ def load_trials(eid, laser_stimulation=False, invert_choice=False, invert_stimsi
                        & (trials['laser_stimulation'] == 0), 'laser_probability'] = 0.25
             trials.loc[(trials['signed_contrast'] == 0)
                        & (trials['laser_stimulation'] == 1), 'laser_probability'] = 0.75
+
     trials['correct'] = trials['feedbackType']
     trials.loc[trials['correct'] == -1, 'correct'] = 0
     trials['right_choice'] = -trials['choice']
@@ -494,3 +495,28 @@ def break_xaxis(y=-0.004, **kwargs):
     plt.text(30, y, '/ /', horizontalalignment='center',
              verticalalignment='center', fontsize=12, fontweight='bold')
 
+
+def get_bias(trials):
+    import psychofit as psy
+    """
+    Calculate bias by fitting psychometric curves to the 80/20 and 20/80 blocks, finding the
+    point on the y-axis when contrast = 0% and getting the difference.
+    """
+    if len(trials) == 0:
+        return np.nan
+
+    # 20/80 blocks
+    these_trials = trials[trials['probabilityLeft'] == 0.2]
+    stim_levels = np.sort(these_trials['signed_contrast'].unique())
+    pars_right = fit_psychfunc(stim_levels, these_trials.groupby('signed_contrast').size(),
+                               these_trials.groupby('signed_contrast').mean()['right_choice'])
+    bias_right = psy.erf_psycho_2gammas(pars_right, 0)
+
+    # 80/20 blocks
+    these_trials = trials[trials['probabilityLeft'] == 0.8]
+    stim_levels = np.sort(these_trials['signed_contrast'].unique())
+    pars_left = fit_psychfunc(stim_levels, these_trials.groupby('signed_contrast').size(),
+                              these_trials.groupby('signed_contrast').mean()['right_choice'])
+    bias_left = psy.erf_psycho_2gammas(pars_left, 0)
+
+    return bias_right - bias_left

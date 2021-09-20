@@ -15,7 +15,8 @@ import seaborn as sns
 import torch
 from models.expSmoothing_stimside import expSmoothing_stimside as exp_stimside
 from models.expSmoothing_prevAction import expSmoothing_prevAction as exp_prev_action
-from serotonin_functions import paths, behavioral_criterion, load_exp_smoothing_trials, figure_style
+from serotonin_functions import (paths, behavioral_criterion, load_exp_smoothing_trials,
+                                 figure_style, query_opto_sessions)
 from one.api import ONE
 one = ONE()
 
@@ -25,7 +26,7 @@ PRE_TRIALS = 5
 POST_TRIALS = 16
 POSTERIOR = 'posterior_mean'
 _, fig_path, save_path = paths()
-fig_path = join(fig_path, 'opto-behavior')
+fig_path = join(fig_path, 'Behavior', 'Models')
 
 subjects = pd.read_csv(join('..', 'subjects.csv'))
 
@@ -34,7 +35,7 @@ accuracy_df = pd.DataFrame()
 for i, nickname in enumerate(subjects['subject']):
 
     # Query sessions
-    eids = one.search(subject=nickname, task_protocol='_iblrig_tasks_opto_biasedChoiceWorld')
+    eids = query_opto_sessions(nickname, one=one)
     eids = behavioral_criterion(eids, one=one)
     if len(eids) == 0:
         continue
@@ -65,13 +66,13 @@ for i, nickname in enumerate(subjects['subject']):
 # %% Plot
 
 colors, dpi = figure_style()
-f, (ax1, ax2) = plt.subplots(1, 2, figsize=(7, 3.5), dpi=dpi)
-sns.stripplot(x='sert-cre', y='tau', data=results_df[results_df['model'] == 'prev actions'], s=8,
+f, (ax1, ax2) = plt.subplots(1, 2, figsize=(4, 2), dpi=dpi)
+sns.stripplot(x='sert-cre', y='tau', data=results_df[results_df['model'] == 'prev actions'], s=4,
               palette=[colors['wt'], colors['sert']], ax=ax1)
-ax1.set(ylabel='Tau', xlabel='', xticks=[0, 1], xticklabels=['WT', 'Sert-Cre'],
+ax1.set(ylabel='Tau', xlabel='', xticks=[0, 1], xticklabels=['WT', 'Sert-Cre'], ylim=[2, 8],
         title='Previous actions')
 
-sns.stripplot(x='sert-cre', y='tau', data=results_df[results_df['model'] == 'stim side'], s=8,
+sns.stripplot(x='sert-cre', y='tau', data=results_df[results_df['model'] == 'stim side'], s=4,
               palette=[colors['wt'], colors['sert']], ax=ax2)
 ax2.set(ylabel='Tau', xlabel='', xticks=[0, 1], xticklabels=['WT', 'Sert-Cre'],
         title='Stimulus sides')

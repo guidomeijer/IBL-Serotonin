@@ -21,9 +21,11 @@ from brainbox.plot import peri_event_time_histogram
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from serotonin_functions import paths, remap, query_ephys_sessions, load_opto_times
 from one.api import ONE
+lda = LinearDiscriminantAnalysis()
 one = ONE()
 
 # Settings
+MIN_NEURONS = 5  # per region
 PLOT = False
 T_BEFORE = 1
 T_AFTER = 2
@@ -84,18 +86,27 @@ for i, eid in enumerate(eids):
         all_times = np.concatenate((control_times, opto_train_times))
         laser_on = np.concatenate((np.zeros(control_times.shape[0]), np.ones(control_times.shape[0])))
 
-        print('LDA projection light pulses..')
-        lda = LinearDiscriminantAnalysis()
-        lda_dist = np.empty(BIN_CENTERS.shape[0])
-        for b, bin_center in enumerate(BIN_CENTERS):
-            times = np.column_stack((((all_times + bin_center) - (BIN_SIZE / 2)),
-                                     ((all_times + bin_center) + (BIN_SIZE / 2))))
-            pop_vector, cluster_ids = get_spike_counts_in_bins(spikes[probe].times,
-                                                               spikes[probe].clusters, times)
-            pop_vector = pop_vector.T
-            lda_projection = lda.fit_transform(pop_vector, laser_on)
-            lda_dist[b] = np.abs(np.mean(lda_projection[laser_on == 0])) + np.abs(np.mean(lda_projection[laser_on == 0]))
+        # Loop over regions
+        for r, region in enumerate(np.unique(clusters[probe]['acronym'])):
+            print(f'Run LDA on region {region}')
 
-        plt.plot(BIN_CENTERS, lda_dist)
+            # Select spikes and clusters in this brain region
+            clusters_in_region = clusters[probe].metrics.cluster_id[clusters[probe]['acronym'] == region]
+            spks_region = spikes[probe].times[np.isin(spikes[probe].clusters, clusters_in_region)]
+            clus_region = spikes[probe].clusters[np.isin(spikes[probe].clusters, clusters_in_region)]
+            if len(clusters_in_region) < MIN_NEURONS:
+                continue
+
+            lda_dist = np.empty(BIN_CENTERS.shape[0])
+            for b, bin_center in enumerate(BIN_CENTERS):
+                times = np.column_stack((((all_times + bin_center) - (BIN_SIZE / 2)),
+                                         ((all_times + bin_center) + (BIN_SIZE / 2))))
+                pop_vector, cluster_ids = get_spike_counts_in_bins(spks_region, clus_region, times)
+                pop_vector = pop_vector.T
+                lda_projection = lda.fit_transform(pop_vector, laser_on)
+                lda_dist[b] = (np.abs(np.mean(lda_projection[laser_on == 0]))
+                               + np.abs(np.mean(lda_projection[laser_on == 1])))
+
+            plt.plot(BIN_CENTERS, lda_dist)
 
 

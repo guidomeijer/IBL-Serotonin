@@ -10,11 +10,11 @@ from iblvideo import run_session
 from one.api import ONE
 one = ONE()
 
-session = one.search(task_protocol='_iblrig_tasks_opto_biasedChoiceWorld')
-# session = one.search(project='serotonin_inference', task_protocol='_iblrig_tasks_biasedChoiceWorld')
+#sessions = one.search(task_protocol='_iblrig_NPH_tasks_')
+sessions = one.search(project='serotonin_inference', task_protocol='biased')
 
-for eid in session:
-    print(f'Processing session {eid}')
+for i, eid in enumerate(sessions):
+    print(f'\n\nProcessing session {eid} [{i + 1} of {len(sessions)}]\n\n')
     status = run_session(eid, machine='guido', cams=['left'], one=one, frames=10000, clobber=True,
                          overwrite=False)
 

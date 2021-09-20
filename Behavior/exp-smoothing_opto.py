@@ -25,12 +25,11 @@ REMOVE_OLD_FIT = False
 POSTERIOR = 'posterior_mean'
 STIM = 'all'
 _, fig_path, save_path = paths()
-fig_path = join(fig_path, 'opto-behavior')
+fig_path = join(fig_path, 'Behavior', 'Models')
 
 subjects = pd.read_csv(join('..', 'subjects.csv'))
 
 results_df = pd.DataFrame()
-accuracy_df = pd.DataFrame()
 for i, nickname in enumerate(subjects['subject']):
 
     # Query sessions
@@ -82,7 +81,7 @@ handles, labels = ax1.get_legend_handles_labels()
 labels = ['', 'WT', 'SERT']
 ax1.legend(handles[:3], labels[:3], frameon=False, prop={'size': 7}, loc='center left', bbox_to_anchor=(1, .5))
 ax1.set(xlabel='', ylabel='Length of integration window (tau)', title='Previous actions',
-        ylim=[2, 12])
+        ylim=[2, 8])
 
 sns.lineplot(x='opto_stim', y='tau_ss', hue='sert-cre', style='subject', estimator=None,
              data=results_df, dashes=False, markers=['o']*int(results_df.shape[0]/2),

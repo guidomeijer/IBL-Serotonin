@@ -15,7 +15,8 @@ import seaborn as sns
 from datetime import datetime
 from models.expSmoothing_stimside import expSmoothing_stimside as exp_stimside
 from models.expSmoothing_prevAction import expSmoothing_prevAction as exp_prev_action
-from serotonin_functions import paths, behavioral_criterion, load_exp_smoothing_trials, figure_style
+from serotonin_functions import (paths, behavioral_criterion, load_exp_smoothing_trials,
+                                 query_opto_sessions, figure_style)
 from one.api import ONE
 one = ONE()
 
@@ -23,7 +24,7 @@ one = ONE()
 REMOVE_OLD_FIT = False
 POSTERIOR = 'posterior_mean'
 _, fig_path, save_path = paths()
-fig_path = join(fig_path, 'opto-behavior')
+fig_path = join(fig_path, 'Behavior', 'Models')
 
 subjects = pd.read_csv(join('..', 'subjects.csv'))
 
@@ -32,12 +33,11 @@ block_switches = pd.DataFrame()
 for i, nickname in enumerate(subjects['subject']):
 
     # Stimulated sessions
-    eids = one.search(subject=nickname, task_protocol='_iblrig_tasks_opto_biasedChoiceWorld')
+    eids = query_opto_sessions(nickname, one=one)
     eids = behavioral_criterion(eids, one=one)
     if len(eids) == 0:
         continue
     details = [one.get_details(i) for i in eids]
-
     stim_dates = [datetime.strptime(i, '%Y-%m-%d') for i in [j['start_time'][:10] for j in details]]
     if len(eids) > 10:
         eids = eids[:10]
