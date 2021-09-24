@@ -16,7 +16,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from datetime import datetime
 import seaborn as sns
-import torch
 from models.optimalBayesian import optimal_Bayesian as opt_bayes
 from models.expSmoothing_stimside import expSmoothing_stimside as exp_stimside
 from models.expSmoothing_prevAction import expSmoothing_prevAction as exp_prev_action
@@ -31,7 +30,7 @@ PRE_TRIALS = 5
 POST_TRIALS = 16
 POSTERIOR = 'posterior_mean'
 _, fig_path, save_path = paths()
-fig_path = join(fig_path, 'opto-behavior')
+fig_path = join(fig_path, 'Behavior', 'Models')
 
 subjects = pd.read_csv(join('..', 'subjects.csv'))
 
@@ -56,22 +55,23 @@ for i, nickname in enumerate(subjects['subject']):
     model = opt_bayes('./model_fit_results/', session_uuids, f'{nickname}',
                       actions, stimuli, stim_side)
     model.load_or_train(nb_steps=2000, remove_old=REMOVE_OLD_FIT)
-    #accuracy_bayes = model.compute_signal(signal='score', act=actions, stim=stimuli, side=stim_side)['accuracy']
-    accuracy_bayes = np.nan
+    accuracy_bayes = model.compute_signal(signal='score', act=actions, stim=stimuli, side=stim_side,
+                                          parameter_type=POSTERIOR)['accuracy']
 
     # Fit previous actions model
     model = exp_prev_action('./model_fit_results/', session_uuids, f'{nickname}',
                             actions, stimuli, stim_side)
     model.load_or_train(nb_steps=2000, remove_old=REMOVE_OLD_FIT)
-    param_prevaction = model.get_parameters(parameter_type=POSTERIOR)
-    accuracy_pa = model.compute_signal(signal='score', act=actions, stim=stimuli, side=stim_side)['accuracy']
+    accuracy_pa = model.compute_signal(signal='score', act=actions, stim=stimuli, side=stim_side,
+                                       parameter_type=POSTERIOR)['accuracy']
 
     # Fit previous stimulus sides model
     model = exp_stimside('./model_fit_results/', session_uuids, f'{nickname}',
                          actions, stimuli, stim_side)
     model.load_or_train(nb_steps=2000, remove_old=REMOVE_OLD_FIT)
     param_stimside = model.get_parameters(parameter_type=POSTERIOR)
-    accuracy_ss = model.compute_signal(signal='score', act=actions, stim=stimuli, side=stim_side)['accuracy']
+    accuracy_ss = model.compute_signal(signal='score', act=actions, stim=stimuli, side=stim_side,
+                                       parameter_type=POSTERIOR)['accuracy']
 
     # Add to dataframe
     results_df = results_df.append(pd.DataFrame(data={'accuracy': [accuracy_bayes, accuracy_pa, accuracy_ss],
@@ -95,22 +95,22 @@ for i, nickname in enumerate(subjects['subject']):
     model = opt_bayes('./model_fit_results/', session_uuids, f'{nickname}',
                       actions, stimuli, stim_side)
     model.load_or_train(nb_steps=2000, remove_old=REMOVE_OLD_FIT)
-    #accuracy_bayes = model.compute_signal(signal='score', act=actions, stim=stimuli, side=stim_side)['accuracy']
-    accuracy_bayes = np.nan
+    accuracy_bayes = model.compute_signal(signal='score', act=actions, stim=stimuli, side=stim_side,
+                                          parameter_type=POSTERIOR)['accuracy']
 
     # Fit previous actions model
     model = exp_prev_action('./model_fit_results/', session_uuids, f'{nickname}',
                             actions, stimuli, stim_side)
     model.load_or_train(nb_steps=2000, remove_old=REMOVE_OLD_FIT)
-    param_prevaction = model.get_parameters(parameter_type=POSTERIOR)
-    accuracy_pa = model.compute_signal(signal='score', act=actions, stim=stimuli, side=stim_side)['accuracy']
+    accuracy_pa = model.compute_signal(signal='score', act=actions, stim=stimuli, side=stim_side,
+                                       parameter_type=POSTERIOR)['accuracy']
 
     # Fit previous stimulus sides model
     model = exp_stimside('./model_fit_results/', session_uuids, f'{nickname}',
                          actions, stimuli, stim_side)
     model.load_or_train(nb_steps=2000, remove_old=REMOVE_OLD_FIT)
-    param_stimside = model.get_parameters(parameter_type=POSTERIOR)
-    accuracy_ss = model.compute_signal(signal='score', act=actions, stim=stimuli, side=stim_side)['accuracy']
+    accuracy_ss = model.compute_signal(signal='score', act=actions, stim=stimuli, side=stim_side,
+                                       parameter_type=POSTERIOR)['accuracy']
 
     # Add to dataframe
     results_df = results_df.append(pd.DataFrame(data={'accuracy': [accuracy_bayes, accuracy_pa, accuracy_ss],
@@ -121,17 +121,51 @@ for i, nickname in enumerate(subjects['subject']):
 # %% Plot
 
 colors, dpi = figure_style()
-f, (ax1, ax2) = plt.subplots(1, 2, figsize=(7, 3.5), dpi=dpi)
-sns.stripplot(x='sert-cre', y='tau', data=results_df[results_df['model'] == 'prev actions'], s=8,
-              palette=[colors['wt'], colors['sert']], ax=ax1)
-ax1.set(ylabel='Tau', xlabel='', xticks=[0, 1], xticklabels=['WT', 'Sert-Cre'],
-        title='Previous actions')
+f, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(6, 2), dpi=dpi)
+colors_id = [colors['wt'], colors['sert']]
 
-sns.stripplot(x='sert-cre', y='tau', data=results_df[results_df['model'] == 'stim side'], s=8,
-              palette=[colors['wt'], colors['sert']], ax=ax2)
-ax2.set(ylabel='Tau', xlabel='', xticks=[0, 1], xticklabels=['WT', 'Sert-Cre'],
-        title='Stimulus sides')
+for i, subject in enumerate(results_df['subject'].unique()):
+    ax1.plot([1, 2, 3],
+             [results_df.loc[((results_df['subject'] == subject) & (results_df['model'] == 'optimal bayes')
+                             & (results_df['stim'] == 0)), 'accuracy'],
+              results_df.loc[((results_df['subject'] == subject) & (results_df['model'] == 'stim side')
+                              & (results_df['stim'] == 0)), 'accuracy'],
+              results_df.loc[((results_df['subject'] == subject) & (results_df['model'] == 'prev actions')
+                              & (results_df['stim'] == 0)), 'accuracy']],
+             color=colors_id[results_df.loc[results_df['subject'] == subject, 'sert-cre'].unique()[0]],
+             marker='o', ms=2)
+ax1.set(ylim=[0.55, 0.75], ylabel='Model accuracy', xticks=[1, 2, 3], title='Non-stimulated sessions',
+        xticklabels=['Bayes\noptimal', 'Stim.\nside', 'Prev.\nactions'])
 
-sns.despine(trim=True)
+
+for i, subject in enumerate(results_df['subject'].unique()):
+   ax2.plot([1, 2, 3],
+             [results_df.loc[((results_df['subject'] == subject) & (results_df['model'] == 'optimal bayes')
+                             & (results_df['stim'] == 1)), 'accuracy'],
+              results_df.loc[((results_df['subject'] == subject) & (results_df['model'] == 'stim side')
+                              & (results_df['stim'] == 1)), 'accuracy'],
+              results_df.loc[((results_df['subject'] == subject) & (results_df['model'] == 'prev actions')
+                              & (results_df['stim'] == 1)), 'accuracy']],
+             color=colors_id[results_df.loc[results_df['subject'] == subject, 'sert-cre'].unique()[0]],
+             marker='o', ms=2)
+ax2.set(ylim=[0.55, 0.75], ylabel='Model accuracy', xticks=[1, 2, 3], title='Stimulated sessions',
+        xticklabels=['Bayes\noptimal', 'Stim.\nside', 'Prev.\nactions'])
+
+for i, subject in enumerate(results_df['subject'].unique()):
+    ax3.plot([1, 2],
+             [(results_df.loc[((results_df['subject'] == subject) & (results_df['model'] == 'prev actions')
+                               & (results_df['stim'] == 0)), 'accuracy'].values
+               - results_df.loc[((results_df['subject'] == subject) & (results_df['model'] == 'optimal bayes')
+                                 & (results_df['stim'] == 0)), 'accuracy'].values),
+              (results_df.loc[((results_df['subject'] == subject) & (results_df['model'] == 'prev actions')
+                               & (results_df['stim'] == 1)), 'accuracy'].values
+               - results_df.loc[((results_df['subject'] == subject) & (results_df['model'] == 'optimal bayes')
+                                 & (results_df['stim'] == 1)), 'accuracy'].values)],
+             color=colors_id[results_df.loc[results_df['subject'] == subject, 'sert-cre'].unique()[0]],
+             marker='o', ms=2)
+ax3.set(xticks=[1, 2], xticklabels=['No stim', 'Stim'], ylabel='prev actions - optimal bayes',
+        ylim=[0, 0.08])
+
 plt.tight_layout()
-plt.savefig(join(fig_path, 'exp_smoothing_whole_session'))
+sns.despine(trim=True)
+plt.savefig(join(fig_path, 'Model accuracy comparison'))

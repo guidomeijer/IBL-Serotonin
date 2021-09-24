@@ -11,25 +11,35 @@ from os.path import join
 import pandas as pd
 from dlc_functions import get_dlc_XYs, get_pupil_diameter
 import matplotlib.pyplot as plt
-from scipy.stats import zscore
 import seaborn as sns
-from serotonin_functions import load_trials, paths, DATE_GOOD_OPTO
+from serotonin_functions import paths, figure_style
 from one.api import ONE
 one = ONE()
 
 # Settings
+BASELINE = 5
 _, fig_path, _ = paths()
 fig_path = join(fig_path, 'Pupil')
 
 subjects = pd.read_csv(join('..', 'subjects.csv'))
-subjects = subjects[subjects['subject'] == 'ZFM-02600'].reset_index(drop=True)
 results_df = pd.DataFrame()
 for i, nickname in enumerate(subjects['subject']):
     print(f'Processing {nickname}..')
 
-    # Query sessions
-    eids, details = one.search(subject=nickname, project='serotonin_inference',
-                               task_protocol='biased', details=True)
+    # Query all sessions
+    eids, details = one.search(subject=nickname, task_protocol='biased', details=True)
+    if len(eids) == 0:
+        continue
+    all_dates = [i['date'] for i in details]
+
+    # Find first stimulated session
+    _, stim_details = one.search(subject=nickname,
+                                 task_protocol=['_iblrig_tasks_opto_biasedChoiceWorld'],
+                                 details=True)
+    stim_dates = [i['date'] for i in stim_details]
+    if len(stim_dates) == 0:
+        continue
+    rel_ses = -(np.arange(len(all_dates)) - all_dates.index(np.min(stim_dates)))
 
     # Loop over sessions
     pupil_size = pd.DataFrame()
@@ -45,15 +55,39 @@ for i, nickname in enumerate(subjects['subject']):
         except:
             print('Could not load video and/or DLC data')
             continue
+        if XYs['pupil_bottom_r'][0].shape[0] < 100:
+            continue
 
         # Get pupil diameter
         diameter = get_pupil_diameter(XYs)
 
         # Add to dataframe
         results_df = results_df.append(pd.DataFrame(index=[results_df.shape[0] + 1], data={
-            'subject': nickname, 'date': details[j]['date'],
-            'opto': 'opto' in details[j]['task_protocol'],
-            'diameter_mean': np.mean(diameter), 'diameter_std': np.std(diameter)}))
+            'subject': nickname, 'date': details[j]['date'], 'session': rel_ses[j],
+            'opto': 'opto' in details[j]['task_protocol'], 'sert-cre': subjects.loc[i, 'sert-cre'],
+            'diameter_mean': np.mean(diameter), 'diameter_std': np.std(diameter),
+            'diameter_median': np.median(diameter)}))
 
+    # Subtract baseline
+    results_df.loc[results_df['subject'] == nickname, 'diameter_median_baseline'] = (
+        (results_df.loc[results_df['subject'] == nickname, 'diameter_median']
+        - (results_df.loc[(results_df['subject'] == nickname)
+                         & (results_df['session'].between(-BASELINE, -1)), 'diameter_median'].median())))
 
+# %% Plot
+colors, dpi = figure_style()
+f, ax1 = plt.subplots(1, 1, figsize=(2, 2), dpi=dpi)
+"""
+sns.lineplot(x='session', y='bias', hue='sert-cre', style='subject', estimator=None,
+             data=results_df, dashes=False, markers=['o']*int(results_df.shape[0]/2),
+             legend=False, lw=2, ms=8, palette=[colors['wt'], colors['sert']], ax=ax1)
+
+sns.lineplot(x='session', y='bias', hue='sert-cre', style='subject', dashes=False,
+             estimator=None,
+             data=results_df, legend=False, lw=2, ms=8, palette=[colors['wt'], colors['sert']], ax=ax1)
+"""
+sns.lineplot(x='session', y='diameter_median_baseline', hue='sert-cre', ci=68,
+             data=results_df[results_df['sert-cre'] == 1], legend=False,
+             palette=[colors['sert']], ax=ax1)
+ax1.set(ylabel='Pupil diameter', xlabel='Days relative to first opto day', xlim=[-5, 10])
 
