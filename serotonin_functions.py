@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 from sklearn.utils import shuffle
 import pandas as pd
 import tkinter as tk
+from os.path import join
 from glob import glob
 from datetime import datetime
 from brainbox.io.spikeglx import spikeglx
@@ -25,6 +26,13 @@ DATE_GOOD_OPTO = '2021-07-01'
 
 # This is the date at which light shielding was added so that the mouse couldn't see the opto stim
 DATE_LIGHT_SHIELD = '2021-06-08'
+
+
+def load_subjects():
+    subjects = pd.read_csv(join('..', 'subjects.csv'))
+    subjects = subjects[~((subjects['expression'] == 0) & (subjects['sert-cre'] == 1))]
+    subjects = subjects.reset_index()
+    return subjects
 
 
 def paths():
@@ -77,7 +85,7 @@ def figure_style():
               'light-significant': sns.color_palette('colorblind')[0],
               'stim-significant': sns.color_palette('colorblind')[4]}
     screen_width = tk.Tk().winfo_screenwidth()
-    dpi = screen_width / 10
+    dpi = screen_width / 15
     return colors, dpi
 
 

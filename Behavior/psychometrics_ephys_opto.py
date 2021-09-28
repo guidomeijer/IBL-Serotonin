@@ -19,10 +19,10 @@ one = ONE()
 # Settings
 PLOT_SINGLE_ANIMALS = True
 _, fig_path, _ = paths()
-fig_path = join(fig_path, 'opto-behavior-ephys')
+fig_path = join(fig_path, 'Behavior', 'Ephys')
 subjects = pd.read_csv(join('..', 'subjects.csv'))
 
-subjects = subjects[subjects['subject'] == 'ZFM-01867'].reset_index(drop=True)
+#subjects = subjects[subjects['subject'] == 'ZFM-01867'].reset_index(drop=True)
 
 bias_df, lapse_df, psy_df = pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
 for i, nickname in enumerate(subjects['subject']):
@@ -84,6 +84,7 @@ for i, nickname in enumerate(subjects['subject']):
                            & (trials['laser_probability'] == 0.25)].median()['reaction_times']
     bias_df = bias_df.append(pd.DataFrame(data={
         'subject': nickname, 'sert-cre': subjects.loc[i, 'sert-cre'],
+        'expression': subjects.loc[i, 'expression'],
         'bias': [bias_no_stim, bias_stim, bias_catch_stim, bias_catch_no_stim],
         'rt': [rt_no_stim, rt_stim, rt_catch_stim, rt_catch_no_stim],
         'opto_stim': [0, 1, 1, 0], 'catch_trial': [0, 0, 1, 1]}))
@@ -107,6 +108,7 @@ for i, nickname in enumerate(subjects['subject']):
                               & (trials['laser_probability'] == 1), 'correct'].mean()
     lapse_df = lapse_df.append(pd.DataFrame(data={
         'subject': nickname, 'sert-cre': subjects.loc[i, 'sert-cre'],
+        'expression': subjects.loc[i, 'expression'],
         'lapse': [lapse_l_l_ns, lapse_r_l_ns, lapse_l_r_ns, lapse_r_r_ns,
                   lapse_l_l_s, lapse_r_l_s, lapse_l_r_s, lapse_r_r_s],
         'opto_stim': [0, 0, 0, 0, 1, 1, 1, 1],
@@ -144,7 +146,9 @@ for i, nickname in enumerate(subjects['subject']):
     pars = fit_psychfunc(stim_levels, these_trials.groupby('signed_contrast').size(),
                          these_trials.groupby('signed_contrast').mean()['right_choice'])
     psy_df = psy_df.append(pd.DataFrame(index=[len(psy_df)+1], data={
-        'subject': nickname, 'sert-cre': subjects.loc[i, 'sert-cre'], 'opto_stim': 1, 'prob_left': 0.2,
+        'subject': nickname, 'sert-cre': subjects.loc[i, 'sert-cre'],
+        'expression': subjects.loc[i, 'expression'],
+        'opto_stim': 1, 'prob_left': 0.2,
         'bias': pars[0], 'threshold': pars[1], 'lapse_l': pars[2], 'lapse_r': pars[3]}))
 
     # Plot
@@ -213,37 +217,53 @@ for i, nickname in enumerate(subjects['subject']):
         plt.savefig(join(fig_path, '%s_opto_behavior_psycurve' % nickname))
 
 # %% Plot
-colors = [sns.color_palette('colorblind')[0], sns.color_palette('colorblind')[7]]
-
 psy_avg_block_df = psy_df.groupby(['subject', 'opto_stim']).mean()
 psy_avg_block_df['lapse_both'] = psy_avg_block_df.loc[:, 'lapse_l':'lapse_r'].mean(axis=1)
+psy_avg_block_df = psy_avg_block_df.reset_index()
 colors, dpi = figure_style()
-colors = [colors['sert'], colors['wt']]
-f, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(3.5, 3.5), dpi=dpi)
-sns.lineplot(x='opto_stim', y='bias', hue='sert-cre', style='subject', estimator=None,
-             data=bias_df[bias_df['catch_trial'] == 0], dashes=False,
-             markers=['o']*int(bias_df.shape[0]/4), palette=colors, hue_order=[1, 0],
-             legend=False, ax=ax1)
-ax1.set(xlabel='', xticks=[0, 1], xticklabels=['No stim', 'Stim'], ylabel='Bias', ylim=[0, 0.7])
+colors = [colors['wt'], colors['sert']]
+f, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(2, 3, figsize=(6, 3.5), dpi=dpi)
+for i, subject in enumerate(bias_df['subject']):
+    ax1.plot([1, 2], bias_df.loc[(bias_df['subject'] == subject) & (bias_df['catch_trial'] == 0), 'bias'],
+             color = colors[bias_df.loc[bias_df['subject'] == subject, 'expression'].unique()[0]],
+             marker='o', ms=2)
+ax1.set(xlabel='', xticks=[1, 2], xticklabels=['No stim', 'Stim'], ylabel='Bias', ylim=[0, 0.7])
 
-sns.lineplot(x='opto_stim', y='bias', hue='sert-cre', style='subject', estimator=None,
-             data=bias_df[bias_df['catch_trial'] == 1], dashes=False,
-             markers=['o']*int(bias_df.shape[0]/4), palette=colors, hue_order=[1, 0],
-             legend=False, ax=ax2)
-ax2.set(xlabel='', xticks=[0, 1], xticklabels=['No stim', 'Stim'], ylabel='Bias', ylim=[0, 0.7],
+for i, subject in enumerate(bias_df['subject']):
+    ax2.plot([1, 2], bias_df.loc[(bias_df['subject'] == subject) & (bias_df['catch_trial'] == 1), 'bias'],
+             color = colors[bias_df.loc[bias_df['subject'] == subject, 'expression'].unique()[0]],
+             marker='o', ms=2)
+ax2.set(xlabel='', xticks=[1, 2], xticklabels=['No stim', 'Stim'], ylabel='Bias', ylim=[0, 0.7],
         title='Catch trials')
+
+delta_block = (bias_df.loc[(bias_df['opto_stim'] == 1) & (bias_df['catch_trial'] == 0), 'bias'].values -
+               bias_df.loc[(bias_df['opto_stim'] == 0) & (bias_df['catch_trial'] == 0), 'bias'].values)
+delta_probe = (bias_df.loc[(bias_df['opto_stim'] == 1) & (bias_df['catch_trial'] == 1), 'bias'].values -
+               bias_df.loc[(bias_df['opto_stim'] == 0) & (bias_df['catch_trial'] == 1), 'bias'].values)
+sert_cre = bias_df.loc[(bias_df['opto_stim'] == 1) & (bias_df['catch_trial'] == 0), 'sert-cre'].values
+ax3.plot([0, 0], [-0.2, 0.2], ls='--', color='gray')
+ax3.plot([-0.2, 0.2], [0, 0], ls='--', color='gray')
+ax3.scatter(delta_block[sert_cre == 1], delta_probe[sert_cre ==1], color=colors[0])
+ax3.scatter(delta_block[sert_cre == 0], delta_probe[sert_cre ==0], color=colors[1])
+ax3.set(xlim=(-0.2, 0.2), ylim=(-0.2, 0.2), xlabel='Bias change block trials', ylabel='Bias change probe trials')
 
 sns.lineplot(x='opto_stim', y='threshold', hue='sert-cre', style='subject', estimator=None,
              data=psy_df.groupby(['subject', 'opto_stim']).mean(), dashes=False,
              markers=['o']*int(bias_df.shape[0]/4), palette=colors, hue_order=[1, 0],
-             legend=False, ax=ax3)
-ax3.set(xlabel='', xticks=[0, 1], xticklabels=['No stim', 'Stim'], ylabel='Threshold')
+             legend=False, lw=1, ms=4, ax=ax4)
+ax4.set(xlabel='', xticks=[0, 1], xticklabels=['No stim', 'Stim'], ylabel='Threshold')
 
-sns.lineplot(x='opto_stim', y='lapse_both', hue='sert-cre', style='subject', estimator=None,
-             data=psy_avg_block_df, dashes=False,
-             markers=['o']*int(bias_df.shape[0]/4), palette=colors, hue_order=[1, 0],
-             legend=False, ax=ax4)
-ax4.set(xlabel='', xticks=[0, 1], xticklabels=['No stim', 'Stim'], ylabel='Lapse rate')
+for i, subject in enumerate(psy_avg_block_df['subject']):
+    ax5.plot([1, 2], psy_avg_block_df.loc[(psy_avg_block_df['subject'] == subject), 'lapse_both'],
+             color = colors[int(psy_avg_block_df.loc[psy_avg_block_df['subject'] == subject, 'expression'].unique()[1])],
+             marker='o', ms=2)
+ax5.set(xlabel='', xticks=[1, 2], xticklabels=['No stim', 'Stim'], ylabel='Lapse rate')
+
+for i, subject in enumerate(bias_df['subject']):
+    ax6.plot([1, 2], bias_df.loc[(bias_df['subject'] == subject) & (bias_df['catch_trial'] == 0), 'rt'],
+             color = colors[bias_df.loc[bias_df['subject'] == subject, 'expression'].unique()[0]],
+             marker='o', ms=2)
+ax6.set(xlabel='', xticks=[1, 2], xticklabels=['No stim', 'Stim'], ylabel='Median reaction time')
 
 plt.tight_layout()
 sns.despine(trim=True)

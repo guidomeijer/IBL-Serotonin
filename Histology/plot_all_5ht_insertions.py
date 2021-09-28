@@ -1,14 +1,18 @@
 # This example connects to IBL database and fetches
 # all insertion probes
-from one.api import ONE
+try:
+    from oneibl.one import ONE
+except ImportError:
+    from one.api import ONE
 import numpy as np
-
+import pandas as pd
+import argparse
 from iblviewer.launcher import IBLViewer
 
 
 class ProbeData:
 
-    def __init__(self, as_segments=True, line_width=2, trim_outliers=True):
+    def __init__(self, as_segments=False, line_width=4, trim_outliers=True):
         """
         Constructor
         :param viewer: The IBLViewer controller
@@ -36,11 +40,18 @@ class ProbeData:
         ins_id: list of insertions eids
         sess_id: list of (unique) sessions eids
         """
-        ins = one.alyx.rest('insertions', 'list',
-                            provenance='Ephys aligned histology track',
-                            django='session__project__name__icontains,serotonin,'
-                                'session__qc__lt,50,'
-                                'json__extended_qc__alignment_count__gt,0')
+
+        all_ins = one.alyx.rest('insertions', 'list',
+                                provenance='Ephys aligned histology track',
+                                django='session__project__name__icontains,serotonin,'
+                                       'session__qc__lt,50,'
+                                       'json__extended_qc__alignment_count__gt,0')
+        subjects = pd.read_csv('/home/guido/Repositories/IBL-Serotonin/subjects.csv')
+        subjects = subjects[~((subjects['expression'] == 0) & (subjects['sert-cre'] == 1))]
+        ins = []
+        for i, insertion in enumerate(all_ins):
+            if insertion['session_info']['subject'] in subjects['subject'].values:
+                ins.append(insertion)
 
         ins_ids = [item['id'] for item in ins]
         sess_id = [item['session_info']['id'] for item in ins]
@@ -92,12 +103,29 @@ class ProbeData:
         return lines
 
 
+def str2bool(v):
+    if isinstance(v, bool):
+        return v
+    elif v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
+
+
 def main():
+    # More parsing options are added in parse_args() method below.
+    # -> Please check that you don't override any existing argument name!
+    parser = argparse.ArgumentParser(description='International Brain Viewer based on VTK')
+    parser.add_argument('-seg', dest='segments', type=str2bool, default=True,
+    help='Whether line probes are simplified to segments. Defaults to 0 (False)')
+
     iblviewer = IBLViewer()
     # First retrieve command-line arguments (default ones + custom ones above)
-    args = iblviewer.parse_args()
+    args = iblviewer.parse_args(parser)
 
-    pb = ProbeData()
+    pb = ProbeData(args.segments)
     # Now start the viewer and add points when it's initialized
     iblviewer.launch(pb.on_viewer_initialized, None, args)
     '''

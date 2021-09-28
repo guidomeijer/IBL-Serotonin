@@ -16,7 +16,7 @@ from datetime import datetime
 from models.expSmoothing_stimside import expSmoothing_stimside as exp_stimside
 from models.expSmoothing_prevAction import expSmoothing_prevAction as exp_prev_action
 from serotonin_functions import (paths, behavioral_criterion, load_exp_smoothing_trials,
-                                 query_opto_sessions, figure_style)
+                                 query_opto_sessions, figure_style, load_subjects)
 from one.api import ONE
 one = ONE()
 
@@ -26,7 +26,7 @@ POSTERIOR = 'posterior_mean'
 _, fig_path, save_path = paths()
 fig_path = join(fig_path, 'Behavior', 'Models')
 
-subjects = pd.read_csv(join('..', 'subjects.csv'))
+subjects = load_subjects()
 
 results_df = pd.DataFrame()
 block_switches = pd.DataFrame()

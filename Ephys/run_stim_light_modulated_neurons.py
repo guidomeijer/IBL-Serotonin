@@ -22,20 +22,23 @@ from one.api import ONE
 one = ONE()
 
 # Settings
+OVERWRITE = False
 T_BEFORE = 1  # for plotting
 T_AFTER = 2
 PRE_TIME = [0.5, 0]  # for significance testing
 POST_TIME = [0, 0.5]
 BIN_SIZE = 0.05
 PERMUTATIONS = 500
-_, fig_path, save_path = paths()
-fig_path = join(fig_path, '5HT', 'light-modulated-neurons')
-save_path = join(save_path, '5HT')
+_, _, save_path = paths()
 
 # Query sessions
 eids, _ = query_ephys_sessions(one=one)
 
-stim_neurons = pd.DataFrame()
+if OVERWRITE:
+    stim_neurons = pd.DataFrame()
+else:
+    stim_neurons = pd.read_csv(join(save_path, 'stim_light_modulated_neurons.csv'))
+    eids = eids[~np.isin(eids, stim_neurons['eid'])]
 for i, eid in enumerate(eids):
 
     # Get session details
@@ -52,16 +55,21 @@ for i, eid in enumerate(eids):
     for p, probe in enumerate(spikes.keys()):
 
         # Filter neurons that pass QC
-        clusters_pass = np.where(clusters[probe]['metrics']['label'] == 1)[0]
+        if 'metrics' not in clusters[probe].keys():
+            print('No neuron QC found, using all neurons')
+            clusters_pass = np.unique(spikes[probe].clusters)
+        else:
+            clusters_pass = np.where(clusters[probe]['metrics']['label'] == 1)[0]
         spikes[probe].times = spikes[probe].times[np.isin(spikes[probe].clusters, clusters_pass)]
         spikes[probe].clusters = spikes[probe].clusters[np.isin(spikes[probe].clusters, clusters_pass)]
-        cluster_regions = remap(clusters[probe].atlas_id[clusters_pass])
+        if len(spikes[probe].clusters) == 0:
+            continue
 
         # Determine stimulus responsive neurons
         print('Calculating stimulus responsive neurons..')
-        roc_l_stim = roc_single_event(spikes[probe].times, spikes[probe].clusters,
-                                      trials.loc[trials['signed_contrast'] == -1, 'stimOn_times'],
-                                      pre_time=PRE_TIME, post_time=POST_TIME)[0]
+        roc_l_stim, cluster_ids = roc_single_event(spikes[probe].times, spikes[probe].clusters,
+                                                   trials.loc[trials['signed_contrast'] == -1, 'stimOn_times'],
+                                                   pre_time=PRE_TIME, post_time=POST_TIME)
         roc_r_stim = roc_single_event(spikes[probe].times, spikes[probe].clusters,
                                       trials.loc[trials['signed_contrast'] == 1, 'stimOn_times'],
                                       pre_time=PRE_TIME, post_time=POST_TIME)[0]
@@ -100,6 +108,7 @@ for i, eid in enumerate(eids):
                 pseudo_laser[trials['signed_contrast'] == 1], post_time=POST_TIME[1])[0]
 
         # Add results to df
+        cluster_regions = remap(clusters[probe].atlas_id[cluster_ids])
         stim_neurons = stim_neurons.append(pd.DataFrame(data={
             'subject': subject, 'date': date, 'eid': eid, 'probe': probe,
             'cluster_id': clusters_pass, 'region': cluster_regions,

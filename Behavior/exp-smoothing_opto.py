@@ -16,25 +16,25 @@ import torch
 from models.expSmoothing_stimside_SE import expSmoothing_stimside_SE as exp_stimside
 from models.expSmoothing_prevAction_SE import expSmoothing_prevAction_SE as exp_prev_action
 from serotonin_functions import (paths, behavioral_criterion, load_exp_smoothing_trials, figure_style,
-                                 query_opto_sessions)
+                                 query_opto_sessions, load_subjects)
 from one.api import ONE
 one = ONE()
 
 # Settings
 REMOVE_OLD_FIT = False
 POSTERIOR = 'posterior_mean'
-STIM = 'all'
+STIM = 'block'
 _, fig_path, save_path = paths()
 fig_path = join(fig_path, 'Behavior', 'Models')
 
-subjects = pd.read_csv(join('..', 'subjects.csv'))
+subjects = load_subjects()
 
 results_df = pd.DataFrame()
 for i, nickname in enumerate(subjects['subject']):
 
     # Query sessions
     eids = query_opto_sessions(nickname, one=one)
-    eids = eids[:-2]  # exclude first two opto sessions
+    #eids = eids[:-2]  # exclude first two opto sessions
     eids = behavioral_criterion(eids, one=one)
     if len(eids) == 0:
         continue
@@ -42,12 +42,16 @@ for i, nickname in enumerate(subjects['subject']):
         eids = eids[:10]
 
     # Get trial data
+    """
     if subjects.loc[i, 'sert-cre'] == 1:
         actions, stimuli, stim_side, prob_left, stimulated, session_uuids = load_exp_smoothing_trials(
             eids, stimulated=STIM, patch_old_opto=True, one=one)
     else:
         actions, stimuli, stim_side, prob_left, stimulated, session_uuids = load_exp_smoothing_trials(
             eids, stimulated=STIM, patch_old_opto=False, one=one)
+    """
+    actions, stimuli, stim_side, prob_left, stimulated, session_uuids = load_exp_smoothing_trials(
+        eids, stimulated=STIM, patch_old_opto=True, one=one)
 
     # Fit model
     model = exp_prev_action('./model_fit_results/', session_uuids, '%s_%s' % (nickname, STIM),
@@ -68,24 +72,30 @@ for i, nickname in enumerate(subjects['subject']):
                                                       'tau_pa': [1/param_prevaction[0], 1/param_prevaction[1]],
                                                       'opto_stim': ['no stim', 'stim'],
                                                       'sert-cre': subjects.loc[i, 'sert-cre'],
+                                                      'expression': subjects.loc[i, 'expression'],
                                                       'subject': nickname}))
 
 # %% Plot
 
 colors, dpi = figure_style()
+colors = [colors['wt'], colors['sert']]
 f, (ax1, ax2) = plt.subplots(1, 2, figsize=(6, 3), dpi=dpi)
-sns.lineplot(x='opto_stim', y='tau_pa', hue='sert-cre', style='subject', estimator=None,
-             data=results_df, dashes=False, markers=['o']*int(results_df.shape[0]/2),
-             legend='brief', palette=[colors['wt'], colors['sert']], lw=1, ms=4, ax=ax1)
+
+for i, subject in enumerate(results_df['subject']):
+    ax1.plot([1, 2], results_df.loc[(results_df['subject'] == subject), 'tau_pa'],
+             color = colors[results_df.loc[results_df['subject'] == subject, 'expression'].unique()[0]],
+             marker='o', ms=2)
+
 handles, labels = ax1.get_legend_handles_labels()
 labels = ['', 'WT', 'SERT']
 ax1.legend(handles[:3], labels[:3], frameon=False, prop={'size': 7}, loc='center left', bbox_to_anchor=(1, .5))
 ax1.set(xlabel='', ylabel='Length of integration window (tau)', title='Previous actions',
         ylim=[2, 8])
 
-sns.lineplot(x='opto_stim', y='tau_ss', hue='sert-cre', style='subject', estimator=None,
-             data=results_df, dashes=False, markers=['o']*int(results_df.shape[0]/2),
-             legend='brief', palette=[colors['wt'], colors['sert']], lw=1, ms=4, ax=ax2)
+for i, subject in enumerate(results_df['subject']):
+    ax2.plot([1, 2], results_df.loc[(results_df['subject'] == subject), 'tau_ss'],
+             color = colors[results_df.loc[results_df['subject'] == subject, 'expression'].unique()[0]],
+             marker='o', ms=2)
 handles, labels = ax2.get_legend_handles_labels()
 labels = ['', 'WT', 'SERT']
 ax2.legend(handles[:3], labels[:3], frameon=False, prop={'size': 7}, loc='center left', bbox_to_anchor=(1, .5))

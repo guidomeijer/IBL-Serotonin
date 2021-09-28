@@ -15,7 +15,7 @@ import matplotlib as mpl
 from one.api import ONE
 one = ONE()
 
-SUBJECT = 'ZFM-02180'
+SUBJECT = 'ZFM-02181'
 
 trajs = one.alyx.rest('trajectories', 'list', provenance='micro-manipulator')
 traj = pd.DataFrame(list(trajs))

@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from psytrack.hyperOpt import hyperOpt
 from serotonin_functions import (paths, behavioral_criterion, load_trials, figure_style,
-                                 query_opto_sessions)
+                                 query_opto_sessions, load_subjects)
 from one.api import ONE
 one = ONE()
 
@@ -21,9 +21,9 @@ one = ONE()
 PLOT_SINGLE = False
 PREV_TRIALS = 0
 _, fig_path, save_path = paths()
-fig_path = join(fig_path, 'opto-behavior')
+fig_path = join(fig_path, 'Behavior', 'Models')
 
-subjects = pd.read_csv(join('..', 'subjects.csv'))
+subjects = load_subjects()
 
 results_df = pd.DataFrame()
 for i, nickname in enumerate(subjects['subject']):

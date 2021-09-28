@@ -14,7 +14,8 @@ import pandas as pd
 from os import mkdir
 from ibllib.io import spikeglx
 from brainbox.task.closed_loop import roc_single_event
-from my_functions import figure_style
+from brainbox.metrics.single_units import spike_sorting_metrics
+from serotonin_functions import figure_style
 import brainbox.io.one as bbone
 from brainbox.plot import peri_event_time_histogram
 from serotonin_functions import paths, remap, query_ephys_sessions, load_opto_times
@@ -23,6 +24,7 @@ one = ONE()
 
 # Settings
 PLOT = True
+OVERWRITE = True
 T_BEFORE = 1  # for plotting
 T_AFTER = 2
 PRE_TIME = [0.5, 0]  # for significance testing
@@ -31,19 +33,23 @@ BIN_SIZE = 0.05
 PERMUTATIONS = 500
 ARTIFACT_CUTOFF = 0.9  # ROC auc higher than this means a light artifact neuron
 _, fig_path, save_path = paths()
-fig_path = join(fig_path, 'light-modulated-neurons')
-save_path = join(save_path,)
+fig_path = join(fig_path, 'Ephys', 'LightModNeurons')
 
 # Query sessions
 eids, _ = query_ephys_sessions(one=one)
 
-light_neurons = pd.DataFrame()
+if OVERWRITE:
+    light_neurons = pd.DataFrame()
+else:
+    light_neurons = pd.read_csv(join(save_path, 'light_modulated_neurons.csv'))
+    eids = eids[~np.isin(eids, light_neurons['eid'])]
 for i, eid in enumerate(eids):
 
     # Get session details
     ses_details = one.get_details(eid)
     subject = ses_details['subject']
     date = ses_details['start_time'][:10]
+
     print(f'Starting {subject}, {date}')
 
     # Load in laser pulse times
@@ -72,13 +78,15 @@ for i, eid in enumerate(eids):
         spikes[probe].times = spikes[probe].times[spikes[probe].times > start_passive]
 
         # Filter neurons that pass QC
-        if 'metrics' in clusters[probe].keys():
-            clusters_pass = np.where(clusters[probe]['metrics']['label'] == 1)[0]
-        else:
-            print('No neuron QC, using all units')
+        if 'metrics' not in clusters[probe].keys():
+            print('No neuron QC found, using all neurons')
             clusters_pass = np.unique(spikes[probe].clusters)
+        else:
+            clusters_pass = np.where(clusters[probe]['metrics']['label'] == 1)[0]
         spikes[probe].times = spikes[probe].times[np.isin(spikes[probe].clusters, clusters_pass)]
         spikes[probe].clusters = spikes[probe].clusters[np.isin(spikes[probe].clusters, clusters_pass)]
+        if len(spikes[probe].clusters) == 0:
+            continue
 
         # Determine significant neurons
         print('Calculating significant neurons..')

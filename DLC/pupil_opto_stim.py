@@ -22,10 +22,10 @@ TIME_BINS = np.arange(-1, 3, 0.1)
 BIN_SIZE = 0.1
 BASELINE = 0.5
 _, fig_path, _ = paths()
-fig_path = join(fig_path, 'opto-pupil')
+fig_path = join(fig_path, 'Pupil')
 
 subjects = pd.read_csv(join('..', 'subjects.csv'))
-subjects = subjects[subjects['subject'] == 'ZFM-02600'].reset_index(drop=True)
+#subjects = subjects[subjects['subject'] == 'ZFM-02600'].reset_index(drop=True)
 results_df = pd.DataFrame()
 for i, nickname in enumerate(subjects['subject']):
     print(f'Processing {nickname}..')
@@ -41,12 +41,13 @@ for i, nickname in enumerate(subjects['subject']):
         # Load in trials and video data
         try:
             trials = load_trials(eid, laser_stimulation=True, one=one)
-            if trials is None:
-                continue
-            if 'laser_stimulation' not in trials.columns.values:
-                continue
         except:
             print('could not load trials')
+            continue
+        if trials is None:
+            continue
+        if 'laser_stimulation' not in trials.columns.values:
+            continue
 
         # Load in camera timestamps and DLC output
         try:
@@ -57,7 +58,7 @@ for i, nickname in enumerate(subjects['subject']):
 
         # If the difference between timestamps and video frames is too large, skip
         if np.abs(video_times.shape[0]
-                  - XYs['pupil_left_r'].shape[len(XYs['pupil_left_r'].shape) - 1]) > 100:
+                  - XYs['pupil_left_r'].shape[len(XYs['pupil_left_r'].shape) - 1]) > 10000:
             print('Timestamp mismatch, skipping..')
             continue
 
@@ -89,7 +90,8 @@ for i, nickname in enumerate(subjects['subject']):
             pupil_size = pupil_size.append(pd.DataFrame(data={
                 'diameter': this_diameter, 'baseline_subtracted': baseline_subtracted, 'eid': eid,
                 'subject': nickname, 'trial': t, 'contrast': trials.loc[t, 'signed_contrast'],
-                'sert': subjects.loc[i, 'sert-cre'], 'laser': trials.loc[t, 'laser_stimulation'],
+                'sert': subjects.loc[i, 'sert-cre'], 'expression': subjects.loc[i, 'expression'],
+                'laser': trials.loc[t, 'laser_stimulation'],
                 'laser_prob': trials.loc[t, 'laser_probability'],
                 'time': TIME_BINS}))
 
@@ -100,7 +102,7 @@ for i, nickname in enumerate(subjects['subject']):
                                data=pupil_size[((pupil_size['laser_prob'] == 0.75) & (pupil_size['laser'] == 1))
                                                | ((pupil_size['laser_prob'] == 0.25) & (pupil_size['laser'] == 0))],
                                palette='colorblind', ci=68, ax=ax1)
-        ax1.set(title='%s, sert: %d' % (nickname, subjects.loc[i, 'sert-cre']),
+        ax1.set(title='%s, expression: %d' % (nickname, subjects.loc[i, 'expression']),
                 ylabel='z-scored pupil diameter', xlabel='Time relative to trial start(s)')
 
         handles, labels = ax1.get_legend_handles_labels()
