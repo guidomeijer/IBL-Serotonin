@@ -13,13 +13,13 @@ from dlc_functions import get_dlc_XYs, get_pupil_diameter
 import matplotlib.pyplot as plt
 from scipy.stats import zscore
 import seaborn as sns
-from serotonin_functions import load_trials, paths, query_opto_sessions
+from serotonin_functions import load_trials, paths, query_opto_sessions, figure_style
 from one.api import ONE
 one = ONE()
 
 # Settings
-TIME_BINS = np.arange(-1, 3, 0.1)
-BIN_SIZE = 0.1
+TIME_BINS = np.arange(-1, 3.2, 0.2)
+BIN_SIZE = 0.2
 BASELINE = 0.5
 _, fig_path, _ = paths()
 fig_path = join(fig_path, 'Pupil')
@@ -94,10 +94,12 @@ for i, nickname in enumerate(subjects['subject']):
                 'laser': trials.loc[t, 'laser_stimulation'],
                 'laser_prob': trials.loc[t, 'laser_probability'],
                 'time': TIME_BINS}))
+    pupil_size = pupil_size.reset_index(drop=True)
 
     # Plot this animal
     if pupil_size.shape[0] > 0:
-        f, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5), sharey=True, dpi=300)
+        colors, dpi = figure_style()
+        f, (ax1, ax2) = plt.subplots(1, 2, figsize=(4, 2), sharey=True, dpi=dpi)
         lineplt = sns.lineplot(x='time', y='baseline_subtracted', hue='laser',
                                data=pupil_size[((pupil_size['laser_prob'] == 0.75) & (pupil_size['laser'] == 1))
                                                | ((pupil_size['laser_prob'] == 0.25) & (pupil_size['laser'] == 0))],
@@ -113,10 +115,11 @@ for i, nickname in enumerate(subjects['subject']):
                                                | ((pupil_size['laser_prob'] == 0.25) & (pupil_size['laser'] == 1))],
                      palette='colorblind', ci=68, legend=None, ax=ax2)
         ax2.set(xlabel='Time relative to trial start(s)',
-                title='Catch trials')
+                title='Probe trials')
 
         plt.tight_layout()
         sns.despine(trim=True)
+
         plt.savefig(join(fig_path, f'{nickname}_pupil_opto'))
 
         # Add to overall dataframe

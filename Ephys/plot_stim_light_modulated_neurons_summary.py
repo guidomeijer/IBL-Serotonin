@@ -10,7 +10,7 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 from os.path import join
-from serotonin_functions import paths, figure_style, get_full_region_name
+from serotonin_functions import paths, figure_style, get_full_region_name, load_subjects
 
 # Settings
 HISTOLOGY = True
@@ -31,10 +31,12 @@ else:
     light_neurons = pd.read_csv(join(save_path, 'light_modulated_neurons_no_histology.csv'))
     all_neurons = pd.merge(stim_neurons, light_neurons, on=['subject', 'date', 'cluster_id', 'eid', 'probe'])
 
-# Add genotype
-subjects = pd.read_csv(join('..', 'subjects.csv'))
-for i, nickname in enumerate(np.unique(all_neurons['subject'])):
-    all_neurons.loc[all_neurons['subject'] == nickname, 'expression'] = subjects.loc[subjects['subject'] == nickname, 'expression'].values[0]
+# Add expression
+subjects = load_subjects()
+all_neurons = all_neurons[all_neurons['subject'].isin(subjects['subject'])]
+
+# Exclude sert-cre mice without expression
+all_neurons = all_neurons[~((all_neurons['expression'] == 0) & (all_neurons['sert-cre'] == 1))]
 
 # Get max of left or right stim modulation
 all_neurons['roc_light'] = all_neurons[['roc_l_light', 'roc_r_light']].values[

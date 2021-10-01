@@ -13,21 +13,20 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import torch
-from models.expSmoothing_stimside_SE import expSmoothing_stimside_SE as exp_stimside
 from models.expSmoothing_prevAction_SE import expSmoothing_prevAction_SE as exp_prev_action
 from serotonin_functions import (paths, behavioral_criterion, load_exp_smoothing_trials,
-                                 figure_style, query_opto_sessions)
+                                 figure_style, query_opto_sessions, load_subjects)
 from one.api import ONE
 one = ONE()
 
 # Settings
 TRIALS_AFTER_SWITCH = 20
-REMOVE_OLD_FIT = True
+REMOVE_OLD_FIT = False
 POSTERIOR = 'posterior_mean'
 _, fig_path, save_path = paths()
-fig_path = join(fig_path, 'opto-behavior')
+fig_path = join(fig_path, 'Behavior', 'Models')
 
-subjects = pd.read_csv(join('..', 'subjects.csv'))
+subjects = load_subjects()
 
 results_df = pd.DataFrame()
 accuracy_df = pd.DataFrame()
@@ -68,16 +67,16 @@ for i, nickname in enumerate(subjects['subject']):
 # %% Plot
 
 colors, dpi = figure_style()
-f, ax1 = plt.subplots(1, 1, figsize=(5, 5), dpi=dpi)
-sns.lineplot(x='after-switch', y='tau', hue='sert-cre', style='subject', estimator=None,
-             data=results_df.sort_values('after-switch', ascending=False),
-             dashes=False, markers=['o']*int(results_df.shape[0]/2),
-             legend='brief', palette=[colors['wt'], colors['sert']], lw=2, ms=8, ax=ax1)
-handles, labels = ax1.get_legend_handles_labels()
-labels = ['', 'WT', 'SERT']
-ax1.legend(handles[:3], labels[:3], frameon=False, prop={'size': 20}, loc='center left', bbox_to_anchor=(1, .5))
+f, ax1 = plt.subplots(1, 1, figsize=(2, 2), dpi=dpi)
+
+colors = [colors['wt'], colors['sert']]
+for i, subject in enumerate(results_df['subject']):
+    sert_cre = results_df.loc[results_df['subject'] == subject, 'sert-cre'].unique()[0]
+    ax1.plot([1, 2], results_df.loc[(results_df['subject'] == subject), 'tau'],
+             color = colors[sert_cre], marker='o', ms=2)
+
 ax1.set(xlabel='Trials after block switch', ylabel='Lenght of integration window (tau)',
-        xticks=[0, 1], xticklabels=['1-20', '20+'], ylim=[0, 20])
+        xticks=[1, 2], xticklabels=['1-20', '20+'], ylim=[0, 15])
 
 sns.despine(trim=True, offset=10)
 plt.tight_layout()

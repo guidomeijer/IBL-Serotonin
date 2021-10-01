@@ -12,22 +12,29 @@ import pandas as pd
 from dlc_functions import get_dlc_XYs, get_pupil_diameter
 import matplotlib.pyplot as plt
 import seaborn as sns
-from serotonin_functions import paths, figure_style
+from serotonin_functions import paths, figure_style, load_subjects
 from one.api import ONE
 one = ONE()
 
 # Settings
 BASELINE = 5
+OPTO_SESSIONS = 10
+EPHYS_RIG = False
 _, fig_path, _ = paths()
 fig_path = join(fig_path, 'Pupil')
 
-subjects = pd.read_csv(join('..', 'subjects.csv'))
+subjects = load_subjects()
+subjects = subjects[subjects['subject'] != 'ZFM-02602']
+subjects = subjects[subjects['subject'] != 'ZFM-02180']
+subjects = subjects[subjects['subject'] != 'ZFM-01867']
+subjects = subjects.reset_index(drop=True)
 results_df = pd.DataFrame()
 for i, nickname in enumerate(subjects['subject']):
     print(f'Processing {nickname}..')
 
     # Query all sessions
     eids, details = one.search(subject=nickname, task_protocol='biased', details=True)
+    eids = np.array(eids)
     if len(eids) == 0:
         continue
     all_dates = [i['date'] for i in details]
@@ -42,12 +49,15 @@ for i, nickname in enumerate(subjects['subject']):
     rel_ses = -(np.arange(len(all_dates)) - all_dates.index(np.min(stim_dates)))
 
     # Loop over sessions
+    eids = eids[(rel_ses >= -BASELINE) & (rel_ses <= OPTO_SESSIONS)]
+    rel_ses = rel_ses[(rel_ses >= -BASELINE) & (rel_ses <= OPTO_SESSIONS)]
     pupil_size = pd.DataFrame()
-    for j, eid in enumerate(eids):
-        print(f'Processing session {j+1} of {len(eids)}')
-        rig = one.get_details(eid, full=True)['location']
-        if 'ephys' not in rig:
-            continue
+    for j, eid in enumerate(eids[(rel_ses >= -BASELINE) & (rel_ses <= OPTO_SESSIONS)]):
+        print(f'Processing day {rel_ses[j]}')
+        if EPHYS_RIG:
+            rig = one.get_details(eid, full=True)['location']
+            if 'ephys' not in rig:
+                continue
 
         # Load in camera timestamps and DLC output
         try:

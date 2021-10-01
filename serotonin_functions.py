@@ -56,7 +56,7 @@ def figure_style():
             font="Arial",
             rc={"font.size": 7,
                  "axes.titlesize": 8,
-                 "axes.labelsize": 7,
+                 "axes.labelsize": 8,
                  "axes.linewidth": 0.5,
                  "lines.linewidth": 1,
                  "lines.markersize": 3,
@@ -70,7 +70,8 @@ def figure_style():
                  "xtick.minor.size": 2,
                  "ytick.minor.size": 2,
                  "xtick.minor.width": 0.5,
-                 "ytick.minor.width": 0.5
+                 "ytick.minor.width": 0.5,
+                 'legend.fontsize': 7
                  })
     matplotlib.rcParams['pdf.fonttype'] = 42
     matplotlib.rcParams['ps.fonttype'] = 42
@@ -81,9 +82,10 @@ def figure_style():
               'enhanced': sns.color_palette('colorblind')[3],
               'suppressed': sns.color_palette('colorblind')[0],
               'no-modulation': sns.color_palette('colorblind')[7],
-              'both-significant': sns.color_palette('colorblind')[2],
-              'light-significant': sns.color_palette('colorblind')[0],
-              'stim-significant': sns.color_palette('colorblind')[4]}
+              'stim': sns.color_palette('colorblind')[9],
+              'no-stim': sns.color_palette('colorblind')[7],
+              'probe': sns.color_palette('colorblind')[4],
+              'block': sns.color_palette('colorblind')[6]}
     screen_width = tk.Tk().winfo_screenwidth()
     dpi = screen_width / 15
     return colors, dpi
@@ -121,6 +123,10 @@ def query_ephys_sessions(selection='aligned', return_subjects=False, one=None):
     else:
         ins = []
 
+    # Only include subjects from subjects.csv
+    incl_subjects = load_subjects()
+    ins = [i for i in ins if i['session_info']['subject'] in incl_subjects['subject'].values]
+
     # Get list of eids and probes
     all_eids = np.array([i['session'] for i in ins])
     all_probes = np.array([i['name'] for i in ins])
@@ -156,8 +162,8 @@ def load_trials(eid, laser_stimulation=False, invert_choice=False, invert_stimsi
         trials['laser_stimulation'] = one.load_dataset(eid, dataset='_ibl_trials.laser_stimulation.npy')
         try:
             trials['laser_probability'] = one.load_dataset(eid, dataset='_ibl_trials.laser_probability.npy')
-            trials['catch'] = ((trials['laser_stimulation'] == 0) & (trials['laser_probability'] == 0.75)
-                               | (trials['laser_stimulation'] == 1) & (trials['laser_probability'] == 0.25)).astype(int)
+            trials['probe_trial'] = ((trials['laser_stimulation'] == 0) & (trials['laser_probability'] == 0.75)
+                                     | (trials['laser_stimulation'] == 1) & (trials['laser_probability'] == 0.25)).astype(int)
         except:
             trials['laser_probability'] = trials['laser_stimulation'].copy()
             trials.loc[(trials['signed_contrast'] == 0)
@@ -222,7 +228,7 @@ def get_full_region_name(acronyms):
         return full_region_names
 
 
-def behavioral_criterion(eids, max_lapse=0.25, max_bias=0.4, min_trials=1, one=None):
+def behavioral_criterion(eids, max_lapse=0.3, max_bias=0.4, min_trials=1, one=None):
     if one is None:
         one = ONE()
     use_eids = []

@@ -25,15 +25,15 @@ one = ONE()
 # Settings
 PLOT = True
 OVERWRITE = True
+NEURON_QC = False
 T_BEFORE = 1  # for plotting
 T_AFTER = 2
-PRE_TIME = [0.5, 0]  # for significance testing
-POST_TIME = [0, 0.5]
+PRE_TIME = [1, 0]  # for significance testing
+POST_TIME = [0, 1]
 BIN_SIZE = 0.05
 PERMUTATIONS = 500
-ARTIFACT_CUTOFF = 0.9  # ROC auc higher than this means a light artifact neuron
 _, fig_path, save_path = paths()
-fig_path = join(fig_path, 'Ephys', 'LightModNeurons')
+fig_path = join(fig_path, 'Ephys', 'SingleNeurons', 'LightModNeurons')
 
 # Query sessions
 eids, _ = query_ephys_sessions(one=one)
@@ -78,8 +78,8 @@ for i, eid in enumerate(eids):
         spikes[probe].times = spikes[probe].times[spikes[probe].times > start_passive]
 
         # Filter neurons that pass QC
-        if 'metrics' not in clusters[probe].keys():
-            print('No neuron QC found, using all neurons')
+        if ('metrics' not in clusters[probe].keys()) or (NEURON_QC == False):
+            print('No neuron QC, using all neurons')
             clusters_pass = np.unique(spikes[probe].clusters)
         else:
             clusters_pass = np.where(clusters[probe]['metrics']['label'] == 1)[0]
@@ -121,24 +121,27 @@ for i, eid in enumerate(eids):
                     mkdir(join(fig_path, f'{cluster_regions[cluster_ids == cluster][0]}'))
 
                 # Plot PSTH
-                figure_style()
-                p, ax = plt.subplots()
+                colors, dpi = figure_style()
+                p, ax = plt.subplots(1, 1, figsize=(2, 2), dpi=dpi)
                 peri_event_time_histogram(spikes[probe].times, spikes[probe].clusters, opto_train_times,
                                           cluster, t_before=T_BEFORE, t_after=T_AFTER, bin_size=BIN_SIZE,
                                           include_raster=True, error_bars='sem', ax=ax,
-                                          pethline_kwargs={'color': 'black', 'lw': 2},
+                                          pethline_kwargs={'color': 'black', 'lw': 1},
                                           errbar_kwargs={'color': 'black', 'alpha': 0.3},
+                                          raster_kwargs={'color': 'black', 'lw': 0.3},
                                           eventline_kwargs={'lw': 0})
                 ax.set(ylim=[ax.get_ylim()[0], ax.get_ylim()[1] + ax.get_ylim()[1] * 0.2])
                 ax.plot([0, 1], [ax.get_ylim()[1] - ax.get_ylim()[1] * 0.05,
-                                 ax.get_ylim()[1] - ax.get_ylim()[1] * 0.05], lw=4, color='royalblue')
+                                 ax.get_ylim()[1] - ax.get_ylim()[1] * 0.05], lw=2, color='royalblue')
                 ax.set(ylabel='spikes/s', xlabel='Time (s)',
+                       title=f'Modulation index: {roc_auc[cluster_ids == cluster][0]:.2f}',
                        yticks=np.linspace(0, np.round(ax.get_ylim()[1]), 3))
                 ax.yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
                 plt.tight_layout()
                 plt.savefig(join(fig_path, cluster_regions[cluster_ids == cluster][0],
                                  f'{subject}_{date}_{probe}_neuron{cluster}'))
                 plt.close(p)
+
 
     light_neurons.to_csv(join(save_path, 'light_modulated_neurons.csv'))
 light_neurons.to_csv(join(save_path, 'light_modulated_neurons.csv'))

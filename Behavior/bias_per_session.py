@@ -25,6 +25,7 @@ fig_path = join(fig_path, 'Behavior')
 subjects = load_subjects()
 subjects = subjects[subjects['subject'] != 'ZFM-02602']
 subjects = subjects[subjects['subject'] != 'ZFM-02180']
+subjects = subjects[subjects['subject'] != 'ZFM-01867']
 subjects = subjects.reset_index()
 
 results_df = pd.DataFrame()
@@ -91,8 +92,8 @@ sns.lineplot(x='session', y='bias', hue='sert-cre', style='subject', estimator=N
              legend=False, lw=2, ms=8, palette=[colors['wt'], colors['sert']], ax=ax1)
 """
 sns.lineplot(x='session', y='bias', hue='sert-cre', style='subject', dashes=False,
-             estimator=None, data=results_df[results_df['expression'] == 1],
-             legend=False, lw=2, ms=8, palette=[colors['sert']], ax=ax1)
+             estimator=None, data=results_df, legend=False, lw=2, ms=8,
+             palette=[colors['wt'], colors['sert']], ax=ax1)
 """
 sns.lineplot(x='session', y='bias', hue='expression', ci=68,
              data=results_df[results_df['expression'] == 1], legend=False,
@@ -120,8 +121,14 @@ for i, nickname in enumerate(results_df.loc[results_df['expression'] == 1, 'subj
     ax4.plot([0, 1], [results_df.loc[(results_df['subject'] == nickname)
                                      & (results_df['session'].between(-3, -1)), 'bias'].mean(),
                       results_df.loc[(results_df['subject'] == nickname)
-                                     & (results_df['session'].between(3, 5)), 'bias'].mean()],
-             color='gray', marker='o')
+                                     & (results_df['session'].between(2, 4)), 'bias'].mean()],
+             color=colors['sert'], marker='o')
+for i, nickname in enumerate(results_df.loc[results_df['expression'] == 0, 'subject'].unique()):
+    ax4.plot([0, 1], [results_df.loc[(results_df['subject'] == nickname)
+                                     & (results_df['session'].between(-3, -1)), 'bias'].mean(),
+                      results_df.loc[(results_df['subject'] == nickname)
+                                     & (results_df['session'].between(2, 4)), 'bias'].mean()],
+             color=colors['wt'], marker='o')
 ax4.set(ylabel='Bias', ylim=[0, 0.61], xticks=[0, 1], xticklabels=['-3 to -1', '3 to 5'],
         xlabel='Days')
 
