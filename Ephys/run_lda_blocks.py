@@ -12,16 +12,19 @@ from sklearn.model_selection import KFold
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
 import brainbox.io.one as bbone
 from brainbox.task.closed_loop import generate_pseudo_blocks
+from brainbox.metrics.single_units import spike_sorting_metrics
 from brainbox.population.decode import classify, get_spike_counts_in_bins
 from serotonin_functions import (query_ephys_sessions, load_trials, paths, remap, load_subjects,
                                  behavioral_criterion)
 from one.api import ONE
+from ibllib.atlas import AllenAtlas
+ba = AllenAtlas()
 one = ONE()
 
 # Settings
-ARTIFACT_CUTOFF = 0.48
-NEURON_QC = False
-MIN_NEURONS = 5
+ARTIFACT_CUTOFF = 0.6
+NEURON_QC = True
+MIN_NEURONS = 2
 PRE_TIME = 0
 POST_TIME = 0.3
 MIN_TRIALS = 300
@@ -36,7 +39,7 @@ light_neurons = pd.read_csv(join(save_path, 'light_modulated_neurons.csv'))
 subjects = load_subjects()
 
 # Apply behavioral criterion
-eids = behavioral_criterion(eids, min_trials=MIN_TRIALS)
+#eids = behavioral_criterion(eids, min_trials=MIN_TRIALS)
 
 # Initialize classifier
 classifier = LDA()
@@ -67,7 +70,8 @@ for i, eid in enumerate(eids):
     block_id = (trials['probabilityLeft'] == 0.8).astype(int).values
 
     # Load in neural data
-    spikes, clusters, channels = bbone.load_spike_sorting_with_channel(eid, aligned=True, one=one)
+    spikes, clusters, channels = bbone.load_spike_sorting_with_channel(
+        eid, aligned=True, one=one, dataset_types=['spikes.amps', 'spikes.depths'], brain_atlas=ba)
 
     for p, probe in enumerate(spikes.keys()):
         if 'acronym' not in clusters[probe].keys():
@@ -75,11 +79,17 @@ for i, eid in enumerate(eids):
             continue
 
         # Filter neurons that pass QC
-        if ('metrics' not in clusters[probe].keys()) or (NEURON_QC == False):
-            print('No neuron QC, using all neurons')
-            clusters_pass = np.unique(spikes[probe].clusters)
+        if NEURON_QC:
+            if ('metrics' in clusters[probe].keys()) & (clusters[probe]['metrics'].shape[0] == clusters[probe]['channels'].shape[0]):
+                clusters_pass = np.where(clusters[probe]['metrics']['label'] == 1)[0]
+            else:
+                print('Calculating neuron QC metrics..')
+                qc_metrics, _ = spike_sorting_metrics(spikes[probe].times, spikes[probe].clusters,
+                                                      spikes[probe].amps, spikes[probe].depths,
+                                                      cluster_ids=np.arange(clusters[probe].channels.size))
+                clusters_pass = np.where(qc_metrics['label'] == 1)[0]
         else:
-            clusters_pass = np.where(clusters[probe]['metrics']['label'] == 1)[0]
+            clusters_pass = np.unique(spikes[probe].clusters)
         spikes[probe].times = spikes[probe].times[np.isin(spikes[probe].clusters, clusters_pass)]
         spikes[probe].clusters = spikes[probe].clusters[np.isin(spikes[probe].clusters, clusters_pass)]
         if len(spikes[probe].clusters) == 0:
@@ -127,14 +137,17 @@ for i, eid in enumerate(eids):
             acc_improvement = acc_block_on - acc_block_off
 
             # Get p-value for stim induced decoding change
-            acc_shuf_block_on, acc_shuf_block_off = np.empty(ITERATIONS), np.empty(ITERATIONS)
+            acc_shuf_block_on, acc_shuf_block_off = np.array([np.nan]*ITERATIONS), np.array([np.nan]*ITERATIONS)
             for k in range(ITERATIONS):
                 pseudo_opto = generate_pseudo_blocks(trials.shape[0], first5050=0)
                 pseudo_opto = (pseudo_opto == 0.8).astype(int)
-                acc_shuf_block_on[k] = classify(population_activity[pseudo_opto == 1, :], block_id[pseudo_opto == 1],
-                                                classifier, cross_validation=cv)[0]
-                acc_shuf_block_off[k] = classify(population_activity[pseudo_opto == 0], block_id[pseudo_opto == 0],
-                                                 classifier, cross_validation=cv)[0]
+                try:
+                    acc_shuf_block_on[k] = classify(population_activity[pseudo_opto == 1, :], block_id[pseudo_opto == 1],
+                                                    classifier, cross_validation=cv)[0]
+                    acc_shuf_block_off[k] = classify(population_activity[pseudo_opto == 0], block_id[pseudo_opto == 0],
+                                                     classifier, cross_validation=cv)[0]
+                except:
+                    continue
             acc_shuf_improvement = acc_shuf_block_on - acc_shuf_block_off
             if acc_improvement > 0:
                 p_value = np.sum(acc_shuf_improvement > acc_improvement) / ITERATIONS
@@ -146,7 +159,7 @@ for i, eid in enumerate(eids):
                   index=[results_df.shape[0] + 1], data={
                       'subject': subject, 'date': date, 'eid': eid, 'probe': probe, 'region': region,
                       'sert-cre': sert_cre, 'acc_block_on': acc_block_on, 'acc_block_off': acc_block_off,
-                      'acc_improvement': acc_improvement, 'p_value': p_value}))
+                      'n_neurons': len(clusters_in_region), 'acc_improvement': acc_improvement, 'p_value': p_value}))
 
     results_df.to_csv(join(save_path, f'lda_decoding_block_{PRE_TIME}_{POST_TIME}.csv'))
 results_df.to_csv(join(save_path, f'lda_decoding_block_{PRE_TIME}_{POST_TIME}.csv'))

@@ -13,15 +13,18 @@ from os.path import join
 from serotonin_functions import paths, figure_style, get_full_region_name
 
 # Settings
-MIN_NEURONS = 5
+MIN_NEURONS = 15
 ARTIFACT_ROC = 0.5
-MIN_PERC = 5
+MIN_PERC = 3
 
 # Paths
 _, fig_path, save_path = paths()
 
 # Load in results
 light_neurons = pd.read_csv(join(save_path, 'light_modulated_neurons.csv'))
+
+# Drop ZFM-02180 for now
+# light_neurons = light_neurons[light_neurons['subject'] != 'ZFM-02180']
 
 # Drop root and void
 light_neurons = light_neurons.reset_index(drop=True)
@@ -101,4 +104,5 @@ ax2.set(ylabel='', xlabel='Percentage of serotonin modulated neurons', xlim=[-51
 
 plt.tight_layout()
 sns.despine(trim=True)
-plt.savefig(join(fig_path, 'Ephys', 'light_modulated_neurons_per_region'))
+plt.savefig(join(fig_path, 'Ephys', 'light_modulated_neurons_per_region.pdf'))
+plt.savefig(join(fig_path, 'Ephys', 'light_modulated_neurons_per_region.png'))

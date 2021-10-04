@@ -97,14 +97,14 @@ for i, nickname in enumerate(subjects['subject']):
     pupil_size = pupil_size.reset_index(drop=True)
 
     # Plot this animal
-    if pupil_size.shape[0] > 0:
+    if pupil_size.shape[0] > 100:
         colors, dpi = figure_style()
         f, (ax1, ax2) = plt.subplots(1, 2, figsize=(4, 2), sharey=True, dpi=dpi)
         lineplt = sns.lineplot(x='time', y='baseline_subtracted', hue='laser',
                                data=pupil_size[((pupil_size['laser_prob'] == 0.75) & (pupil_size['laser'] == 1))
                                                | ((pupil_size['laser_prob'] == 0.25) & (pupil_size['laser'] == 0))],
-                               palette='colorblind', ci=68, ax=ax1)
-        ax1.set(title='%s, expression: %d' % (nickname, subjects.loc[i, 'expression']),
+                               palette=[colors['no-stim'], colors['stim']], ci=68, ax=ax1)
+        ax1.set(title='%s, expression: %d' % (nickname, subjects.loc[i, 'expression']), ylim=[-0.5, 0.25],
                 ylabel='z-scored pupil diameter', xlabel='Time relative to trial start(s)')
 
         handles, labels = ax1.get_legend_handles_labels()
@@ -113,14 +113,15 @@ for i, nickname in enumerate(subjects['subject']):
         sns.lineplot(x='time', y='baseline_subtracted', hue='laser',
                      data=pupil_size[((pupil_size['laser_prob'] == 0.75) & (pupil_size['laser'] == 0))
                                                | ((pupil_size['laser_prob'] == 0.25) & (pupil_size['laser'] == 1))],
-                     palette='colorblind', ci=68, legend=None, ax=ax2)
+                     palette=[colors['no-stim'], colors['stim']], ci=68, legend=None, ax=ax2)
         ax2.set(xlabel='Time relative to trial start(s)',
                 title='Probe trials')
 
         plt.tight_layout()
         sns.despine(trim=True)
 
-        plt.savefig(join(fig_path, f'{nickname}_pupil_opto'))
+        plt.savefig(join(fig_path, f'{nickname}_pupil_opto.png'))
+        plt.savefig(join(fig_path, f'{nickname}_pupil_opto.pdf'))
 
         # Add to overall dataframe
         results_df = results_df.append(pupil_size[pupil_size['laser'] == 0].groupby(['time', 'laser']).mean())

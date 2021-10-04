@@ -34,7 +34,7 @@ for i, nickname in enumerate(subjects['subject']):
 
     # Query sessions
     eids = query_opto_sessions(nickname, one=one)
-    #eids = eids[:-2]  # exclude first two opto sessions
+    eids = eids[:-1]  # exclude first two opto sessions
     eids = behavioral_criterion(eids, one=one)
     if len(eids) == 0:
         continue
@@ -79,7 +79,7 @@ for i, nickname in enumerate(subjects['subject']):
 
 colors, dpi = figure_style()
 colors = [colors['wt'], colors['sert']]
-f, (ax1, ax2) = plt.subplots(1, 2, figsize=(6, 3), dpi=dpi)
+f, (ax1, ax2) = plt.subplots(1, 2, figsize=(3, 2), dpi=dpi, sharey=False)
 
 for i, subject in enumerate(results_df['subject']):
     ax1.plot([1, 2], results_df.loc[(results_df['subject'] == subject), 'tau_pa'],
@@ -90,7 +90,7 @@ handles, labels = ax1.get_legend_handles_labels()
 labels = ['', 'WT', 'SERT']
 ax1.legend(handles[:3], labels[:3], frameon=False, prop={'size': 7}, loc='center left', bbox_to_anchor=(1, .5))
 ax1.set(xlabel='', ylabel='Length of integration window (tau)', title='Previous actions',
-        ylim=[2, 8])
+        xticks=[1, 2], xticklabels=['No stim', 'Stim'], ylim=[0, 15])
 
 for i, subject in enumerate(results_df['subject']):
     ax2.plot([1, 2], results_df.loc[(results_df['subject'] == subject), 'tau_ss'],
@@ -99,7 +99,8 @@ for i, subject in enumerate(results_df['subject']):
 handles, labels = ax2.get_legend_handles_labels()
 labels = ['', 'WT', 'SERT']
 ax2.legend(handles[:3], labels[:3], frameon=False, prop={'size': 7}, loc='center left', bbox_to_anchor=(1, .5))
-ax2.set(xlabel='', ylabel='Length of integration window (tau)', title='Stimulus sides')
+ax2.set(xlabel='', ylabel='Length of integration window (tau)', title='Stimulus sides',
+        xticks=[1, 2], xticklabels=['No stim', 'Stim'], ylim=[0, 25])
 
 sns.despine(trim=True)
 plt.tight_layout()

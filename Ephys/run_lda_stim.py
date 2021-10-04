@@ -12,16 +12,19 @@ from sklearn.model_selection import KFold
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
 import brainbox.io.one as bbone
 import matplotlib.pyplot as plt
+from brainbox.metrics.single_units import spike_sorting_metrics
 from brainbox.population.decode import classify, get_spike_counts_in_bins
 from serotonin_functions import (query_ephys_sessions, load_trials, paths, remap, load_subjects,
                                  behavioral_criterion)
 from one.api import ONE
+from ibllib.atlas import AllenAtlas
+ba = AllenAtlas()
 one = ONE()
 
 # Settings
-ARTIFACT_CUTOFF = 0.48
-NEURON_QC = False
-MIN_NEURONS = 5
+ARTIFACT_CUTOFF = 0.6
+NEURON_QC = True
+MIN_NEURONS = 2
 PRE_TIME = 0
 POST_TIME = 0.3
 MIN_TRIALS = 300
@@ -73,7 +76,8 @@ for i, eid in enumerate(eids):
     block_off_trials = (trials['laser_stimulation'] == 0) & (trials['laser_probability'] != 0.75)
 
     # Load in neural data
-    spikes, clusters, channels = bbone.load_spike_sorting_with_channel(eid, aligned=True, one=one)
+    spikes, clusters, channels = bbone.load_spike_sorting_with_channel(
+        eid, aligned=True, one=one, dataset_types=['spikes.amps', 'spikes.depths'], brain_atlas=ba)
 
     for p, probe in enumerate(spikes.keys()):
         if 'acronym' not in clusters[probe].keys():
@@ -81,11 +85,17 @@ for i, eid in enumerate(eids):
             continue
 
         # Filter neurons that pass QC
-        if ('metrics' not in clusters[probe].keys()) or (NEURON_QC == False):
-            print('No neuron QC, using all neurons')
-            clusters_pass = np.unique(spikes[probe].clusters)
+        if NEURON_QC:
+            if ('metrics' in clusters[probe].keys()) & (clusters[probe]['metrics'].shape[0] == clusters[probe]['channels'].shape[0]):
+                clusters_pass = np.where(clusters[probe]['metrics']['label'] == 1)[0]
+            else:
+                print('Calculating neuron QC metrics..')
+                qc_metrics, _ = spike_sorting_metrics(spikes[probe].times, spikes[probe].clusters,
+                                                      spikes[probe].amps, spikes[probe].depths,
+                                                      cluster_ids=np.arange(clusters[probe].channels.size))
+                clusters_pass = np.where(qc_metrics['label'] == 1)[0]
         else:
-            clusters_pass = np.where(clusters[probe]['metrics']['label'] == 1)[0]
+            clusters_pass = np.unique(spikes[probe].clusters)
         spikes[probe].times = spikes[probe].times[np.isin(spikes[probe].clusters, clusters_pass)]
         spikes[probe].clusters = spikes[probe].clusters[np.isin(spikes[probe].clusters, clusters_pass)]
         if len(spikes[probe].clusters) == 0:

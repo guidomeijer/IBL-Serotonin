@@ -20,12 +20,14 @@ import brainbox.io.one as bbone
 from brainbox.plot import peri_event_time_histogram
 from serotonin_functions import paths, remap, query_ephys_sessions, load_opto_times
 from one.api import ONE
+from ibllib.atlas import AllenAtlas
+ba = AllenAtlas()
 one = ONE()
 
 # Settings
-PLOT = True
+PLOT = False
 OVERWRITE = True
-NEURON_QC = False
+NEURON_QC = True
 T_BEFORE = 1  # for plotting
 T_AFTER = 2
 PRE_TIME = [1, 0]  # for significance testing
@@ -65,28 +67,32 @@ for i, eid in enumerate(eids):
         print(f'Found {len(opto_train_times)} passive laser pulses')
 
     # Load in spikes
-    spikes, clusters, channels = bbone.load_spike_sorting_with_channel(eid, aligned=True, one=one)
+    spikes, clusters, channels = bbone.load_spike_sorting_with_channel(
+        eid, aligned=True, one=one, dataset_types=['spikes.amps', 'spikes.depths'], brain_atlas=ba)
 
     for p, probe in enumerate(spikes.keys()):
         if 'acronym' not in clusters[probe].keys():
             print(f'No brain regions found for {eid}')
             continue
 
-        # Select spikes of passive period
-        start_passive = opto_train_times[0] - 360
-        spikes[probe].clusters = spikes[probe].clusters[spikes[probe].times > start_passive]
-        spikes[probe].times = spikes[probe].times[spikes[probe].times > start_passive]
-
         # Filter neurons that pass QC
-        if ('metrics' not in clusters[probe].keys()) or (NEURON_QC == False):
-            print('No neuron QC, using all neurons')
-            clusters_pass = np.unique(spikes[probe].clusters)
+        if NEURON_QC:
+            print('Calculating neuron QC metrics..')
+            qc_metrics, _ = spike_sorting_metrics(spikes[probe].times, spikes[probe].clusters,
+                                                  spikes[probe].amps, spikes[probe].depths,
+                                                  cluster_ids=np.arange(clusters[probe].channels.size))
+            clusters_pass = np.where(qc_metrics['label'] == 1)[0]
         else:
-            clusters_pass = np.where(clusters[probe]['metrics']['label'] == 1)[0]
+            clusters_pass = np.unique(spikes[probe].clusters)
         spikes[probe].times = spikes[probe].times[np.isin(spikes[probe].clusters, clusters_pass)]
         spikes[probe].clusters = spikes[probe].clusters[np.isin(spikes[probe].clusters, clusters_pass)]
         if len(spikes[probe].clusters) == 0:
             continue
+
+        # Select spikes of passive period
+        start_passive = opto_train_times[0] - 360
+        spikes[probe].clusters = spikes[probe].clusters[spikes[probe].times > start_passive]
+        spikes[probe].times = spikes[probe].times[spikes[probe].times > start_passive]
 
         # Determine significant neurons
         print('Calculating significant neurons..')
@@ -139,9 +145,8 @@ for i, eid in enumerate(eids):
                 ax.yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
                 plt.tight_layout()
                 plt.savefig(join(fig_path, cluster_regions[cluster_ids == cluster][0],
-                                 f'{subject}_{date}_{probe}_neuron{cluster}'))
+                                 f'{subject}_{date}_{probe}_neuron{cluster}.pdf'))
                 plt.close(p)
-
 
     light_neurons.to_csv(join(save_path, 'light_modulated_neurons.csv'))
 light_neurons.to_csv(join(save_path, 'light_modulated_neurons.csv'))

@@ -87,7 +87,7 @@ def figure_style():
               'probe': sns.color_palette('colorblind')[4],
               'block': sns.color_palette('colorblind')[6]}
     screen_width = tk.Tk().winfo_screenwidth()
-    dpi = screen_width / 15
+    dpi = screen_width / 12
     return colors, dpi
 
 

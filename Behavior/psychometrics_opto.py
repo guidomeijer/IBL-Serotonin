@@ -185,7 +185,7 @@ for i, nickname in enumerate(subjects['subject']):
     # Plot
     if PLOT_SINGLE_ANIMALS:
         colors, dpi = figure_style()
-        f, (ax1, ax2) = plt.subplots(1, 2, figsize=(4, 2), dpi=dpi, sharey=True)
+        f, (ax1, ax2) = plt.subplots(1, 2, figsize=(5, 3), dpi=dpi, sharey=True)
 
         # plot_psychometric(trials[trials['probabilityLeft'] == 0.5], ax=ax1, color='k')
         plot_psychometric(trials[(trials['probabilityLeft'] == 0.8)
@@ -202,8 +202,8 @@ for i, nickname in enumerate(subjects['subject']):
                                  & (trials['laser_stimulation'] == 1)
                                  & (trials['laser_probability'] != 0.25)], ax=ax1,
                           color=colors['right'], linestyle='--')
-        ax1.text(-25, 0.75, '20:80', color=colors['right'])
-        ax1.text(25, 0.25, '80:20', color=colors['left'])
+        ax1.text(-20, 0.75, '80% right', color=colors['right'])
+        ax1.text(20, 0.25, '80% left', color=colors['left'])
         ax1.set(title='dashed line = opto stim')
 
         catch_trials = trials[((trials['laser_probability'] == 0.75) & (trials['laser_stimulation'] == 0))
@@ -245,7 +245,8 @@ for i, nickname in enumerate(subjects['subject']):
 
         sns.despine(trim=True)
         plt.tight_layout()
-        plt.savefig(join(fig_path, '%s_opto_behavior_psycurve' % nickname))
+        plt.savefig(join(fig_path, '%s_opto_behavior_psycurve.png' % nickname), dpi=600)
+        plt.savefig(join(fig_path, '%s_opto_behavior_psycurve.pdf' % nickname))
 
 # %% Plot
 
@@ -264,7 +265,8 @@ for i, subject in enumerate(bias_df['subject']):
     ax1.plot([1, 2], [bias_df.loc[bias_df['subject'] == subject, 'bias_no_stim'],
                       bias_df.loc[bias_df['subject'] == subject, 'bias_stim']],
              color = colors[sert_cre], label=label, marker='o', ms=2)
-ax1.set(xlabel='', xticks=[1, 2], xticklabels=['No stim', 'Stim'], ylabel='Bias', ylim=[-0.1, 0.7])
+ax1.set(xlabel='', xticks=[1, 2], xticklabels=['Non-stimulated\ntrials', 'Stimulated\ntrials'],
+        ylabel='Total bias', ylim=[-0.1, 0.7])
 #ax1.legend(frameon=False)
 
 
@@ -272,20 +274,23 @@ for i, subject in enumerate(bias_df['subject']):
     ax2.plot([1, 2], [bias_df.loc[bias_df['subject'] == subject, 'bias_probe_no_stim'],
                       bias_df.loc[bias_df['subject'] == subject, 'bias_probe_stim']],
              color = colors[bias_df.loc[bias_df['subject'] == subject, 'sert-cre'].values[0]], marker='o', ms=2)
-ax2.set(xlabel='', xticks=[1, 2], xticklabels=['No stim', 'Stim'], ylabel='Bias', ylim=[-0.1, 0.7],
+ax2.set(xlabel='', xticks=[1, 2], xticklabels=['Non-stimulated\ntrials', 'Stimulated\ntrials'],
+        ylabel='Total bias', ylim=[-0.1, 0.7],
         title='Probe trials')
 
 for i, subject in enumerate(bias_df['subject']):
     ax3.plot([1, 2], [bias_df.loc[bias_df['subject'] == subject, 'side_bias_no_stim'],
                       bias_df.loc[bias_df['subject'] == subject, 'side_bias_stim']],
              color = colors[bias_df.loc[bias_df['subject'] == subject, 'sert-cre'].values[0]], marker='o', ms=2)
-ax3.set(xlabel='', xticks=[1, 2], xticklabels=['No stim', 'Stim'], ylabel='Side bias', ylim=[-0.25, 0.25])
+ax3.set(xlabel='', xticks=[1, 2], xticklabels=['Non-stimulated\ntrials', 'Stimulated\ntrials'],
+        ylabel='Side bias', ylim=[-0.25, 0.25])
 
 for i, subject in enumerate(bias_df['subject']):
     ax4.plot([1, 2], [bias_df.loc[bias_df['subject'] == subject, 'side_bias_probe_no_stim'],
                       bias_df.loc[bias_df['subject'] == subject, 'side_bias_probe_stim']],
              color = colors[bias_df.loc[bias_df['subject'] == subject, 'sert-cre'].values[0]], marker='o', ms=2)
-ax4.set(xlabel='', xticks=[1, 2], xticklabels=['No stim', 'Stim'], ylabel='Side bias', title='Probe trials', ylim=[-0.25, 0.25])
+ax4.set(xlabel='', xticks=[1, 2], xticklabels=['Non-stimulated\ntrials', 'Stimulated\ntrials'],
+        ylabel='Side bias', title='Probe trials', ylim=[-0.25, 0.25])
 
 """
 delta_block = (bias_df.loc[(bias_df['opto_stim'] == 1) & (bias_df['catch_trial'] == 0), 'bias'].values -
@@ -320,7 +325,7 @@ ax7.set(xlabel='', xticks=[1, 2], xticklabels=['No stim', 'Stim'], ylabel='Media
 
 plt.tight_layout()
 sns.despine(trim=True)
-plt.savefig(join(fig_path, 'summary_psycurve'))
+plt.savefig(join(fig_path, 'summary_psycurve.pdf'))
 
 # %%
 """

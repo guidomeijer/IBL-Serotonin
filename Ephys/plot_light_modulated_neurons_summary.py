@@ -15,7 +15,7 @@ from serotonin_functions import paths, figure_style
 # Settings
 HISTOLOGY = True
 N_BINS = 30
-ARTIFACT_ROC = 0.5
+ARTIFACT_ROC = 0.6
 
 # Paths
 _, fig_path, save_path = paths()
@@ -45,13 +45,15 @@ ax1.hist([all_neurons.loc[(all_neurons['expression'] == 1) & (all_neurons['enhan
           all_neurons.loc[(all_neurons['expression'] == 1) & (all_neurons['suppressed'] == 1), 'roc_auc']],
          N_BINS, density=True, histtype='bar', stacked=True,
          color=[colors['enhanced'], colors['suppressed']])
-ax1.set(xlim=[-.5, .5], xlabel='Modulation index', ylabel='Neuron count', title='SERT', ylim=[0, 4])
+ax1.set(xlim=[-.6, .6], xlabel='Modulation index', ylabel='Neuron count', title='SERT', ylim=[0, 3],
+        xticks=np.arange(-0.6, 0.61, 0.3))
 
 ax2.hist([all_neurons.loc[(all_neurons['expression'] == 0) & (all_neurons['enhanced'] == 1), 'roc_auc'],
           all_neurons.loc[(all_neurons['expression'] == 0) & (all_neurons['suppressed'] == 1), 'roc_auc']],
          int(N_BINS/2), density=True, histtype='bar', stacked=True,
          color=[colors['enhanced'], colors['suppressed']])
-ax2.set(xlim=[-0.5, 0.5], xlabel='Modulation index', ylabel='Neuron count', title='WT', ylim=[0, 8])
+ax2.set(xlim=[-0.6, 0.6], xlabel='Modulation index', ylabel='Neuron count', title='WT', ylim=[0, 5],
+        xticks=np.arange(-0.6, 0.61, 0.3))
 
 summary_df = all_neurons.groupby('subject').sum()
 summary_df['n_neurons'] = all_neurons.groupby('subject').size()
@@ -60,10 +62,11 @@ summary_df['expression'] = (summary_df['expression'] > 0).astype(int)
 
 sns.swarmplot(x='expression', y='perc_mod', data=summary_df, ax=ax3,
               palette=[colors['wt'], colors['sert']])
-ax3.set(ylabel='Light modulated neurons (%)', xlabel='', xticklabels=['WT', 'SERT'], ylim=[0, 15])
+ax3.set(ylabel='Light modulated neurons (%)', xlabel='', xticklabels=['Wild type\ncontrol', 'Sert-Cre'], ylim=[0, 20])
 
 plt.tight_layout(pad=2)
 sns.despine(trim=True)
-plt.savefig(join(fig_path, 'opto_modulation_summary'))
+plt.savefig(join(fig_path, 'opto_modulation_summary.pdf'))
+plt.savefig(join(fig_path, 'opto_modulation_summary.png'))
 
 
