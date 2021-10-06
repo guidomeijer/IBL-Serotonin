@@ -13,7 +13,7 @@ from dlc_functions import get_dlc_XYs, get_pupil_diameter
 import matplotlib.pyplot as plt
 from scipy.stats import zscore
 import seaborn as sns
-from serotonin_functions import load_trials, paths, query_opto_sessions, figure_style
+from serotonin_functions import load_trials, paths, query_opto_sessions, figure_style, load_subjects
 from one.api import ONE
 one = ONE()
 
@@ -24,8 +24,8 @@ BASELINE = 0.5
 _, fig_path, _ = paths()
 fig_path = join(fig_path, 'Pupil')
 
-subjects = pd.read_csv(join('..', 'subjects.csv'))
-#subjects = subjects[subjects['subject'] == 'ZFM-02600'].reset_index(drop=True)
+subjects = load_subjects()
+subjects = subjects[subjects['subject'] != 'ZFM-01867']
 results_df = pd.DataFrame()
 for i, nickname in enumerate(subjects['subject']):
     print(f'Processing {nickname}..')
@@ -94,36 +94,83 @@ for i, nickname in enumerate(subjects['subject']):
                 'laser': trials.loc[t, 'laser_stimulation'],
                 'laser_prob': trials.loc[t, 'laser_probability'],
                 'time': TIME_BINS}))
+    if pupil_size.shape[0] < 100:
+        continue
+
+    # Add to overal dataframe
     pupil_size = pupil_size.reset_index(drop=True)
+    pupil_size['abs_contrast'] = pupil_size['contrast'].abs()
+    pupil_size['abs_log_contrast'] = pupil_size['abs_contrast'].copy()
+    pupil_size.loc[pupil_size['abs_log_contrast'] == 0, 'abs_log_contrast'] = 0.01
+    pupil_size['abs_log_contrast'] = np.log10(pupil_size['abs_log_contrast'])
+    results_df = results_df.append(pd.DataFrame(data={
+        'stim_block': pupil_size[(pupil_size['laser_prob'] == 0.75) & (pupil_size['laser'] == 1)].groupby('time').mean()['baseline_subtracted'],
+        'no_stim_block': pupil_size[(pupil_size['laser_prob'] == 0.25) & (pupil_size['laser'] == 0)].groupby('time').mean()['baseline_subtracted'],
+        'stim_probe': pupil_size[(pupil_size['laser_prob'] == 0.25) & (pupil_size['laser'] == 1)].groupby('time').mean()['baseline_subtracted'],
+        'no_stim_probe': pupil_size[(pupil_size['laser_prob'] == 0.75) & (pupil_size['laser'] == 0)].groupby('time').mean()['baseline_subtracted'],
+        'subject': nickname, 'sert-cre': subjects.loc[i, 'sert-cre']}))
 
     # Plot this animal
-    if pupil_size.shape[0] > 100:
-        colors, dpi = figure_style()
-        f, (ax1, ax2) = plt.subplots(1, 2, figsize=(4, 2), sharey=True, dpi=dpi)
-        lineplt = sns.lineplot(x='time', y='baseline_subtracted', hue='laser',
-                               data=pupil_size[((pupil_size['laser_prob'] == 0.75) & (pupil_size['laser'] == 1))
-                                               | ((pupil_size['laser_prob'] == 0.25) & (pupil_size['laser'] == 0))],
-                               palette=[colors['no-stim'], colors['stim']], ci=68, ax=ax1)
-        ax1.set(title='%s, expression: %d' % (nickname, subjects.loc[i, 'expression']), ylim=[-0.5, 0.25],
-                ylabel='z-scored pupil diameter', xlabel='Time relative to trial start(s)')
+    colors, dpi = figure_style()
+    f, ((ax1, ax2, ax3, ax4), (ax5, ax6, ax7, ax8)) = plt.subplots(2, 4, figsize=(8, 4), sharey=True, sharex=True, dpi=dpi)
+    lineplt = sns.lineplot(x='time', y='baseline_subtracted', hue='laser',
+                           data=pupil_size[((pupil_size['laser_prob'] == 0.75) & (pupil_size['laser'] == 1))
+                                           | ((pupil_size['laser_prob'] == 0.25) & (pupil_size['laser'] == 0))],
+                           palette=[colors['no-stim'], colors['stim']], ci=68, ax=ax1)
+    ax1.set(title='%s, expression: %d' % (nickname, subjects.loc[i, 'expression']), ylim=[-0.75, 0.75],
+            ylabel='z-scored pupil diameter', xlabel='Time relative to trial start(s)')
 
-        handles, labels = ax1.get_legend_handles_labels()
-        ax1.legend(handles=handles, labels=['No stim', 'Stim'], frameon=False)
+    handles, labels = ax1.get_legend_handles_labels()
+    ax1.legend(handles=handles, labels=['No stim', 'Stim'], frameon=False)
 
-        sns.lineplot(x='time', y='baseline_subtracted', hue='laser',
-                     data=pupil_size[((pupil_size['laser_prob'] == 0.75) & (pupil_size['laser'] == 0))
-                                               | ((pupil_size['laser_prob'] == 0.25) & (pupil_size['laser'] == 1))],
-                     palette=[colors['no-stim'], colors['stim']], ci=68, legend=None, ax=ax2)
-        ax2.set(xlabel='Time relative to trial start(s)',
-                title='Probe trials')
+    sns.lineplot(x='time', y='baseline_subtracted', hue='laser',
+                 data=pupil_size[((pupil_size['laser_prob'] == 0.75) & (pupil_size['laser'] == 0))
+                                           | ((pupil_size['laser_prob'] == 0.25) & (pupil_size['laser'] == 1))],
+                 palette=[colors['no-stim'], colors['stim']], ci=68, legend=None, ax=ax2)
+    ax2.set(xlabel='Time relative to trial start(s)',
+            title='Probe trials')
 
-        plt.tight_layout()
-        sns.despine(trim=True)
+    sns.lineplot(x='time', y='baseline_subtracted', data=pupil_size[pupil_size['laser'] == 1],
+                 hue='abs_log_contrast', palette='viridis', ci=0, legend=None, ax=ax3)
+    ax3.set(xlabel='Time relative to trial start(s)', title='Stimulated trials')
 
-        plt.savefig(join(fig_path, f'{nickname}_pupil_opto.png'))
-        plt.savefig(join(fig_path, f'{nickname}_pupil_opto.pdf'))
+    sns.lineplot(x='time', y='baseline_subtracted', data=pupil_size[pupil_size['laser'] == 0],
+                 hue='abs_log_contrast', palette='viridis', ci=0, ax=ax4)
+    ax4.set(xlabel='Time relative to trial start(s)', title='Non-stimulated trials')
+    ax4.legend(frameon=False, bbox_to_anchor=(1, 1), labels=[0, 6.25, 12.5, 25, 100])
 
-        # Add to overall dataframe
-        results_df = results_df.append(pupil_size[pupil_size['laser'] == 0].groupby(['time', 'laser']).mean())
-        results_df = results_df.append(pupil_size[pupil_size['laser'] == 1].groupby(['time', 'laser']).mean())
-        results_df['nickname'] = nickname
+    sns.lineplot(x='time', y='baseline_subtracted', hue='laser_prob',
+                 data=pupil_size[((pupil_size['laser_prob'] == 0.75) & (pupil_size['laser'] == 1))
+                                           | ((pupil_size['laser_prob'] == 0.25) & (pupil_size['laser'] == 1))],
+                 palette='Paired', ci=68, ax=ax5)
+    ax5.set(xlabel='Time relative to trial start(s)', title='Stimulated trials')
+    handles, labels = ax5.get_legend_handles_labels()
+    ax5.legend(handles=handles, labels=['Block', 'Probe'], frameon=False)
+
+    plt.tight_layout()
+    sns.despine(trim=True)
+
+    plt.savefig(join(fig_path, f'{nickname}_pupil_opto.png'))
+    plt.savefig(join(fig_path, f'{nickname}_pupil_opto.pdf'))
+
+results_df = results_df.reset_index()
+results_df['diff_stim_block'] = results_df['stim_block'] - results_df['no_stim_block']
+results_df['diff_stim_probe'] = results_df['stim_probe'] - results_df['no_stim_probe']
+results_df['diff_block'] = results_df['stim_block'] - results_df['stim_probe']
+
+# %% Plot over mice
+
+ax = dict()
+f, (ax['dsb'], ax['dsp'], ax['db']) = plt.subplots(1, 3, figsize=(6, 2), dpi=dpi)
+
+sns.lineplot(x='time', y='diff_stim_block', data=results_df, hue='sert-cre',
+             units='subject', estimator=None, legend=None, ax=ax['dsb'])
+
+sns.lineplot(x='time', y='diff_stim_probe', data=results_df, hue='sert-cre',
+             units='subject', estimator=None, legend=None, ax=ax['dsp'])
+
+sns.lineplot(x='time', y='diff_block', data=results_df, hue='sert-cre',
+             units='subject', estimator=None, legend=None, ax=ax['db'])
+
+
+

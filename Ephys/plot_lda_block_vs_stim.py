@@ -15,18 +15,21 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 from serotonin_functions import paths, get_full_region_name, figure_style
 
 # Settings
-COLORMAP = 'viridis'
+COLORMAP = 'seagreen'
 _, fig_path, save_path = paths()
 PRE_TIME = 0
 POST_TIME = 0.3
 MIN_IMPROVEMENT = 5
-TARGET = 'block'
 
 # Load in results
-decoding_result = pd.read_csv(join(save_path, f'lda_decoding_{TARGET}_{PRE_TIME}_{POST_TIME}.csv'))
+decoding_block = pd.read_csv(join(save_path, f'lda_decoding_block_{PRE_TIME}_{POST_TIME}.csv'))
+decoding_stim = pd.read_csv(join(save_path, f'lda_decoding_stim_{PRE_TIME}_{POST_TIME}.csv'))
 
 # Calculate delta
-decoding_result['delta_block'] = (decoding_result['acc_block_on'] - decoding_result['acc_block_off']) * 100
+decoding_block['delta_block'] = (decoding_block['acc_block_on'] - decoding_block['acc_block_off']) * 100
+decoding_stim['delta_block'] = (decoding_stim['acc_block_on'] - decoding_stim['acc_block_off']) * 100
+
+
 
 # Get full region names
 decoding_result['full_region'] = get_full_region_name(decoding_result['region'])
@@ -45,12 +48,10 @@ for i, region in enumerate(decoding_result['region'].unique()):
 decoding_result = decoding_result[decoding_result['mean'].abs() >= MIN_IMPROVEMENT]
 
 #Create a matplotlib colormap
-decoding_result['p_value_log'] = np.log10(decoding_result['p_value'])
-cmap = sns.color_palette(COLORMAP, as_cmap=True)
-#norm = matplotlib.colors.Normalize(vmin=decoding_result['p_value_log'].min(), vmax=np.log10(0.5))
-norm = matplotlib.colors.Normalize(vmin=np.log10(0.01), vmax=np.log10(0.5))
+cmap = sns.light_palette(COLORMAP, reverse=True, as_cmap=True)
+norm = matplotlib.colors.Normalize(vmin=decoding_result['p_value'].min(), vmax=decoding_result['p_value'].max())
 colors = {}
-for cval in decoding_result['p_value_log']:
+for cval in decoding_result['p_value']:
     colors.update({cval : cmap(norm(cval))})
 
 # Plot
@@ -61,19 +62,16 @@ decoding_sert = decoding_result[decoding_result['sert-cre'] == 1]
 sort_regions = decoding_sert.groupby('full_region').max().sort_values('mean', ascending=False).reset_index()['full_region']
 sns.barplot(x='mean', y='full_region', data=decoding_sert, order=sort_regions,
             ci=68, facecolor=(1, 1, 1, 0), errcolor=".2", edgecolor=".2", ax=ax1)
-sns.swarmplot(x='delta_block', y='full_region', data=decoding_sert, hue='p_value_log', palette=colors,
+sns.swarmplot(x='delta_block', y='full_region', data=decoding_sert, hue='p_value', palette=colors,
               order=sort_regions, ax=ax1)
 ax1.legend_.remove()
 divider = make_axes_locatable(plt.gca())
-#ax_cb = divider.new_horizontal(size="5%", pad=0.05)
 ax_cb = divider.new_horizontal(size="5%", pad=0.05)
 f.add_axes(ax_cb)
 cb1 = matplotlib.colorbar.ColorbarBase(ax_cb, cmap=cmap, norm=norm, orientation='vertical')
-cb1.set_label('log transformed p-values', rotation=90)
-cb1.set_ticks(np.log10([0.01, 0.05, 0.10, 0.25, 0.5]))
-cb1.set_ticklabels([0.01, 0.05, 0.10, 0.25, 0.5])
+cb1.set_label('p-value', rotation=90)
 
-ax1.set(xlabel='Stimulation induced decoding improvement of prior (% correct)', ylabel='', xlim=[-40, 40])
+ax1.set(xlabel='Stimulation induced decoding improvement of prior (% correct)', ylabel='', xlim=[-30, 30])
 
 """
 decoding_wt = decoding_result[decoding_result['sert-cre'] == 0]

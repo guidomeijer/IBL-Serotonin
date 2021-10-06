@@ -58,7 +58,11 @@ for i, nickname in enumerate(subjects['subject']):
     if len(trials) == 0:
         continue
 
-    # Get bias strength
+    # Get bias from fitted curves
+    bias_fit_stim = get_bias(trials.loc[(trials['laser_stimulation'] == 1) & (trials['probe_trial'] == 0)])
+    bias_fit_no_stim = get_bias(trials.loc[(trials['laser_stimulation'] == 0) & (trials['probe_trial'] == 0)])
+
+    # Get bias strength 0% contrast trials
     bias_no_stim = np.abs(trials[(trials['probabilityLeft'] == 0.8)
                                  & (trials['laser_stimulation'] == 0)
                                  & (trials['laser_probability'] == 0.25)].mean()
@@ -85,7 +89,7 @@ for i, nickname in enumerate(subjects['subject']):
                                          & (trials['laser_stimulation'] == 0)
                                          & (trials['laser_probability'] == 0.75)].mean())['right_choice']
 
-    # Get absolute bias
+    # Get side bias 0% contrast trials
     side_bias_no_stim = 0.5 - (np.sum(trials.loc[(trials['laser_probability'] == 0.25)
                                                  & (trials['laser_stimulation'] == 0), 'right_choice'] == 1)
                                / np.shape(trials.loc[(trials['laser_probability'] == 0.25)
@@ -118,7 +122,8 @@ for i, nickname in enumerate(subjects['subject']):
         'bias_probe_no_stim': bias_probe_no_stim, 'side_bias_no_stim': side_bias_no_stim,
         'side_bias_stim': side_bias_stim, 'side_bias_probe_stim': side_bias_probe_stim,
         'side_bias_probe_no_stim': side_bias_probe_no_stim, 'rt_no_stim': rt_no_stim,
-        'rt_stim': rt_stim, 'rt_catch_no_stim': rt_catch_no_stim, 'rt_catch_stim': rt_catch_stim}))
+        'rt_stim': rt_stim, 'rt_catch_no_stim': rt_catch_no_stim, 'rt_catch_stim': rt_catch_stim,
+        'bias_fit_stim': bias_fit_stim, 'bias_fit_no_stim': bias_fit_no_stim}))
 
     # Get lapse rates
     lapse_l_l_ns = trials.loc[(trials['probabilityLeft'] == 0.8) & (trials['signed_contrast'] == -1)
