@@ -23,10 +23,7 @@ _, fig_path, save_path = paths()
 fig_path = join(fig_path, 'Behavior', 'ReactionTimes')
 PLOT = True
 
-subjects = load_subjects()
-subjects = subjects[subjects['subject'] != 'ZFM-02602']
-subjects = subjects[subjects['subject'] != 'ZFM-02180']
-subjects = subjects[subjects['subject'] != 'ZFM-01867']
+subjects = load_subjects(behavior=True)
 subjects = subjects.reset_index()
 
 results_df = pd.DataFrame()
@@ -118,6 +115,63 @@ for i, nickname in enumerate(subjects['subject']):
                  ax4.get_ylim(), ls='--', color=colors['no-stim'])
         ax4.set(title='Low contrast stim', xticks=np.log10(XTICKS), xticklabels=XTICKS, ylabel='Trial count',
                 xlabel='log-transformed reaction times (s)', xlim=np.log10([np.min(XTICKS), np.max(XTICKS)]))
+
+        plt.tight_layout()
+        sns.despine(trim=True)
+        plt.savefig(join(fig_path, f'log_rt_distribution_{nickname}.png'))
+        plt.savefig(join(fig_path, f'log_rt_distribution_{nickname}.pdf'))
+
+        f, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(4, 4), dpi=dpi)
+
+        ax1.hist(trials.loc[(trials['laser_probability'] == 0.75) & (trials['laser_stimulation'] == 1),
+                            'reaction_times'], label='Stim', color=colors['stim'], histtype='step', lw=1.5, bins=200)
+        ax1.hist(trials.loc[(trials['laser_probability'] == 0.25) & (trials['laser_stimulation'] == 0),
+                            'reaction_times'], label='No stim', color=colors['no-stim'], histtype='step', lw=1.5, bins=200)
+        ax1.plot([trials.loc[(trials['laser_probability'] == 0.75) & (trials['laser_stimulation'] == 1), 'reaction_times'].median(),
+                  trials.loc[(trials['laser_probability'] == 0.75) & (trials['laser_stimulation'] == 1), 'reaction_times'].median()],
+                 ax1.get_ylim(), ls='--', color=colors['stim'])
+        ax1.plot([trials.loc[(trials['laser_probability'] == 0.25) & (trials['laser_stimulation'] == 0), 'reaction_times'].median(),
+                  trials.loc[(trials['laser_probability'] == 0.25) & (trials['laser_stimulation'] == 0), 'reaction_times'].median()],
+                 ax1.get_ylim(), ls='--', color=colors['no-stim'])
+        ax1.set(title='0% contrast (stim. blocks)', ylabel='Trial count', xlabel='Reaction times (s)', xlim=[-0.5, 1])
+
+        ax2.hist(trials.loc[(trials['laser_probability'] == 0.25) & (trials['laser_stimulation'] == 1),
+                            'reaction_times'], label='Stim', color=colors['stim'], histtype='step', lw=1.5, bins=200)
+        ax2.hist(trials.loc[(trials['laser_probability'] == 0.75) & (trials['laser_stimulation'] == 0),
+                            'reaction_times'], label='No stim', color=colors['no-stim'], histtype='step', lw=1.5, bins=200)
+        ax2.plot([trials.loc[(trials['laser_probability'] == 0.25) & (trials['laser_stimulation'] == 1), 'reaction_times'].median(),
+                  trials.loc[(trials['laser_probability'] == 0.25) & (trials['laser_stimulation'] == 1), 'reaction_times'].median()],
+                 ax2.get_ylim(), ls='--', color=colors['stim'])
+        ax2.plot([trials.loc[(trials['laser_probability'] == 0.75) & (trials['laser_stimulation'] == 0), 'reaction_times'].median(),
+                  trials.loc[(trials['laser_probability'] == 0.75) & (trials['laser_stimulation'] == 0), 'reaction_times'].median()],
+                 ax2.get_ylim(), ls='--', color=colors['no-stim'])
+        ax2.set(title='0% contrast (probe trials)', ylabel='Trial count', xlabel='Reaction times (s)', xlim=[-0.5, 1])
+
+        ax3.hist(trials.loc[(trials['signed_contrast'].abs() >= 0.25) & (trials['laser_stimulation'] == 1),
+                            'reaction_times'], label='Stim', color=colors['stim'], histtype='step', lw=1.5, bins=200)
+        ax3.hist(trials.loc[(trials['signed_contrast'].abs() >= 0.25) & (trials['laser_stimulation'] == 0),
+                            'reaction_times'], label='No stim', color=colors['no-stim'], histtype='step', lw=1.5, bins=200)
+        ax3.plot([trials.loc[(trials['signed_contrast'].abs() >= 0.25) & (trials['laser_stimulation'] == 1), 'reaction_times'].median(),
+                  trials.loc[(trials['signed_contrast'].abs() >= 0.25) & (trials['laser_stimulation'] == 1), 'reaction_times'].median()],
+                 ax3.get_ylim(), ls='--', color=colors['stim'])
+        ax3.plot([trials.loc[(trials['signed_contrast'].abs() >= 0.25) & (trials['laser_stimulation'] == 0), 'reaction_times'].median(),
+                  trials.loc[(trials['signed_contrast'].abs() >= 0.25) & (trials['laser_stimulation'] == 0), 'reaction_times'].median()],
+                 ax3.get_ylim(), ls='--', color=colors['no-stim'])
+        ax3.set(title='High contrast stim', ylabel='Trial count', xlabel='Reaction times (s)', xlim=[-0.5, 1])
+
+        ax4.hist(trials.loc[((trials['signed_contrast'].abs() < 0.25) & ((trials['signed_contrast'].abs() > 0)))
+                            & (trials['laser_stimulation'] == 1),
+                            'reaction_times'], label='Stim', color=colors['stim'], histtype='step', lw=1.5, bins=200)
+        ax4.hist(trials.loc[((trials['signed_contrast'].abs() < 0.25) & ((trials['signed_contrast'].abs() > 0)))
+                            & (trials['laser_stimulation'] == 0),
+                            'reaction_times'], label='Stim', color=colors['no-stim'], histtype='step', lw=1.5, bins=200)
+        ax4.plot([trials.loc[(trials['signed_contrast'].abs() < 0.25) & (trials['laser_stimulation'] == 1), 'reaction_times'].median(),
+                  trials.loc[(trials['signed_contrast'].abs() < 0.25) & (trials['laser_stimulation'] == 1), 'reaction_times'].median()],
+                 ax4.get_ylim(), ls='--', color=colors['stim'])
+        ax4.plot([trials.loc[(trials['signed_contrast'].abs() < 0.25) & (trials['laser_stimulation'] == 0), 'reaction_times'].median(),
+                  trials.loc[(trials['signed_contrast'].abs() < 0.25) & (trials['laser_stimulation'] == 0), 'reaction_times'].median()],
+                 ax4.get_ylim(), ls='--', color=colors['no-stim'])
+        ax4.set(title='Low contrast stim', ylabel='Trial count', xlabel='Reaction times (s)', xlim=[-0.5, 1])
 
         plt.tight_layout()
         sns.despine(trim=True)

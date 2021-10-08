@@ -21,6 +21,7 @@ one = ONE()
 TIME_BINS = np.arange(-1, 3.2, 0.2)
 BIN_SIZE = 0.2
 BASELINE = 0.5
+N_TRIALS = 20
 _, fig_path, _ = paths()
 fig_path = join(fig_path, 'Pupil')
 
@@ -47,6 +48,21 @@ for i, nickname in enumerate(subjects['subject']):
             continue
         if 'laser_stimulation' not in trials.columns.values:
             continue
+
+        # Get stimulation block transitions
+        no_probe_trials = trials.copy()
+        no_probe_trials.loc[no_probe_trials['probe_trial'] == 1, 'laser_stimulation'] = (
+            no_probe_trials.loc[no_probe_trials['probe_trial'] == 1, 'laser_probability'].round())
+        stim_block_trans = np.append([0], np.array(np.where(np.diff(no_probe_trials['laser_stimulation']) != 0)) + 1)
+
+        # Divide up stim blocks
+        for k, trans in enumerate(stim_block_trans):
+            trials.loc[trans:trans+N_TRIALS, 'block_progress'] = 1
+            trials.loc[trans+N_TRIALS+1:trans+N_TRIALS*2+1, 'block_progress'] = 2
+            if k != stim_block_trans.shape[0]-1:
+                trials.loc[trans+N_TRIALS*2+1:stim_block_trans[k+1], 'block_progress'] = 3
+            else:
+                trials.loc[trans+N_TRIALS*2+1:-1, 'block_progress'] = 3
 
         # Load in camera timestamps and DLC output
         try:
@@ -90,7 +106,7 @@ for i, nickname in enumerate(subjects['subject']):
                 'diameter': this_diameter, 'baseline_subtracted': baseline_subtracted, 'eid': eid,
                 'subject': nickname, 'trial': t, 'contrast': trials.loc[t, 'signed_contrast'],
                 'sert': subjects.loc[i, 'sert-cre'], 'laser': trials.loc[t, 'laser_stimulation'],
-                'laser_prob': trials.loc[t, 'laser_probability'],
+                'laser_prob': trials.loc[t, 'laser_probability'], 'progress': trials.loc[t, 'block_progress'],
                 'time': TIME_BINS}))
     if pupil_size.shape[0] < 100:
         continue
@@ -108,50 +124,33 @@ for i, nickname in enumerate(subjects['subject']):
         'no_stim_probe': pupil_size[(pupil_size['laser_prob'] == 0.75) & (pupil_size['laser'] == 0)].groupby('time').mean()['baseline_subtracted'],
         'subject': nickname, 'sert-cre': subjects.loc[i, 'sert-cre']}))
 
+    pupil_df = pd.concat([pupil_size[pupil_size['laser'] == 1].groupby(['time', 'progress']).mean()['baseline_subtracted'].rename('stim'),
+                          pupil_size[pupil_size['laser'] == 0].groupby(['time', 'progress']).mean()['baseline_subtracted'].rename('no-stim')], axis=1)
+    pupil_df['stim_diff'] = pupil_df['stim'] - pupil_df['no-stim']
+
+
     # Plot this animal
     colors, dpi = figure_style()
-    f, ((ax1, ax2, ax5), (ax3, ax4, ax6)) = plt.subplots(2, 3, figsize=(6, 3.5), sharey=True, sharex=True, dpi=dpi)
-    lineplt = sns.lineplot(x='time', y='baseline_subtracted', hue='laser',
-                           data=pupil_size[((pupil_size['laser_prob'] == 0.75) & (pupil_size['laser'] == 1))
-                                           | ((pupil_size['laser_prob'] == 0.25) & (pupil_size['laser'] == 0))],
-                           palette=[colors['no-stim'], colors['stim']], ci=68, ax=ax1, legend=None)
-    ax1.set(title='%s, expression: %d' % (nickname, subjects.loc[i, 'expression']), ylim=[-0.6, 0.3],
-            ylabel='z-scored pupil diameter', xlabel='Time relative to trial start(s)',
-            xticks=np.arange(-1, 3.1), yticks=np.arange(-0.6, 0.32, 0.3))
+    f, (ax1, ax2) = plt.subplots(1, 2, figsize=(5, 2.5), dpi=dpi)
+    sns.lineplot(x='time', y='stim_diff', hue='progress', data=pupil_df, palette='flare', ci=68, ax=ax1)
+    ax1.set(title='%s, expression: %d' % (nickname, subjects.loc[i, 'expression']), ylim=[-0.3, 0.3],
+            yticks=np.arange(-0.3, 0.31, 0.1), ylabel='Stimulation induced change in pupil size',
+            xlabel='Time relative to trial start(s)')
+    handles, labels = ax1.get_legend_handles_labels()
+    ax1.legend(handles=handles, labels=[f'1-{N_TRIALS}', f'{N_TRIALS+1}-{N_TRIALS*2}', f'{N_TRIALS*2+1}+'],
+               frameon=False, title='trials after switch')
 
-    #handles, labels = ax1.get_legend_handles_labels()
-    #ax1.legend(handles=handles, labels=['No stim', 'Stim'], frameon=False)
-
-    sns.lineplot(x='time', y='baseline_subtracted', hue='laser',
-                 data=pupil_size[((pupil_size['laser_prob'] == 0.75) & (pupil_size['laser'] == 0))
-                                           | ((pupil_size['laser_prob'] == 0.25) & (pupil_size['laser'] == 1))],
-                 palette=[colors['no-stim'], colors['stim']], ci=68, legend=None, ax=ax2)
-    ax2.set(xlabel='Time relative to trial start(s)',
-            title='Probe trials', xticks=np.arange(-1, 3.1))
-
-    sns.lineplot(x='time', y='baseline_subtracted', data=pupil_size[pupil_size['laser'] == 1],
-                 hue='abs_log_contrast', palette='viridis', ci=0, legend=None, ax=ax3)
-    ax3.set(xlabel='Time relative to trial start(s)', title='Stimulated trials', xticks=np.arange(-1, 3.1))
-
-    sns.lineplot(x='time', y='baseline_subtracted', data=pupil_size[pupil_size['laser'] == 0],
-                 hue='abs_log_contrast', palette='viridis', ci=0, ax=ax4)
-    ax4.set(xlabel='Time relative to trial start(s)', title='Non-stimulated trials')
-    ax4.legend(frameon=False, bbox_to_anchor=(1, 1), labels=[0, 6.25, 12.5, 25, 100])
-
-    sns.lineplot(x='time', y='baseline_subtracted', hue='laser_prob',
-                 data=pupil_size[((pupil_size['laser_prob'] == 0.75) & (pupil_size['laser'] == 1))
-                                           | ((pupil_size['laser_prob'] == 0.25) & (pupil_size['laser'] == 1))],
-                 palette='Paired', ci=68, ax=ax5)
-    ax5.set(xlabel='Time relative to trial start(s)', title='Stimulated trials')
-    handles, labels = ax5.get_legend_handles_labels()
-    ax5.legend(handles=handles, labels=['Block', 'Probe'], frameon=False)
+    sns.lineplot(x='time', y='baseline_subtracted', data=pupil_size, hue='progress', palette='flare', ax=ax2)
+    handles, labels = ax2.get_legend_handles_labels()
+    ax2.legend(handles=handles, labels=[f'1-{N_TRIALS}', f'{N_TRIALS+1}-{N_TRIALS*2}', f'{N_TRIALS*2+1}+'],
+               frameon=False, title='trials after switch')
+    ax2.set(ylabel='z-scored pupil size', xlabel='Time relative to trial start(s)')
 
     plt.tight_layout()
     sns.despine(trim=True)
 
-    plt.savefig(join(fig_path, f'{nickname}_pupil_opto.png'))
-    plt.savefig(join(fig_path, f'{nickname}_pupil_opto.pdf'))
-
+    plt.savefig(join(fig_path, f'{nickname}_pupil_opto_uncertainty.png'))
+    plt.savefig(join(fig_path, f'{nickname}_pupil_opto_uncertainty.pdf'))
 
 results_df = results_df.reset_index()
 results_df['diff_stim_block'] = results_df['stim_block'] - results_df['no_stim_block']
@@ -159,15 +158,12 @@ results_df['diff_stim_probe'] = results_df['stim_probe'] - results_df['no_stim_p
 results_df['diff_block'] = results_df['stim_block'] - results_df['stim_probe']
 
 # %% Plot over mice
-colors, dpi = figure_style()
+
 ax = dict()
 f, (ax['dsb'], ax['dsp'], ax['db']) = plt.subplots(1, 3, figsize=(6, 2), dpi=dpi)
 
 sns.lineplot(x='time', y='diff_stim_block', data=results_df, hue='sert-cre',
-             units='subject', estimator=None, legend=None, ax=ax['dsb'],
-             palette=[colors['wt'], colors['sert']], lw=1.5)
-ax['dsb'].set(xlabel='Time relative to trial start (s)', ylabel='Δ pupil size (a.u.)',
-              ylim=[-0.1, 0.21], xticks=np.arange(-1, 3.1))
+             units='subject', estimator=None, legend=None, ax=ax['dsb'])
 
 sns.lineplot(x='time', y='diff_stim_probe', data=results_df, hue='sert-cre',
              units='subject', estimator=None, legend=None, ax=ax['dsp'])
@@ -175,7 +171,5 @@ sns.lineplot(x='time', y='diff_stim_probe', data=results_df, hue='sert-cre',
 sns.lineplot(x='time', y='diff_block', data=results_df, hue='sert-cre',
              units='subject', estimator=None, legend=None, ax=ax['db'])
 
-plt.tight_layout()
-sns.despine(trim=True)
-plt.savefig(join(fig_path, 'OverAnimalsDiff.png'))
-plt.savefig(join(fig_path, 'OverAnimalsDiff.pdf'))
+
+

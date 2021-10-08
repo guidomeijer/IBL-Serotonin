@@ -190,7 +190,7 @@ for i, nickname in enumerate(subjects['subject']):
     # Plot
     if PLOT_SINGLE_ANIMALS:
         colors, dpi = figure_style()
-        f, (ax1, ax2) = plt.subplots(1, 2, figsize=(5, 3), dpi=dpi, sharey=True)
+        f, (ax1, ax2) = plt.subplots(1, 2, figsize=(4, 2), dpi=dpi, sharey=True)
 
         # plot_psychometric(trials[trials['probabilityLeft'] == 0.5], ax=ax1, color='k')
         plot_psychometric(trials[(trials['probabilityLeft'] == 0.8)
@@ -207,8 +207,8 @@ for i, nickname in enumerate(subjects['subject']):
                                  & (trials['laser_stimulation'] == 1)
                                  & (trials['laser_probability'] != 0.25)], ax=ax1,
                           color=colors['right'], linestyle='--')
-        ax1.text(-20, 0.75, '80% right', color=colors['right'])
-        ax1.text(20, 0.25, '80% left', color=colors['left'])
+        #ax1.text(-20, 0.75, '80% right', color=colors['right'])
+        #ax1.text(20, 0.25, '80% left', color=colors['left'])
         ax1.set(title='dashed line = opto stim')
 
         catch_trials = trials[((trials['laser_probability'] == 0.75) & (trials['laser_stimulation'] == 0))
@@ -250,6 +250,7 @@ for i, nickname in enumerate(subjects['subject']):
 
         sns.despine(trim=True)
         plt.tight_layout()
+
         plt.savefig(join(fig_path, '%s_opto_behavior_psycurve.png' % nickname), dpi=600)
         plt.savefig(join(fig_path, '%s_opto_behavior_psycurve.pdf' % nickname))
 
@@ -267,11 +268,11 @@ for i, subject in enumerate(bias_df['subject']):
         label = 'SERT'
     else:
         label = 'WT'
-    ax1.plot([1, 2], [bias_df.loc[bias_df['subject'] == subject, 'bias_no_stim'],
-                      bias_df.loc[bias_df['subject'] == subject, 'bias_stim']],
+    ax1.plot([1, 2], [bias_df.loc[bias_df['subject'] == subject, 'bias_fit_no_stim'],
+                      bias_df.loc[bias_df['subject'] == subject, 'bias_fit_stim']],
              color = colors[sert_cre], label=label, marker='o', ms=2)
 ax1.set(xlabel='', xticks=[1, 2], xticklabels=['Non-stimulated\ntrials', 'Stimulated\ntrials'],
-        ylabel='Total bias', ylim=[-0.1, 0.7])
+        ylabel='Bias', ylim=[-0.1, 0.7])
 #ax1.legend(frameon=False)
 
 

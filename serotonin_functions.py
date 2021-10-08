@@ -28,10 +28,12 @@ DATE_GOOD_OPTO = '2021-07-01'
 DATE_LIGHT_SHIELD = '2021-06-08'
 
 
-def load_subjects():
+def load_subjects(behavior=None):
     subjects = pd.read_csv(join('..', 'subjects.csv'))
     subjects = subjects[~((subjects['expression'] == 0) & (subjects['sert-cre'] == 1))]
-    subjects = subjects.reset_index()
+    if behavior:
+        subjects = subjects[subjects['include_behavior'] == 1]
+    subjects = subjects.reset_index(drop=True)
     return subjects
 
 
@@ -71,12 +73,13 @@ def figure_style():
                  "ytick.minor.size": 2,
                  "xtick.minor.width": 0.5,
                  "ytick.minor.width": 0.5,
-                 'legend.fontsize': 7
+                 'legend.fontsize': 7,
+                 'legend.title_fontsize': 7
                  })
     matplotlib.rcParams['pdf.fonttype'] = 42
     matplotlib.rcParams['ps.fonttype'] = 42
-    colors = {'sert': sns.color_palette('colorblind')[2],
-              'wt': sns.color_palette('colorblind')[7],
+    colors = {'sert': sns.color_palette('Dark2')[0],
+              'wt': [0.75, 0.75, 0.75],
               'left': sns.color_palette('colorblind')[1],
               'right': sns.color_palette('colorblind')[0],
               'enhanced': sns.color_palette('colorblind')[3],
@@ -486,9 +489,8 @@ def plot_psychometric(trials, ax, **kwargs):
     ax.set(xticks=[-35, -25, -12.5, 0, 12.5, 25, 35], xlim=[-40, 40], ylim=[0, 1.02],
            yticks=[0, 0.25, 0.5, 0.75, 1], yticklabels=['0', '25', '50', '75', '100'],
            ylabel='Right choices', xlabel='Contrast (%)')
-    ax.set_xticklabels(['-100', '-25', '-12.5', '0', '12.5', '25', '100'],
-                       size='small')
-    break_xaxis()
+    ax.set_xticklabels(['-100', '-25', '-12.5', '0', '12.5', '25', '100'])
+    #break_xaxis()
 
 
 def break_xaxis(y=-0.004, **kwargs):

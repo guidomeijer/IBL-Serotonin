@@ -23,19 +23,18 @@ one = ONE()
 # Settings
 REMOVE_OLD_FIT = False
 POSTERIOR = 'posterior_mean'
-STIM = 'block'
+STIM = 'all'
 _, fig_path, save_path = paths()
 fig_path = join(fig_path, 'Behavior', 'Models')
 
-subjects = load_subjects()
+subjects = load_subjects(behavior=True)
 
 results_df = pd.DataFrame()
 for i, nickname in enumerate(subjects['subject']):
 
     # Query sessions
     eids = query_opto_sessions(nickname, one=one)
-    eids = eids[:-1]  # exclude first two opto sessions
-    eids = behavioral_criterion(eids, one=one)
+    #eids = behavioral_criterion(eids, one=one)
     if len(eids) == 0:
         continue
     if len(eids) > 10:

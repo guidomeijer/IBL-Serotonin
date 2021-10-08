@@ -90,13 +90,13 @@ for i, nickname in enumerate(subjects['subject']):
 # %% Plot
 colors, dpi = figure_style()
 colors = [colors['wt'], colors['sert']]
-f, ax1 = plt.subplots(1, 1, figsize=(2, 2), dpi=dpi)
+f, ax1 = plt.subplots(1, 1, figsize=(1.5, 1.5), dpi=dpi)
 for i, subject in enumerate(results_df['subject']):
     ax1.plot([1, 2], [results_df.loc[results_df['subject'] == subject, 'bias_no_stim'],
                       results_df.loc[results_df['subject'] == subject, 'bias_stim']],
              color = colors[results_df.loc[results_df['subject'] == subject, 'sert-cre'].values[0]], marker='o', ms=2)
 ax1.set(xlabel='', xticks=[1, 2], xticklabels=['Non-stimulated\nsessions', 'Stimulated\nsessions'],
-        ylabel='Bias', ylim=[0.1, 0.7], yticks=np.arange(0.1, 0.71, 0.1))
+        ylabel='Bias', ylim=[-0.05, 0.6], yticks=np.arange(0, 0.61, 0.2))
 plt.tight_layout()
 sns.despine(trim=True)
 plt.savefig(join(fig_path, 'bias_fit_stim_no_stim_ses.png'), dpi=300)

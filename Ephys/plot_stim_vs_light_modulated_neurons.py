@@ -36,7 +36,7 @@ for i, nickname in enumerate(np.unique(all_neurons['subject'])):
 
 # %% Plot
 colors, dpi = figure_style()
-f, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(5, 5), dpi=dpi)
+f, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(4, 4), dpi=dpi)
 ax1.plot([0, 0], [-1, 1], color=[.5, .5, .5], ls='--')
 ax1.plot([-1, 1], [0, 0], color=[.5, .5, .5], ls='--')
 ax1.scatter(all_neurons.loc[(all_neurons['sert-cre'] == 1) & all_neurons['task_responsive'], 'task_roc'],
@@ -65,12 +65,15 @@ ax3.scatter(all_neurons.loc[(all_neurons['sert-cre'] == 1) & ~(all_neurons['stim
 ax3.scatter(all_neurons.loc[(all_neurons['sert-cre'] == 1) & (all_neurons['stim_modulated'] | (all_neurons['modulated'])), 'roc_auc'],
             all_neurons.loc[(all_neurons['sert-cre'] == 1) & (all_neurons['stim_modulated'] | (all_neurons['modulated'])), 'stim_mod_roc'],
             color=colors['sert'], s=6)
-r, p = pearsonr(all_neurons.loc[all_neurons['sert-cre'] == 1, 'roc_auc'], all_neurons.loc[all_neurons['sert-cre'] == 1, 'stim_mod_roc'])
-m, b = np.polyfit(all_neurons.loc[all_neurons['sert-cre'] == 1, 'roc_auc'], all_neurons.loc[all_neurons['sert-cre'] == 1, 'stim_mod_roc'], 1)
-ax3.plot([-1, 1], m*np.array([-1, 1]) + b, color='k')
-
+r, p = pearsonr(all_neurons.loc[(all_neurons['sert-cre'] == 1) & (all_neurons['stim_modulated'] | (all_neurons['modulated'])), 'roc_auc'],
+                all_neurons.loc[(all_neurons['sert-cre'] == 1)  & (all_neurons['stim_modulated'] | (all_neurons['modulated'])), 'stim_mod_roc'])
+m, b = np.polyfit(all_neurons.loc[(all_neurons['sert-cre'] == 1) & (all_neurons['stim_modulated'] | (all_neurons['modulated'])), 'roc_auc'],
+                  all_neurons.loc[(all_neurons['sert-cre'] == 1)  & (all_neurons['stim_modulated'] | (all_neurons['modulated'])), 'stim_mod_roc'], 1)
+ax3.plot([-1, 1], m*np.array([-1, 1]) + b, color=colors['sert'])
+ax3.text(0.3, 0.6, f'r = {r:.2f}')
 ax3.set(ylim=[-AXIS_LIM, AXIS_LIM], xlim=[-AXIS_LIM, AXIS_LIM], xlabel='Spontaneous 5-HT modulation',
-        ylabel='Task-evoked 5-HT modulation', title='SERT')
+        ylabel='Task-evoked 5-HT modulation', title='SERT', xticks=np.arange(-AXIS_LIM, AXIS_LIM+0.1, 0.4),
+        yticks=np.arange(-AXIS_LIM, AXIS_LIM+0.1, 0.4))
 
 ax4.plot([0, 0], [-1, 1], color=[.5, .5, .5], ls='--')
 ax4.plot([-1, 1], [0, 0], color=[.5, .5, .5], ls='--')
@@ -85,3 +88,5 @@ ax4.set(ylim=[-AXIS_LIM, AXIS_LIM], xlim=[-AXIS_LIM, AXIS_LIM], xlabel='Spontane
 
 plt.tight_layout()
 sns.despine(trim=True)
+plt.savefig(join(fig_path, 'Ephys', 'stim_vs_light_modulation.png'))
+plt.savefig(join(fig_path, 'Ephys', 'stim_vs_light_modulation.pdf'))

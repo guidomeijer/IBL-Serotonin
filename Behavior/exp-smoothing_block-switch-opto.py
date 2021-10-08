@@ -26,7 +26,7 @@ POSTERIOR = 'posterior_mean'
 _, fig_path, save_path = paths()
 fig_path = join(fig_path, 'Behavior', 'Models')
 
-subjects = load_subjects()
+subjects = load_subjects(behavior=True)
 
 results_df = pd.DataFrame()
 accuracy_df = pd.DataFrame()
@@ -35,7 +35,7 @@ for i, nickname in enumerate(subjects['subject']):
 
     # Query sessions
     eids = query_opto_sessions(nickname, one=one)
-    eids = behavioral_criterion(eids, one=one)
+    #eids = behavioral_criterion(eids, one=one)
     if len(eids) == 0:
         continue
 
@@ -67,7 +67,7 @@ for i, nickname in enumerate(subjects['subject']):
 # %% Plot
 
 colors, dpi = figure_style()
-f, ax1 = plt.subplots(1, 1, figsize=(2, 2), dpi=dpi)
+f, ax1 = plt.subplots(1, 1, figsize=(2, 2.1), dpi=dpi)
 
 colors = [colors['wt'], colors['sert']]
 for i, subject in enumerate(results_df['subject']):
@@ -75,8 +75,8 @@ for i, subject in enumerate(results_df['subject']):
     ax1.plot([1, 2], results_df.loc[(results_df['subject'] == subject), 'tau'],
              color = colors[sert_cre], marker='o', ms=2)
 
-ax1.set(xlabel='Trials after block switch', ylabel='Lenght of integration window (tau)',
-        xticks=[1, 2], xticklabels=['1-20', '20+'], ylim=[0, 15])
+ax1.set(xlabel='Trials after block switch', ylabel='Integration window (tau)',
+        xticks=[1, 2], xticklabels=['1-20', '21+'], ylim=[0, 15])
 
 sns.despine(trim=True, offset=10)
 plt.tight_layout()
