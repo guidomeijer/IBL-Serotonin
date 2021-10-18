@@ -59,7 +59,7 @@ for i, nickname in enumerate(subjects['subject']):
 
     if PLOT:
         colors, dpi = figure_style()
-        XTICKS = [0.01, 0.05, 0.5, 5, 10]
+        XTICKS = [0.01, 0.05, 0.5, 5, 10, 60]
         f, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(4, 4), dpi=dpi)
 
         ax1.hist(trials.loc[(trials['laser_probability'] == 0.75) & (trials['laser_stimulation'] == 1),

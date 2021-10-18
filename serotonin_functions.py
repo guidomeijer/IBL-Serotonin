@@ -12,11 +12,14 @@ import matplotlib.pyplot as plt
 from sklearn.utils import shuffle
 import pandas as pd
 import tkinter as tk
+import patsy
+import statsmodels.api as sm
+from sklearn.model_selection import KFold
 from os.path import join
 from glob import glob
 from datetime import datetime
 from brainbox.io.spikeglx import spikeglx
-from brainbox.numerical import ismember
+from iblutil.numerical import ismember
 from ibllib.atlas import BrainRegions
 from one.api import ONE
 
@@ -256,7 +259,7 @@ def behavioral_criterion(eids, max_lapse=0.3, max_bias=0.4, min_trials=1, one=No
     return use_eids
 
 
-def load_exp_smoothing_trials(eids, stimulated=None, rt_cutoff=0.2, after_probe_trials=0,
+def load_exp_smoothing_trials(eids, stimulated=None, rt_cutoff=0.2, after_probe_trials=0, stim_trial_shift=0,
                               pseudo=False, patch_old_opto=True, min_trials=100, one=None):
     """
     Parameters
@@ -295,22 +298,24 @@ def load_exp_smoothing_trials(eids, stimulated=None, rt_cutoff=0.2, after_probe_
             if trials.shape[0] < min_trials:
                 continue
             if stimulated == 'all':
-                stimulated_arr.append(trials['laser_stimulation'].values)
+                stim_trials = trials['laser_stimulation'].values
             elif stimulated == 'probe':
-                probe_trials = ((trials['laser_stimulation'] == 1) & (trials['laser_probability'] <= .5)).values
+                stim_trials = ((trials['laser_stimulation'] == 1) & (trials['laser_probability'] <= .5)).values
                 if pseudo:
-                    probe_trials = shuffle(probe_trials)
-                for k, ind in enumerate(np.where(probe_trials == 1)[0]):
-                    probe_trials[ind:ind + (after_probe_trials + 1)] = 1
-                stimulated_arr.append(probe_trials)
+                    stim_trials = shuffle(stim_trials)
+                for k, ind in enumerate(np.where(stim_trials == 1)[0]):
+                    stim_trials[ind:ind + (after_probe_trials + 1)] = 1
             elif stimulated == 'block':
-                block_trials = trials['laser_stimulation'].values
+                stim_trials = trials['laser_stimulation'].values
                 if 'laser_probability' in trials.columns:
-                    block_trials[(trials['laser_stimulation'] == 0) & (trials['laser_probability'] == .75)] = 1
-                    block_trials[(trials['laser_stimulation'] == 1) & (trials['laser_probability'] == .25)] = 0
-                stimulated_arr.append(block_trials)
+                    stim_trials[(trials['laser_stimulation'] == 0) & (trials['laser_probability'] == .75)] = 1
+                    stim_trials[(trials['laser_stimulation'] == 1) & (trials['laser_probability'] == .25)] = 0
             elif stimulated == 'rt':
-                stimulated_arr.append((trials['reaction_times'] > rt_cutoff).values)
+                stim_trials = (trials['reaction_times'] > rt_cutoff).values
+
+            stim_trials = np.append(np.zeros(stim_trial_shift), stim_trials)[:-stim_trial_shift]
+            stimulated_arr.append(stim_trials)
+
             stimuli_arr.append(trials['signed_contrast'].values)
             actions_arr.append(trials['choice'].values)
             stim_sides_arr.append(trials['stim_side'].values)
@@ -536,3 +541,76 @@ def get_bias(trials):
     bias_left = psy.erf_psycho_2gammas(pars_left, 0)
 
     return bias_right - bias_left
+
+
+def fit_glm(behav, prior_blocks=True, folds=5):
+
+    # drop trials with contrast-level 50, only rarely present (should not be its own regressor)
+    behav = behav[np.abs(behav.signed_contrast) != 50]
+
+    # use patsy to easily build design matrix
+    if not prior_blocks:
+        endog, exog = patsy.dmatrices('choice ~ 1 + stimulus_side:C(contrast, Treatment)'
+                                      '+ previous_choice:C(previous_outcome)',
+                               data=behav.dropna(subset=['trial_feedback_type', 'choice',
+                                  'previous_choice', 'previous_outcome']).reset_index(),
+                                      return_type='dataframe')
+    else:
+        endog, exog = patsy.dmatrices('choice ~ 1 + stimulus_side:C(contrast, Treatment)'
+                                      '+ previous_choice:C(previous_outcome) '
+                                      '+ block_id',
+                               data=behav.dropna(subset=['trial_feedback_type', 'choice',
+                                  'previous_choice', 'previous_outcome', 'block_id']).reset_index(),
+                                      return_type='dataframe')
+
+    # remove the one column (with 0 contrast) that has no variance
+    if 'stimulus_side:C(contrast, Treatment)[0.0]' in exog.columns:
+        exog.drop(columns=['stimulus_side:C(contrast, Treatment)[0.0]'], inplace=True)
+
+    # recode choices for logistic regression
+    endog['choice'] = endog['choice'].map({-1:0, 1:1})
+
+    # rename columns
+    exog.rename(columns={'Intercept': 'bias',
+              'stimulus_side:C(contrast, Treatment)[6.25]': '6.25',
+             'stimulus_side:C(contrast, Treatment)[12.5]': '12.5',
+             'stimulus_side:C(contrast, Treatment)[25.0]': '25',
+             'stimulus_side:C(contrast, Treatment)[50.0]': '50',
+             'stimulus_side:C(contrast, Treatment)[100.0]': '100',
+             'previous_choice:C(previous_outcome)[-1.0]': 'unrewarded',
+             'previous_choice:C(previous_outcome)[1.0]': 'rewarded'},
+             inplace=True)
+
+    # NOW FIT THIS WITH STATSMODELS - ignore NaN choices
+    logit_model = sm.Logit(endog, exog)
+    res = logit_model.fit_regularized(disp=False) # run silently
+
+    # what do we want to keep?
+    params = pd.DataFrame(res.params).T
+    params['pseudo_rsq'] = res.prsquared # https://www.statsmodels.org/stable/generated/statsmodels.discrete.discrete_model.LogitResults.prsquared.html?highlight=pseudo
+    params['condition_number'] = np.linalg.cond(exog)
+
+    # ===================================== #
+    # ADD MODEL ACCURACY - cross-validate
+
+    kf = KFold(n_splits=folds, shuffle=True)
+    acc = np.array([])
+    for train, test in kf.split(endog):
+        X_train, X_test, y_train, y_test = exog.loc[train], exog.loc[test], \
+                                           endog.loc[train], endog.loc[test]
+        # fit again
+        logit_model = sm.Logit(y_train, X_train)
+        res = logit_model.fit_regularized(disp=False)  # run silently
+
+        # compute the accuracy on held-out data [from Luigi]:
+        # suppose you are predicting Pr(Left), let's call it p,
+        # the % match is p if the actual choice is left, or 1-p if the actual choice is right
+        # if you were to simulate it, in the end you would get these numbers
+        y_test['pred'] = res.predict(X_test)
+        y_test.loc[y_test['choice'] == 0, 'pred'] = 1 - y_test.loc[y_test['choice'] == 0, 'pred']
+        acc = np.append(acc, y_test['pred'].mean())
+
+    # average prediction accuracy over the K folds
+    params['accuracy'] = np.mean(acc)
+
+    return params  # wide df

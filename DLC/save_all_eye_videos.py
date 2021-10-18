@@ -24,6 +24,9 @@ for i, nickname in enumerate(subjects['subject']):
                       date_range=[DATE_GOOD_OPTO, '2025-01-01'])
 
     for j, eid in enumerate(eids):
-        if not isfile(join(video_save_path, f'{eid}_trials_{trials[0]}_{trials[1]}_left.mp4')):
+        details = one.get_details(eid)
+        date = details['date']
+
+        if not isfile(join(video_save_path, f'{nickname}_trials_{trials[0]}_{trials[1]}_left.mp4')):
             Viewer(eid, 'left', [10, 15], video_save_path, eye_zoom=True)
 

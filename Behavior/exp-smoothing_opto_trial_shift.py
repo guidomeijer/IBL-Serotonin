@@ -24,6 +24,7 @@ one = ONE()
 # Settings
 PRE_TRIALS = 5
 POST_TRIALS = 20
+TRIAL_SHIFT = 10
 PLOT_EXAMPLES = False
 REMOVE_OLD_FIT = False
 POSTERIOR = 'posterior_mean'
@@ -48,13 +49,13 @@ for i, nickname in enumerate(subjects['subject']):
     # Get trial data
     if subjects.loc[i, 'sert-cre'] == 1:
         actions, stimuli, stim_side, prob_left, stimulated, session_uuids = load_exp_smoothing_trials(
-            eids, stimulated=STIM, patch_old_opto=True, one=one)
+            eids, stimulated=STIM, patch_old_opto=True, stim_trial_shift=TRIAL_SHIFT, one=one)
     else:
         actions, stimuli, stim_side, prob_left, stimulated, session_uuids = load_exp_smoothing_trials(
-            eids, stimulated=STIM, patch_old_opto=False, one=one)
+            eids, stimulated=STIM, patch_old_opto=False, stim_trial_shift=TRIAL_SHIFT, one=one)
 
     # Fit model
-    model = exp_prev_action('./model_fit_results/', session_uuids, '%s_%s' % (nickname, STIM),
+    model = exp_prev_action('./model_fit_results/', session_uuids, '%s_%s_%s_shift' % (nickname, STIM, TRIAL_SHIFT),
                             actions, stimuli, stim_side, torch.tensor(stimulated))
     model.load_or_train(nb_steps=2000, remove_old=REMOVE_OLD_FIT)
     param_prevaction = model.get_parameters(parameter_type=POSTERIOR)
@@ -142,4 +143,4 @@ ax1.set(xlabel='', ylabel='Length of integration window (tau)', title='Previous 
 
 sns.despine(trim=True)
 plt.tight_layout()
-plt.savefig(join(fig_path, f'exp-smoothing_opto_{STIM}'))
+plt.savefig(join(fig_path, f'exp-smoothing_opto_{STIM}_{TRIAL_SHIFT}_shift'))

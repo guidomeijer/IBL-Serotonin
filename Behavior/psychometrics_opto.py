@@ -18,7 +18,7 @@ from one.api import ONE
 one = ONE()
 
 # Settings
-PLOT_SINGLE_ANIMALS = True
+PLOT_SINGLE_ANIMALS = False
 _, fig_path, _ = paths()
 fig_path = join(fig_path, 'Behavior', 'Psychometrics')
 subjects = load_subjects()
@@ -327,7 +327,8 @@ for i, subject in enumerate(bias_df['subject']):
     ax7.plot([1, 2], [bias_df.loc[bias_df['subject'] == subject, 'rt_no_stim'],
                       bias_df.loc[bias_df['subject'] == subject, 'rt_stim']],
              color = colors[bias_df.loc[bias_df['subject'] == subject, 'sert-cre'].values[0]], marker='o', ms=2)
-ax7.set(xlabel='', xticks=[1, 2], xticklabels=['No stim', 'Stim'], ylabel='Median reaction time')
+ax7.set(xlabel='', xticks=[1, 2], xticklabels=['No stim', 'Stim'], ylabel='Median reaction time',
+        yscale='log', yticks=[1], yticklabels=[1])
 
 plt.tight_layout()
 sns.despine(trim=True)
