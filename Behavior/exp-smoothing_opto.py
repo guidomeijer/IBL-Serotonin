@@ -24,7 +24,7 @@ one = ONE()
 # Settings
 PRE_TRIALS = 5
 POST_TRIALS = 20
-PLOT_EXAMPLES = False
+PLOT_EXAMPLES = True
 REMOVE_OLD_FIT = False
 POSTERIOR = 'posterior_mean'
 STIM = 'block'
@@ -47,15 +47,15 @@ for i, nickname in enumerate(subjects['subject']):
 
     # Get trial data
     if subjects.loc[i, 'sert-cre'] == 1:
-        actions, stimuli, stim_side, prob_left, stimulated, session_uuids = load_exp_smoothing_trials(
+        actions, stimuli, stim_side, prob_left, stim_trials, session_uuids = load_exp_smoothing_trials(
             eids, stimulated=STIM, patch_old_opto=True, one=one)
     else:
-        actions, stimuli, stim_side, prob_left, stimulated, session_uuids = load_exp_smoothing_trials(
+        actions, stimuli, stim_side, prob_left, stim_trials, session_uuids = load_exp_smoothing_trials(
             eids, stimulated=STIM, patch_old_opto=False, one=one)
 
     # Fit model
     model = exp_prev_action('./model_fit_results/', session_uuids, '%s_%s' % (nickname, STIM),
-                            actions, stimuli, stim_side, torch.tensor(stimulated))
+                            actions, stimuli, stim_side, torch.tensor(stim_trials))
     model.load_or_train(nb_steps=2000, remove_old=REMOVE_OLD_FIT)
     param_prevaction = model.get_parameters(parameter_type=POSTERIOR)
     priors_prevaction = model.compute_signal(signal='prior', act=actions, stim=stimuli, side=stim_side)['prior']
@@ -71,9 +71,9 @@ for i, nickname in enumerate(subjects['subject']):
         transitions = np.array(np.where(np.diff(prob_left[k]) != 0)[0])[:-1] + 1
         for t, trans in enumerate(transitions):
             if trans >= PRE_TRIALS:
-                if stimulated[k][trans] == 1:
+                if stim_trials[k][trans] == 1:
                     opto = 'stim'
-                elif stimulated[k][trans] == 0:
+                elif stim_trials[k][trans] == 0:
                     opto = 'no stim'
                 block_switches = block_switches.append(pd.DataFrame(data={
                             'prior_prevaction': priors_prevaction[k][trans-PRE_TRIALS:trans+POST_TRIALS],
@@ -98,7 +98,7 @@ for i, nickname in enumerate(subjects['subject']):
                 title='Tau stim: %.2f, Tau no stim: %.2f' % (1/param_prevaction[1], 1/param_prevaction[0]))
         sns.despine(trim=True)
         plt.tight_layout()
-        plt.savefig(join(fig_path, '%s_model_prevaction' % nickname))
+        plt.savefig(join(fig_path, '%s_model_prevaction' % nickname), dpi=300)
 
         # Plot priors of example session
         these_priors = priors_prevaction[0][:np.where(stim_side[0] == 0)[0][0] - 1]
@@ -109,18 +109,18 @@ for i, nickname in enumerate(subjects['subject']):
         block_trans = np.append([0], np.array(np.where(np.diff(these_p_left) != 0)) + 1)
         block_trans = np.append(block_trans, [these_p_left.shape[0]])
         for j, trans in enumerate(block_trans[:-1]):
-            p = Rectangle((trans, -0.05), block_trans[j+1] - trans, 1.1, alpha=0.5,
+            p = Rectangle((trans, -0.05), block_trans[j+1] - trans, 1.05, alpha=0.5,
                           color=BLOCK_COLORS[trial_blocks[trans]])
             ax1.add_patch(p)
         ax1.plot(np.arange(1, these_priors.shape[0] + 1), these_priors, color='k')
-        these_stim = stimulated[0][:np.where(stim_side[0] == 0)[0][0] - 1]
+        these_stim = stim_trials[0][:np.where(stim_side[0] == 0)[0][0] - 1]
         these_stim[these_stim == 0] = np.nan
-        these_stim[these_stim == 1] = 1.05
+        these_stim[these_stim == 1] = 1.1
         ax1.plot(np.arange(1, these_priors.shape[0] + 1), these_stim, lw=2, color=colors['stim'])
         ax1.set(ylabel='Prior', xlabel='Trials', title=f'{nickname}')
         sns.despine(trim=True)
         plt.tight_layout()
-        plt.savefig(join(fig_path, '%s_prevaction_example_session' % nickname))
+        plt.savefig(join(fig_path, '%s_prevaction_example_session' % nickname), dpi=300)
 
 
 # %% Plot
@@ -142,4 +142,4 @@ ax1.set(xlabel='', ylabel='Length of integration window (tau)', title='Previous 
 
 sns.despine(trim=True)
 plt.tight_layout()
-plt.savefig(join(fig_path, f'exp-smoothing_opto_{STIM}'))
+plt.savefig(join(fig_path, f'exp-smoothing_opto_{STIM}'), dpi=300)

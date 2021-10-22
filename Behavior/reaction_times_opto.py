@@ -33,27 +33,25 @@ for i, nickname in enumerate(subjects['subject']):
     if len(eids) == 0:
         continue
 
+    # Get trials DataFrame
+    trials = pd.DataFrame()
+    ses_count = 0
     for j, eid in enumerate(eids):
-
-        # Get trials DataFrame
-        trials = pd.DataFrame()
-        ses_count = 0
-        for j, eid in enumerate(eids):
-            try:
-                if subjects.loc[i, 'sert-cre'] == 1:
-                    these_trials = load_trials(eid, laser_stimulation=True, one=one)
-                else:
-                    these_trials = load_trials(eid, laser_stimulation=True, patch_old_opto=False, one=one)
-                """
+        try:
+            if subjects.loc[i, 'sert-cre'] == 1:
                 these_trials = load_trials(eid, laser_stimulation=True, one=one)
-                """
-                these_trials['session'] = ses_count
-                trials = trials.append(these_trials, ignore_index=True)
-                ses_count = ses_count + 1
-            except:
-                pass
-        if len(trials) == 0:
+            else:
+                these_trials = load_trials(eid, laser_stimulation=True, patch_old_opto=False, one=one)
+            """
+            these_trials = load_trials(eid, laser_stimulation=True, one=one)
+            """
+            these_trials['session'] = ses_count
+            trials = trials.append(these_trials, ignore_index=True)
+            ses_count = ses_count + 1
+        except:
             continue
+    if len(trials) == 0:
+        continue
 
     trials['rt_log'] = np.log10(trials['reaction_times'])
 

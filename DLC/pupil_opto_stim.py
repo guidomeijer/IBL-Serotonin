@@ -32,7 +32,7 @@ fig_path = join(fig_path, 'Pupil')
 subjects = load_subjects(behavior=True)
 
 # TESTING
-subjects = subjects[subjects['subject'] != 'ZFM-02181'].reset_index(drop=True)
+#subjects = subjects[subjects['subject'] != 'ZFM-02181'].reset_index(drop=True)
 
 results_df = pd.DataFrame()
 results_df_baseline = pd.DataFrame()
@@ -103,7 +103,8 @@ for i, nickname in enumerate(subjects['subject']):
             diameter = diameter[:video_times.shape[0]]
 
         # Calculate percentage change
-        diameter_perc = ((diameter - np.percentile(diameter, 2)) / np.percentile(diameter, 2)) * 100
+        diameter_perc = ((diameter - np.percentile(diameter[~np.isnan(diameter)], 2))
+                         / np.percentile(diameter[~np.isnan(diameter)], 2)) * 100
 
         # Get trial triggered baseline subtracted pupil diameter
         for t, trial_start in enumerate(trials['stimOn_times']):
@@ -112,10 +113,10 @@ for i, nickname in enumerate(subjects['subject']):
             baseline = np.nanmedian(diameter_perc[(video_times > (trial_start - BASELINE[0]))
                                                   & (video_times < (trial_start - BASELINE[1]))])
             for b, time_bin in enumerate(TIME_BINS):
-                this_diameter[b] = np.median(diameter_perc[
+                this_diameter[b] = np.nanmedian(diameter_perc[
                     (video_times > (trial_start + time_bin) - (BIN_SIZE / 2))
                     & (video_times < (trial_start + time_bin) + (BIN_SIZE / 2))])
-                baseline_subtracted[b] = np.median(diameter_perc[
+                baseline_subtracted[b] = np.nanmedian(diameter_perc[
                     (video_times > (trial_start + time_bin) - (BIN_SIZE / 2))
                     & (video_times < (trial_start + time_bin) + (BIN_SIZE / 2))]) - baseline
             pupil_size = pupil_size.append(pd.DataFrame(data={

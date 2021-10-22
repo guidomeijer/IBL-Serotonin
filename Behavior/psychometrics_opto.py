@@ -332,6 +332,7 @@ ax7.set(xlabel='', xticks=[1, 2], xticklabels=['No stim', 'Stim'], ylabel='Media
 
 plt.tight_layout()
 sns.despine(trim=True)
+plt.savefig(join(fig_path, 'summary_psycurve.png'))
 plt.savefig(join(fig_path, 'summary_psycurve.pdf'))
 
 # %%

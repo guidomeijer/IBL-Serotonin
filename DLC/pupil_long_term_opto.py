@@ -23,10 +23,7 @@ EPHYS_RIG = False
 _, fig_path, _ = paths()
 fig_path = join(fig_path, 'Pupil')
 
-subjects = load_subjects()
-subjects = subjects[subjects['subject'] != 'ZFM-02602']
-subjects = subjects[subjects['subject'] != 'ZFM-02180']
-subjects = subjects[subjects['subject'] != 'ZFM-01867']
+subjects = load_subjects(behavior=True)
 subjects = subjects.reset_index(drop=True)
 results_df = pd.DataFrame()
 for i, nickname in enumerate(subjects['subject']):
