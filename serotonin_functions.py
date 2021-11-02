@@ -165,9 +165,9 @@ def load_trials(eid, laser_stimulation=False, invert_choice=False, invert_stimsi
     trials['signed_contrast'] = trials['contrastRight']
     trials.loc[trials['signed_contrast'].isnull(), 'signed_contrast'] = -trials['contrastLeft']
     if laser_stimulation:
-        trials['laser_stimulation'] = one.load_dataset(eid, dataset='_ibl_trials.laser_stimulation.npy')
+        trials['laser_stimulation'] = one.load_dataset(eid, dataset='_ibl_trials.laserStimulation.npy')
         try:
-            trials['laser_probability'] = one.load_dataset(eid, dataset='_ibl_trials.laser_probability.npy')
+            trials['laser_probability'] = one.load_dataset(eid, dataset='_ibl_trials.laserProbability.npy')
             trials['probe_trial'] = ((trials['laser_stimulation'] == 0) & (trials['laser_probability'] == 0.75)
                                      | (trials['laser_stimulation'] == 1) & (trials['laser_probability'] == 0.25)).astype(int)
         except:
@@ -542,25 +542,21 @@ def get_bias(trials):
     return bias_right - bias_left
 
 
-def fit_glm(behav, prior_blocks=True, folds=5):
+def fit_glm(behav, prior_blocks=True, opto_stim=False, folds=5):
 
     # drop trials with contrast-level 50, only rarely present (should not be its own regressor)
     behav = behav[np.abs(behav.signed_contrast) != 50]
 
+    # add extra parameters to GLM
+    model_str = 'choice ~ 1 + stimulus_side:C(contrast, Treatment) + previous_choice:C(previous_outcome)'
+    if opto_stim:
+        model_str = model_str + ' + laser_stimulation'
+    if prior_blocks:
+        model_str = model_str + ' + block_id'
+
     # use patsy to easily build design matrix
-    if not prior_blocks:
-        endog, exog = patsy.dmatrices('choice ~ 1 + stimulus_side:C(contrast, Treatment)'
-                                      '+ previous_choice:C(previous_outcome)',
-                               data=behav.dropna(subset=['trial_feedback_type', 'choice',
-                                  'previous_choice', 'previous_outcome']).reset_index(),
-                                      return_type='dataframe')
-    else:
-        endog, exog = patsy.dmatrices('choice ~ 1 + stimulus_side:C(contrast, Treatment)'
-                                      '+ previous_choice:C(previous_outcome) '
-                                      '+ block_id',
-                               data=behav.dropna(subset=['trial_feedback_type', 'choice',
-                                  'previous_choice', 'previous_outcome', 'block_id']).reset_index(),
-                                      return_type='dataframe')
+    endog, exog = patsy.dmatrices(model_str, data=behav.dropna(subset=['trial_feedback_type', 'choice', 'previous_choice', 'previous_outcome']).reset_index(),
+                                  return_type='dataframe')
 
     # remove the one column (with 0 contrast) that has no variance
     if 'stimulus_side:C(contrast, Treatment)[0.0]' in exog.columns:

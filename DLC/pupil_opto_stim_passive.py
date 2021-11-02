@@ -99,7 +99,7 @@ for i, eid in enumerate(eids):
     results_df = results_df.append(pd.DataFrame(data={
         'diameter': pupil_size.groupby('time').median()['diameter'],
         'baseline_subtracted': pupil_size.groupby('time').median()['baseline_subtracted'],
-        'subject': nickname, 'sert-cre': subjects.loc[i, 'sert-cre']}))
+        'subject': nickname, 'expression': expression}))
 
     # Plot this animal
     colors, dpi = figure_style()
