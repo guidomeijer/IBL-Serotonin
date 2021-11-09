@@ -22,10 +22,7 @@ one = ONE()
 BASELINE = 5
 _, fig_path, save_path = paths()
 fig_path = join(fig_path, 'Behavior')
-subjects = load_subjects()
-subjects = subjects[subjects['subject'] != 'ZFM-02602']
-subjects = subjects[subjects['subject'] != 'ZFM-02180']
-subjects = subjects[subjects['subject'] != 'ZFM-01867']
+subjects = load_subjects(behavior=True)
 subjects = subjects.reset_index()
 
 results_df = pd.DataFrame()

@@ -34,14 +34,19 @@ block_switches = pd.DataFrame()
 for i, nickname in enumerate(subjects['subject']):
 
     # Query sessions
-    eids = query_opto_sessions(nickname, one=one)
-    #eids = behavioral_criterion(eids, one=one)
+    #eids = query_opto_sessions(nickname, one=one)
+    sessions = one.alyx.rest('sessions', 'list', subject=nickname,
+                             task_protocol='biased',
+                             project='serotonin_inference')
+    eids = [sess['url'][-36:] for sess in sessions]
+    eids = behavioral_criterion(eids, one=one)
     if len(eids) == 0:
         continue
+    if len(eids) > 10:
+        eids = eids[:10]
 
     # Get trial data
-    actions, stimuli, stim_side, prob_left, stimulated, session_uuids = load_exp_smoothing_trials(
-        eids, stimulated='block', one=one)
+    actions, stimuli, stim_side, prob_left, session_uuids = load_exp_smoothing_trials(eids, one=one)
 
     # Make array of after block switch trials
     block_switch = np.zeros(prob_left.shape)
@@ -80,5 +85,5 @@ ax1.set(xlabel='Trials after block switch', ylabel='Integration window (tau)',
 
 sns.despine(trim=True, offset=10)
 plt.tight_layout()
-plt.savefig(join(fig_path, 'model_prevaction_block-switch_opto'))
+plt.savefig(join(fig_path, 'model_prevaction_block-switch_no_opto'))
 

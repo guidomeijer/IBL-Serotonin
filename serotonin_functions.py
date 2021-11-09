@@ -314,7 +314,8 @@ def load_exp_smoothing_trials(eids, stimulated=None, rt_cutoff=0.2, after_probe_
                 stim_trials = (trials['reaction_times'] > rt_cutoff).values
             if stim_trial_shift > 0:
                 stim_trials = np.append(np.zeros(stim_trial_shift), stim_trials)[:-stim_trial_shift]
-            stimulated_arr.append(stim_trials)
+            if stimulated is not None:
+                stimulated_arr.append(stim_trials)
             stimuli_arr.append(trials['signed_contrast'].values)
             actions_arr.append(trials['choice'].values)
             stim_sides_arr.append(trials['stim_side'].values)
