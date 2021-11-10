@@ -6,19 +6,12 @@ By: Guido Meijer
 """
 
 import numpy as np
-from os.path import join, isdir
+from os.path import join
 import matplotlib.pyplot as plt
-from glob import glob
-from matplotlib.ticker import FormatStrFormatter
 import pandas as pd
-from os import mkdir
-from ibllib.io import spikeglx
-from brainbox.task.closed_loop import roc_single_event
 from brainbox.metrics.single_units import spike_sorting_metrics
-from serotonin_functions import figure_style
 import brainbox.io.one as bbone
-from brainbox.plot import peri_event_time_histogram
-from serotonin_functions import paths, remap, query_ephys_sessions, load_opto_times
+from serotonin_functions import paths, query_ephys_sessions
 from one.api import ONE
 from ibllib.atlas import AllenAtlas
 ba = AllenAtlas()
@@ -64,6 +57,7 @@ for i, eid in enumerate(eids):
                                                 '_phy_spikes_subset.channels'],
                                  collections=[collection]*3)[0]
         waveforms, wf_spikes, wf_channels = data[0], data[1], data[2]
+        waveforms = waveforms * 1000  # to uV
 
         # Filter neurons that pass QC
         if NEURON_QC:
@@ -95,6 +89,9 @@ for i, eid in enumerate(eids):
             # Get peak-to-trough ratio
             pt_ratio = np.max(mean_wf) / np.abs(np.min(mean_wf))
 
+            # Get peak minus through
+            pt_subtract = np.max(mean_wf) - np.abs(np.min(mean_wf))
+
             # Get part of spike from trough to first peak after the trough
             peak_after_trough = np.argmax(mean_wf[np.argmin(mean_wf):]) + np.argmin(mean_wf)
             repolarization = mean_wf[np.argmin(mean_wf):np.argmax(mean_wf[np.argmin(mean_wf):]) + np.argmin(mean_wf)]
@@ -121,8 +118,8 @@ for i, eid in enumerate(eids):
             # Add to dataframe
             waveforms_df = waveforms_df.append(pd.DataFrame(index=[waveforms_df.shape[0] + 1], data={
                 'eid': eid, 'probe': probe, 'subject': subject, 'waveform': [mean_wf],
-                'cluster_id': neuron_id, 'regions': clusters_regions[n],
-                'spike_amp': spike_amp, 'pt_ratio': pt_ratio, 'rp_slope': rp_slope,
+                'cluster_id': neuron_id, 'regions': clusters_regions[n], 'spike_amp': spike_amp,
+                'pt_ratio': pt_ratio, 'rp_slope': rp_slope, 'pt_subtract': pt_subtract,
                 'rc_slope': rc_slope, 'peak_to_trough': peak_to_trough, 'spike_width': spike_width,
                 'firing_rate': neuron_fr, 'n_waveforms': n_waveforms}))
 

@@ -91,7 +91,9 @@ def figure_style():
               'stim': sns.color_palette('colorblind')[9],
               'no-stim': sns.color_palette('colorblind')[7],
               'probe': sns.color_palette('colorblind')[4],
-              'block': sns.color_palette('colorblind')[6]}
+              'block': sns.color_palette('colorblind')[6],
+              'RS': sns.color_palette('Set2')[0],
+              'FS': sns.color_palette('Set2')[1]}
     screen_width = tk.Tk().winfo_screenwidth()
     dpi = screen_width / 12
     return colors, dpi

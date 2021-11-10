@@ -25,7 +25,8 @@ ba = AllenAtlas()
 one = ONE()
 
 # Settings
-PLOT = False
+PLOT = True
+SAVE = 'Recordings'  # Regions or Recordings
 OVERWRITE = True
 NEURON_QC = True
 T_BEFORE = 1  # for plotting
@@ -35,7 +36,7 @@ POST_TIME = [0, 1]
 BIN_SIZE = 0.05
 PERMUTATIONS = 500
 _, fig_path, save_path = paths()
-fig_path = join(fig_path, 'Ephys', 'SingleNeurons', 'LightModNeurons')
+fig_path = join(fig_path, 'Ephys', 'SingleNeurons', 'LightModNeurons', SAVE)
 
 # Query sessions
 eids, _ = query_ephys_sessions(one=one)
@@ -123,8 +124,7 @@ for i, eid in enumerate(eids):
         # Plot light modulated units
         if PLOT:
             for n, cluster in enumerate(cluster_ids[modulated]):
-                if not isdir(join(fig_path, f'{cluster_regions[cluster_ids == cluster][0]}')):
-                    mkdir(join(fig_path, f'{cluster_regions[cluster_ids == cluster][0]}'))
+                region = cluster_regions[cluster_ids == cluster][0]
 
                 # Plot PSTH
                 colors, dpi = figure_style()
@@ -144,8 +144,16 @@ for i, eid in enumerate(eids):
                        yticks=np.linspace(0, np.round(ax.get_ylim()[1]), 3))
                 ax.yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
                 plt.tight_layout()
-                plt.savefig(join(fig_path, cluster_regions[cluster_ids == cluster][0],
-                                 f'{subject}_{date}_{probe}_neuron{cluster}.pdf'))
+                if SAVE == 'Regions':
+                    if not isdir(join(fig_path, f'{region}')):
+                        mkdir(join(fig_path, f'{region}'))
+                    plt.savefig(join(fig_path, region,
+                                     f'{region}_{subject}_{date}_{probe}_neuron{cluster}.pdf'))
+                elif SAVE == 'Recordings':
+                    if not isdir(join(fig_path, f'{subject}_{date}')):
+                        mkdir(join(fig_path, f'{subject}_{date}'))
+                    plt.savefig(join(fig_path, f'{subject}_{date}',
+                                     f'{region}_{subject}_{date}_{probe}_neuron{cluster}.pdf'))
                 plt.close(p)
 
     light_neurons.to_csv(join(save_path, 'light_modulated_neurons.csv'))

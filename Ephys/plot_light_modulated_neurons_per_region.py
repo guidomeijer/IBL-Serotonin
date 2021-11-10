@@ -22,6 +22,9 @@ _, fig_path, save_path = paths()
 
 # Load in results
 light_neurons = pd.read_csv(join(save_path, 'light_modulated_neurons.csv'))
+neuron_type = pd.read_csv(join(save_path, 'neuron_type.csv'))
+
+merged_df = pd.concat([light_neurons, neuron_type], axis=1, join='inner')
 
 # Drop ZFM-02180 for now
 # light_neurons = light_neurons[light_neurons['subject'] != 'ZFM-02180']
