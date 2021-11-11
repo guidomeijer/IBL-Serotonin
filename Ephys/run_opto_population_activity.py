@@ -15,7 +15,9 @@ import seaborn as sns
 from brainbox.metrics.single_units import spike_sorting_metrics
 from serotonin_functions import figure_style
 import brainbox.io.one as bbone
+import scipy as sp
 from brainbox.singlecell import calculate_peths
+from brainbox.population.decode import get_spike_counts_in_bins
 from brainbox.plot import peri_event_time_histogram
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from serotonin_functions import paths, remap, query_ephys_sessions, load_opto_times
@@ -31,7 +33,7 @@ PLOT = False
 T_BEFORE = 1
 T_AFTER = 2
 BASELINE = 0.5
-BIN_SIZE = 0.025
+BIN_SIZE = 0.05
 _, fig_path, save_path, repo_path = paths(return_repo_path=True)
 fig_path = join(fig_path, 'Ephys', 'Population', 'LightMod')
 save_path = join(save_path)
@@ -107,15 +109,25 @@ for i, eid in enumerate(eids):
             if len(clusters_in_region) < MIN_NEURONS:
                 continue
 
-            # Get spike vector
+            # Get population activity
             peth, _ = calculate_peths(spks_region, np.ones(spks_region.shape), [1], opto_train_times,
                                        T_BEFORE, T_AFTER, BIN_SIZE)
             pop_act = peth['means'][0]
-            time = peth['tscale']
-            pop_act_baseline = pop_act - np.median(pop_act[(time > -BASELINE) & (time < 0)])
+            time_vector = peth['tscale']
+            pop_act_baseline = pop_act - np.median(pop_act[(time_vector > -BASELINE) & (time_vector < 0)])
+
+            # Get response matrix
+            for b, bin_center in enumerate(time_vector):
+                times = np.column_stack(((opto_train_times + (bin_center - BIN_SIZE / 2)),
+                                         (opto_train_times + (bin_center + BIN_SIZE / 2))))
+                population_activity, cluster_ids = get_spike_counts_in_bins(spks_region, clus_region, times)
+                population_activity = population_activity.T
+                sp.stats.kurtosis(np.mean(population_activity, axis=0))
+
+            # Add to dataframe
             pop_act_df = pop_act_df.append(pd.DataFrame(data={
                 'subject': subject, 'date': date, 'probe': probe, 'eid': eid,
-                'pop_act': pop_act, 'region': region, 'time': time, 'pop_act_baseline': pop_act_baseline}))
+                'pop_act': pop_act, 'region': region, 'time': time_vector, 'pop_act_baseline': pop_act_baseline}))
 
             # Plot
             colors, dpi = figure_style()
