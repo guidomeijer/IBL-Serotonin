@@ -14,6 +14,7 @@ import pandas as pd
 import tkinter as tk
 import patsy
 import statsmodels.api as sm
+import pathlib
 from sklearn.model_selection import KFold
 from os.path import join
 from glob import glob
@@ -40,7 +41,7 @@ def load_subjects(behavior=None):
     return subjects
 
 
-def paths():
+def paths(return_repo_path=False):
     """
     Make a file in the root of the repository called 'serotonin_paths.py' with in it:
 
@@ -50,7 +51,10 @@ def paths():
 
     """
     from serotonin_paths import DATA_PATH, FIG_PATH, SAVE_PATH
-    return DATA_PATH, FIG_PATH, SAVE_PATH
+    if return_repo_path:
+        return DATA_PATH, FIG_PATH, SAVE_PATH, pathlib.Path(__file__).parent.resolve()
+    else:
+        return DATA_PATH, FIG_PATH, SAVE_PATH
 
 
 def figure_style():

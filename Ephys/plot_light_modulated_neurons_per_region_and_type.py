@@ -22,24 +22,27 @@ _, fig_path, save_path = paths()
 
 # Load in results
 light_neurons = pd.read_csv(join(save_path, 'light_modulated_neurons.csv'), index_col=0)
+neuron_type = pd.read_csv(join(save_path, 'neuron_type.csv'))
+neuron_type = neuron_type[neuron_type['type'] != 'Und.']
+merged_df = pd.merge(light_neurons, neuron_type)
 
 # Drop ZFM-02180 for now
 # light_neurons = light_neurons[light_neurons['subject'] != 'ZFM-02180']
 
 # Drop root and void
-light_neurons = light_neurons.reset_index(drop=True)
-light_neurons = light_neurons.drop(index=[i for i, j in enumerate(light_neurons['region']) if 'root' in j])
-light_neurons = light_neurons.reset_index(drop=True)
-light_neurons = light_neurons.drop(index=[i for i, j in enumerate(light_neurons['region']) if 'void' in j])
+merged_df = merged_df.reset_index(drop=True)
+merged_df = merged_df.drop(index=[i for i, j in enumerate(merged_df['region']) if 'root' in j])
+merged_df = merged_df.reset_index(drop=True)
+merged_df = merged_df.drop(index=[i for i, j in enumerate(merged_df['region']) if 'void' in j])
 
 # Add expression
 subjects = pd.read_csv(join('..', 'subjects.csv'))
-for i, nickname in enumerate(np.unique(light_neurons['subject'])):
-    light_neurons.loc[light_neurons['subject'] == nickname, 'expression'] = subjects.loc[subjects['subject'] == nickname, 'expression'].values[0]
-    light_neurons.loc[light_neurons['subject'] == nickname, 'sert-cre'] = subjects.loc[subjects['subject'] == nickname, 'sert-cre'].values[0]
+for i, nickname in enumerate(np.unique(merged_df['subject'])):
+    merged_df.loc[merged_df['subject'] == nickname, 'expression'] = subjects.loc[subjects['subject'] == nickname, 'expression'].values[0]
+    merged_df.loc[merged_df['subject'] == nickname, 'sert-cre'] = subjects.loc[subjects['subject'] == nickname, 'sert-cre'].values[0]
 
 # Exclude artifact neurons
-light_neurons = light_neurons[light_neurons['roc_auc'] < ARTIFACT_ROC]
+merged_df = merged_df[merged_df['roc_auc'] < ARTIFACT_ROC]
 
 # Calculate summary statistics
 summary_df = light_neurons[light_neurons['expression'] == 1].groupby(['region']).sum()
