@@ -126,6 +126,7 @@ for i, nickname in enumerate(subjects['subject']):
                 'laser_prob': trials.loc[t, 'laser_probability'], 'laser_block_progress': trials.loc[t, 'block_progress'],
                 'time': TIME_BINS}))
 
+
         if PLOT_EXAMPLE_TRACE:
             colors, dpi = figure_style()
             f, ax1 = plt.subplots(1, 1, figsize=(3,2), dpi=dpi)

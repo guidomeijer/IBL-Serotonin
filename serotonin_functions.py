@@ -41,7 +41,7 @@ def load_subjects(behavior=None):
     return subjects
 
 
-def paths(return_repo_path=False):
+def paths():
     """
     Make a file in the root of the repository called 'serotonin_paths.py' with in it:
 
@@ -51,10 +51,7 @@ def paths(return_repo_path=False):
 
     """
     from serotonin_paths import DATA_PATH, FIG_PATH, SAVE_PATH
-    if return_repo_path:
-        return DATA_PATH, FIG_PATH, SAVE_PATH, pathlib.Path(__file__).parent.resolve()
-    else:
-        return DATA_PATH, FIG_PATH, SAVE_PATH
+    return DATA_PATH, FIG_PATH, SAVE_PATH
 
 
 def figure_style():
@@ -101,6 +98,21 @@ def figure_style():
     screen_width = tk.Tk().winfo_screenwidth()
     dpi = screen_width / 12
     return colors, dpi
+
+
+def get_artifact_neurons():
+    artifact_neurons = pd.read_csv(join(pathlib.Path(__file__).parent.resolve(), 'artifact_neurons.csv'))
+    return artifact_neurons
+
+
+def remove_artifact_neurons(df):
+    artifact_neurons = pd.read_csv(join(pathlib.Path(__file__).parent.resolve(), 'artifact_neurons.csv'))
+    for i, column in enumerate(df.columns):
+        if df[column].dtype == bool:
+            df[column] = df[column].astype('boolean')
+    df = pd.merge(df, artifact_neurons, indicator=True, how='outer',
+                  on=['eid', 'neuron_id', 'probe', 'subject', 'date']).query('_merge=="left_only"').drop('_merge', axis=1)
+    return df
 
 
 def query_opto_sessions(subject, one=None):

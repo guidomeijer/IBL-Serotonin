@@ -20,63 +20,39 @@ MIN_PERC = 3
 _, fig_path, save_path = paths()
 
 # Load in results
-light_neurons = pd.read_csv(join(save_path, 'light_modulated_neurons.csv'))
+lda_project = pd.read_csv(join(save_path, 'lda_opto_per_region.csv'))
 
 # Drop root and void
-light_neurons = light_neurons.reset_index(drop=True)
-light_neurons = light_neurons.drop(index=[i for i, j in enumerate(light_neurons['region']) if 'root' in j])
-light_neurons = light_neurons.reset_index(drop=True)
-light_neurons = light_neurons.drop(index=[i for i, j in enumerate(light_neurons['region']) if 'void' in j])
+lda_project = lda_project.reset_index(drop=True)
+lda_project = lda_project.drop(index=[i for i, j in enumerate(lda_project['region']) if 'root' in j])
+lda_project = lda_project.reset_index(drop=True)
+lda_project = lda_project.drop(index=[i for i, j in enumerate(lda_project['region']) if 'void' in j])
 
 # Get full region names
-light_neurons['full_region'] = get_full_region_name(light_neurons['region'])
+lda_project['full_region'] = get_full_region_name(lda_project['region'])
 
 # Add expression
 subjects = pd.read_csv(join('..', 'subjects.csv'))
-for i, nickname in enumerate(np.unique(light_neurons['subject'])):
-    light_neurons.loc[light_neurons['subject'] == nickname, 'expression'] = subjects.loc[subjects['subject'] == nickname, 'expression'].values[0]
-    light_neurons.loc[light_neurons['subject'] == nickname, 'sert-cre'] = subjects.loc[subjects['subject'] == nickname, 'sert-cre'].values[0]
+for i, nickname in enumerate(np.unique(lda_project['subject'])):
+    lda_project.loc[lda_project['subject'] == nickname, 'expression'] = subjects.loc[subjects['subject'] == nickname, 'expression'].values[0]
+    lda_project.loc[lda_project['subject'] == nickname, 'sert-cre'] = subjects.loc[subjects['subject'] == nickname, 'sert-cre'].values[0]
 
-# Calculate summary statistics
-summary_df = light_neurons[light_neurons['expression'] == 1].groupby(['region']).sum()
-summary_df['n_neurons'] = light_neurons[light_neurons['expression'] == 1].groupby(['region']).size()
-summary_df['modulation_index'] = light_neurons[light_neurons['expression'] == 1].groupby(['region']).mean()['roc_auc']
-summary_df = summary_df.reset_index()
-summary_df['perc_enh'] =  (summary_df['enhanced'] / summary_df['n_neurons']) * 100
-summary_df['perc_supp'] =  (summary_df['suppressed'] / summary_df['n_neurons']) * 100
-summary_df = summary_df[summary_df['n_neurons'] >= MIN_NEURONS]
-summary_df['full_region'] = get_full_region_name(summary_df['region'])
-summary_df['ratio'] = summary_df['perc_enh'] - summary_df['perc_supp']
-summary_df['perc_supp'] = -summary_df['perc_supp']
-# Exclude regions without modulation
-summary_df = summary_df[(summary_df['perc_enh'] >= MIN_PERC) | (summary_df['perc_supp'] <= -MIN_PERC)]
 # Get ordered regions
-ordered_regions = summary_df.groupby('full_region').max().sort_values(
-                                'modulation_index', ascending=False).reset_index()
-
-summary_no_df = light_neurons[light_neurons['expression'] == 0].groupby(['region']).sum()
-summary_no_df['n_neurons'] = light_neurons[light_neurons['expression'] == 0].groupby(['region']).size()
-summary_no_df['modulation_index'] = light_neurons[light_neurons['expression'] == 0].groupby(['region']).mean()['roc_auc']
-summary_no_df = summary_no_df.reset_index()
-summary_no_df['perc_enh'] =  (summary_no_df['enhanced'] / summary_no_df['n_neurons']) * 100
-summary_no_df['perc_supp'] =  (summary_no_df['suppressed'] / summary_no_df['n_neurons']) * 100
-summary_no_df = summary_no_df[summary_no_df['n_neurons'] >= MIN_NEURONS]
-summary_no_df['full_region'] = get_full_region_name(summary_no_df['region'])
-summary_no_df['ratio'] = summary_no_df['perc_enh'] - summary_no_df['perc_supp']
-summary_no_df['perc_supp'] = -summary_no_df['perc_supp']
-ordered_regions_no = summary_no_df.groupby('full_region').max().sort_values(
-                                'modulation_index', ascending=False).reset_index()
+ordered_regions = lda_project.groupby('full_region').max().sort_values(
+                                    'lda_dist', ascending=False).reset_index()
 
 
 # %% Plot
 
 colors, dpi = figure_style()
 f, (ax1, ax2) = plt.subplots(1, 2, figsize=(8, 4), dpi=dpi)
-ax1.plot([0, 0], [0, summary_df.shape[0]], color=[0.5, 0.5, 0.5], ls='--')
-sns.stripplot(x='perc_enh', y='full_region', data=summary_df, order=ordered_regions['full_region'],
-              color='k', alpha=0, ax=ax1)
-ax1.hlines(y=range(len(ordered_regions.index)), xmin=0, xmax=ordered_regions['perc_enh'],
-           color=colors['enhanced'])
+ax1.plot([0, 0], [0, lda_project.shape[0]], color=[0.5, 0.5, 0.5], ls='--')
+sns.stripplot(x='lda_dist', y='full_region', data=lda_project, order=ordered_regions['full_region'],
+              color='k', alpha=1, ax=ax1)
+sns.barplot(x='lda_dist', y='full_region', data=lda_project, order=ordered_regions['full_region'],
+            ax=ax1, )
+
+
 ax1.plot(ordered_regions['perc_enh'], range(len(ordered_regions.index)), 'o', color=colors['enhanced'])
 sns.stripplot(x='perc_supp', y='full_region', data=summary_df, order=ordered_regions['full_region'],
               color='k', alpha=0, ax=ax1)
@@ -107,10 +83,10 @@ plt.savefig(join(fig_path, 'Ephys', 'light_modulated_neurons_per_region.pdf'))
 plt.savefig(join(fig_path, 'Ephys', 'light_modulated_neurons_per_region.png'))
 
 f, (ax1, ax2) = plt.subplots(1, 2, figsize=(8, 4), dpi=dpi)
-sns.boxplot(x='roc_auc', y='full_region', data=light_neurons, ax=ax1, fliersize=0,
+sns.boxplot(x='roc_auc', y='full_region', data=lda_project, ax=ax1, fliersize=0,
             order=ordered_regions['full_region'], color='lightgrey')
 ax1.plot([0, 0], [0, summary_df.shape[0]], color='r', ls='--')
-#sns.displot(x='roc_auc', y='full_region', data=light_neurons, ax=ax1,
+#sns.displot(x='roc_auc', y='full_region', data=lda_project, ax=ax1,
 #            order=ordered_regions['full_region'], palette='coolwarm_r')
 ax1.set(ylabel='', xlim=[-0.6, 0.6], xticks=np.arange(-0.6, 0.61, 0.2), xlabel='Modulation index')
 
@@ -125,7 +101,7 @@ plt.savefig(join(fig_path, 'Ephys', 'light_modulation_index_per_region.pdf'))
 plt.savefig(join(fig_path, 'Ephys', 'light_modulation_index_per_region.png'))
 
 f, (ax1, ax2) = plt.subplots(1, 2, figsize=(8, 4), dpi=dpi)
-sns.kdeplot(data=light_neurons, x='roc_auc', hue='region', ax=ax1,
+sns.kdeplot(data=lda_project, x='roc_auc', hue='region', ax=ax1,
             hue_order=ordered_regions['region'], palette='coolwarm_r')
 
 plt.tight_layout()

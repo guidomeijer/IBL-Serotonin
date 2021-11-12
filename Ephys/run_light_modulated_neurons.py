@@ -18,14 +18,14 @@ from brainbox.metrics.single_units import spike_sorting_metrics
 from serotonin_functions import figure_style
 import brainbox.io.one as bbone
 from brainbox.plot import peri_event_time_histogram
-from serotonin_functions import paths, remap, query_ephys_sessions, load_opto_times
+from serotonin_functions import paths, remap, query_ephys_sessions, load_opto_times, remove_artifact_neurons
 from one.api import ONE
 from ibllib.atlas import AllenAtlas
 ba = AllenAtlas()
 one = ONE()
 
 # Settings
-PLOT = True
+PLOT = False
 SAVE = 'Recordings'  # Regions or Recordings
 OVERWRITE = True
 NEURON_QC = True
@@ -39,7 +39,7 @@ _, fig_path, save_path = paths()
 fig_path = join(fig_path, 'Ephys', 'SingleNeurons', 'LightModNeurons', SAVE)
 
 # Query sessions
-eids, _ = query_ephys_sessions(one=one)
+eids, _, subjects = query_ephys_sessions(return_subjects=True, one=one)
 
 if OVERWRITE:
     light_neurons = pd.DataFrame()
@@ -118,8 +118,9 @@ for i, eid in enumerate(eids):
         cluster_regions = remap(clusters[probe].atlas_id[cluster_ids])
         light_neurons = light_neurons.append(pd.DataFrame(data={
             'subject': subject, 'date': date, 'eid': eid, 'probe': probe,
-            'region': cluster_regions, 'cluster_id': cluster_ids,
-            'roc_auc': roc_auc, 'modulated': modulated, 'enhanced': enhanced, 'suppressed': suppressed}))
+            'region': cluster_regions, 'neuron_id': cluster_ids, 'roc_auc': roc_auc,
+            'roc_auc_null': np.mean(roc_auc_permut, axis=0),
+            'modulated': modulated, 'enhanced': enhanced, 'suppressed': suppressed}))
 
         # Plot light modulated units
         if PLOT:
@@ -156,5 +157,6 @@ for i, eid in enumerate(eids):
                                      f'{region}_{subject}_{date}_{probe}_neuron{cluster}.pdf'))
                 plt.close(p)
 
-    light_neurons.to_csv(join(save_path, 'light_modulated_neurons.csv'))
-light_neurons.to_csv(join(save_path, 'light_modulated_neurons.csv'))
+# Save output
+light_neurons = remove_artifact_neurons(light_neurons)  # remove artifacts
+light_neurons.to_csv(join(save_path, 'light_modulated_neurons.csv'), index=False)

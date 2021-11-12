@@ -28,7 +28,7 @@ one = ONE()
 ba = AllenAtlas()
 
 # Settings
-MIN_NEURONS = 1  # per region
+MIN_NEURONS = 10  # per region
 PLOT = False
 T_BEFORE = 1
 T_AFTER = 2
@@ -117,17 +117,36 @@ for i, eid in enumerate(eids):
             pop_act_baseline = pop_act - np.median(pop_act[(time_vector > -BASELINE) & (time_vector < 0)])
 
             # Get response matrix
+            sparsity, noise_corr, coef_var = np.zeros(time_vector.shape), np.zeros(time_vector.shape), np.zeros(time_vector.shape)
             for b, bin_center in enumerate(time_vector):
                 times = np.column_stack(((opto_train_times + (bin_center - BIN_SIZE / 2)),
                                          (opto_train_times + (bin_center + BIN_SIZE / 2))))
                 population_activity, cluster_ids = get_spike_counts_in_bins(spks_region, clus_region, times)
                 population_activity = population_activity.T
-                sp.stats.kurtosis(np.mean(population_activity, axis=0))
+
+                # Calculate population sparsity
+                sparsity[b] = ((1 - (1 / population_activity.shape[1])
+                                * ((np.sum(np.mean(population_activity, axis=0))**2)
+                                   / (np.sum(np.mean(population_activity, axis=0)**2))))
+                               / (1 - (1 / population_activity.shape[1])))
+
+                # Calculate noise correlations (remove neurons that do not spike at all)
+                if population_activity[:, np.sum(population_activity, axis=0) > 0].shape[1] > 1:
+                    corr_arr = np.corrcoef(population_activity[:, np.sum(population_activity, axis=0) > 0], rowvar=False)
+                    corr_arr = corr_arr[np.triu_indices(corr_arr.shape[0])]
+                    corr_arr = corr_arr[corr_arr != 1]
+                    noise_corr[b] = np.mean(corr_arr)
+                else:
+                    noise_corr[b] = np.nan
+
+                # Get coefficient of variation
+                coef_var[b] = np.std(np.mean(population_activity, axis=0)) / np.mean(np.mean(population_activity, axis=0))
 
             # Add to dataframe
             pop_act_df = pop_act_df.append(pd.DataFrame(data={
-                'subject': subject, 'date': date, 'probe': probe, 'eid': eid,
-                'pop_act': pop_act, 'region': region, 'time': time_vector, 'pop_act_baseline': pop_act_baseline}))
+                'subject': subject, 'date': date, 'probe': probe, 'eid': eid, 'region': region, 'time': time_vector,
+                'pop_act': pop_act, 'pop_act_baseline': pop_act_baseline, 'sparsity': sparsity,
+                'noise_corr': noise_corr, 'coef_var': coef_var}))
 
             # Plot
             colors, dpi = figure_style()
@@ -152,8 +171,18 @@ pop_act_df.to_csv(join(save_path, 'pop_act_opto_per_region.csv'), index=False)
 # %% Plot all regions
 pop_act_df = pop_act_df.reset_index(drop=True)
 
-f, ax1 = plt.subplots(1, 1, figsize=(3, 3), dpi=dpi)
-sns.lineplot(x='time', y='pop_act_baseline', data=pop_act_df, ci=68, hue='region', estimator=np.nanmean)
-ax1.set(xlabel='Time (s)', ylabel='Baseline subtracted pop. activity (spks/s)')
+colors, dpi = figure_style()
+g = sns.FacetGrid(data=pop_act_df, col='region', col_wrap=5)
+g.map(sns.lineplot, 'time', 'sparsity')
+
+g = sns.FacetGrid(data=pop_act_df, col='region', col_wrap=5)
+g.map(sns.lineplot, 'time', 'noise_corr')
+
+g = sns.FacetGrid(data=pop_act_df, col='region', col_wrap=5)
+g.map(sns.lineplot, 'time', 'coef_var')
+
+g = sns.FacetGrid(data=pop_act_df, col='region', col_wrap=5)
+g.map(sns.lineplot, 'time', 'pop_act')
+
 
 

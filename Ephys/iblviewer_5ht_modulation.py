@@ -37,7 +37,6 @@ class DataViewer():
         light_neurons = light_neurons.drop(index=[i for i, j in enumerate(light_neurons['region']) if 'root' in j])
         light_neurons = light_neurons.reset_index(drop=True)
         light_neurons = light_neurons.drop(index=[i for i, j in enumerate(light_neurons['region']) if 'void' in j])
-        light_neurons = light_neurons[light_neurons['roc_auc'] < 0.7]  # Add expression
         subjects = pd.read_csv(join('..', 'subjects.csv'))
         for i, nickname in enumerate(np.unique(light_neurons['subject'])):
             light_neurons.loc[light_neurons['subject'] == nickname, 'expression'] = subjects.loc[subjects['subject'] == nickname, 'expression'].values[0]
@@ -46,22 +45,19 @@ class DataViewer():
         # Calculate summary statistics
         summary_df = light_neurons[light_neurons['expression'] == 1].groupby(['region']).sum()
         summary_df['n_neurons'] = light_neurons[light_neurons['expression'] == 1].groupby(['region']).size()
+        summary_df['modulation_index'] = light_neurons[light_neurons['expression'] == 1].groupby(['region']).mean()['roc_auc']
         summary_df = summary_df.reset_index()
-        summary_df['perc_enh'] =  (summary_df['enhanced'] / summary_df['n_neurons']) * 100
-        summary_df['perc_supp'] =  (summary_df['suppressed'] / summary_df['n_neurons']) * 100
         summary_df = summary_df[summary_df['n_neurons'] >= 10]
-        summary_df['ratio'] = summary_df['perc_enh'] - summary_df['perc_supp']
-        summary_df['perc_supp'] = -summary_df['perc_supp']
         summary_df = summary_df.rename(columns={'region': 'acronym'})
-        summary_df = summary_df.rename(columns={'ratio': 'value'})
+        summary_df = summary_df.rename(columns={'modulation_index': 'value'})
 
         copy_df = summary_df.copy()
         agg_df = copy_df.groupby(self.grouper).agg({'value': self.aggregator})
         agg_df.dropna(inplace=True)
         #self.min_value = float(np.amin(agg_df, axis=0).to_numpy()[0])
         #self.max_value = float(np.amax(agg_df, axis=0).to_numpy()[0])
-        self.min_value = -20
-        self.max_value = 20
+        self.min_value = -0.15
+        self.max_value = 0.15
 
         if not silent:
             print('Min prior value ' + str(self.min_value))

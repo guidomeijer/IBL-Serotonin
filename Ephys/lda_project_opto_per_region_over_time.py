@@ -21,7 +21,7 @@ import brainbox.io.one as bbone
 from brainbox.population.decode import get_spike_counts_in_bins
 from brainbox.plot import peri_event_time_histogram
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
-from serotonin_functions import paths, remap, query_ephys_sessions, load_opto_times, get_artifact_neurons
+from serotonin_functions import paths, remap, query_ephys_sessions, load_opto_times
 from one.api import ONE
 from ibllib.atlas import AllenAtlas
 lda = LinearDiscriminantAnalysis()
@@ -29,17 +29,23 @@ one = ONE()
 ba = AllenAtlas()
 
 # Settings
-PULSE_TIME = 1  # seconds
 MIN_NEURONS = 5  # per region
-_, fig_path, save_path = paths()
+PLOT = False
+T_BEFORE = 1
+T_AFTER = 2
+BIN_SIZE = 0.1
+_, fig_path, save_path, repo_path = paths(return_repo_path=True)
 fig_path = join(fig_path, 'decoding_opto_pulses')
 save_path = join(save_path)
 
 # Query sessions
 eids, _ = query_ephys_sessions(one=one)
 
+# Get binning time vectors
+BIN_CENTERS = np.arange(-T_BEFORE, T_AFTER, BIN_SIZE) + (BIN_SIZE / 2)
+
 lda_dist_df = pd.DataFrame()
-artifact_neurons = get_artifact_neurons()
+artifact_neurons = pd.read_csv(join(repo_path, 'artifact_neurons.csv'))
 for i, eid in enumerate(eids):
 
     # Get session details
@@ -91,10 +97,11 @@ for i, eid in enumerate(eids):
         clusters[probe]['acronym'] = remap(clusters[probe]['atlas_id'])
         clusters_regions = clusters[probe]['acronym'][clusters_pass]
 
-        # Get time intervals
-        times = np.column_stack((opto_train_times, opto_train_times + PULSE_TIME))
-        times = np.vstack((times, np.column_stack((opto_train_times - PULSE_TIME, opto_train_times))))
-        laser_on = np.concatenate((np.ones(opto_train_times.shape[0]), np.zeros(opto_train_times.shape[0])))
+        # Get a number of random onset times in the spontaneous activity as control
+        control_times = np.random.uniform(low=start_passive, high=opto_train_times[0],
+                                          size=opto_train_times.shape[0], )
+        all_times = np.concatenate((control_times, opto_train_times))
+        laser_on = np.concatenate((np.zeros(control_times.shape[0]), np.ones(control_times.shape[0])))
 
         # Loop over regions
         for r, region in enumerate(np.unique(clusters_regions)):
@@ -106,16 +113,22 @@ for i, eid in enumerate(eids):
             if len(clusters_in_region) < MIN_NEURONS:
                 continue
 
-            pop_vector, cluster_ids = get_spike_counts_in_bins(spks_region, clus_region, times)
-            pop_vector = pop_vector.T
+            lda_dist = np.empty(BIN_CENTERS.shape[0])
+            for b, bin_center in enumerate(BIN_CENTERS):
+                times = np.column_stack((((all_times + bin_center) - (BIN_SIZE / 2)),
+                                         ((all_times + bin_center) + (BIN_SIZE / 2))))
+                pop_vector, cluster_ids = get_spike_counts_in_bins(spks_region, clus_region, times)
+                pop_vector = pop_vector.T
+                if np.sum(pop_vector) > 0:
+                    lda_projection = lda.fit_transform(pop_vector, laser_on)
+                    lda_dist[b] = (np.abs(np.nanmean(lda_projection[laser_on == 0]))
+                                   + np.abs(np.nanmean(lda_projection[laser_on == 1])))
+                else:
+                    lda_dist[b] = np.nan
 
-            lda_projection = lda.fit_transform(pop_vector, laser_on)
-            lda_dist = (np.abs(np.nanmean(lda_projection[laser_on == 0]))
-                        + np.abs(np.nanmean(lda_projection[laser_on == 1])))
-
-            lda_dist_df = lda_dist_df.append(pd.DataFrame(index=[lda_dist_df.shape[0]], data={
+            lda_dist_df = lda_dist_df.append(pd.DataFrame(data={
                 'subject': subject, 'date': date, 'probe': probe, 'eid': eid,
-                'lda_dist': lda_dist, 'region': region}))
+                'lda_dist': lda_dist, 'region': region, 'time': BIN_CENTERS}))
 
 lda_dist_df.to_csv(join(save_path, 'lda_opto_per_region.csv'), index=False)
 

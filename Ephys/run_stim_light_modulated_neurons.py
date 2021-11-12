@@ -108,7 +108,7 @@ for i, eid in enumerate(eids):
         cluster_regions = remap(clusters[probe].atlas_id[neuron_ids])
         stim_neurons = stim_neurons.append(pd.DataFrame(data={
             'subject': subject, 'date': date, 'eid': eid, 'probe': probe,
-            'cluster_id': neuron_ids, 'region': cluster_regions,
+            'neuron_id': neuron_ids, 'region': cluster_regions,
             'task_responsive': task_resp, 'task_roc': roc_task,
             'stim_modulated': stim_mod, 'stim_mod_roc': roc_stim_mod}))
 
