@@ -107,17 +107,15 @@ plt.savefig(join(fig_path, 'Ephys', 'light_modulated_neurons_per_region.pdf'))
 plt.savefig(join(fig_path, 'Ephys', 'light_modulated_neurons_per_region.png'))
 
 f, (ax1, ax2) = plt.subplots(1, 2, figsize=(8, 4), dpi=dpi)
-sns.boxplot(x='roc_auc', y='full_region', data=light_neurons, ax=ax1, fliersize=0,
-            order=ordered_regions['full_region'], color='lightgrey')
+sns.boxplot(x='roc_auc', y='full_region', data=light_neurons[light_neurons['expression'] == 1],
+            ax=ax1, fliersize=0, order=ordered_regions['full_region'], color='lightgrey')
 ax1.plot([0, 0], [0, summary_df.shape[0]], color='r', ls='--')
-#sns.displot(x='roc_auc', y='full_region', data=light_neurons, ax=ax1,
-#            order=ordered_regions['full_region'], palette='coolwarm_r')
 ax1.set(ylabel='', xlim=[-0.6, 0.6], xticks=np.arange(-0.6, 0.61, 0.2), xlabel='Modulation index')
 
-ax2.plot([0, 0], [0, summary_df.shape[0]], color=[0.5, 0.5, 0.5], ls='--')
-sns.violinplot(x='modulation_index', y='full_region', data=summary_no_df, ax=ax2,
-               order=ordered_regions['full_region'], palette='coolwarm_r')
-ax2.set(ylabel='', xlim=[-0.15, 0.15], xticks=np.arange(-0.15, 0.16, 0.05), xlabel='Modulation index')
+sns.boxplot(x='roc_auc', y='full_region', data=light_neurons[light_neurons['expression'] == 0],
+            ax=ax2, fliersize=0, order=ordered_regions['full_region'], color='lightgrey')
+ax2.plot([0, 0], [0, summary_df.shape[0]], color='r', ls='--')
+ax2.set(ylabel='', xlim=[-0.6, 0.6], xticks=np.arange(-0.6, 0.61, 0.2), xlabel='Modulation index')
 
 plt.tight_layout()
 sns.despine(trim=True)

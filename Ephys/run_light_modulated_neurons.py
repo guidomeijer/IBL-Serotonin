@@ -25,9 +25,9 @@ ba = AllenAtlas()
 one = ONE()
 
 # Settings
-PLOT = False
+PLOT = True
 SAVE = 'Recordings'  # Regions or Recordings
-OVERWRITE = True
+OVERWRITE = False
 NEURON_QC = True
 T_BEFORE = 1  # for plotting
 T_AFTER = 2
