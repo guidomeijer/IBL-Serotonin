@@ -21,7 +21,6 @@ class ProbeData:
         :param trim_outliers: Whether you want the lines to be cut when they're out of the brain
         :param with_labels: Whether labels should be added to the lines
         """
-        print('You need valid credentials and access to IBL server in order to run this example.')
         self.one_connection = ONE(base_url="https://alyx.internationalbrainlab.org")
         self.as_segments = as_segments
         self.line_width = line_width

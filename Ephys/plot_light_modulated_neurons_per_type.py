@@ -12,9 +12,6 @@ import matplotlib.pyplot as plt
 from os.path import join
 from serotonin_functions import paths, figure_style, get_full_region_name
 
-# Settings
-ARTIFACT_ROC = 0.6
-
 # Paths
 _, fig_path, save_path = paths()
 
@@ -38,9 +35,6 @@ subjects = pd.read_csv(join('..', 'subjects.csv'))
 for i, nickname in enumerate(np.unique(merged_df['subject'])):
     merged_df.loc[merged_df['subject'] == nickname, 'expression'] = subjects.loc[subjects['subject'] == nickname, 'expression'].values[0]
     merged_df.loc[merged_df['subject'] == nickname, 'sert-cre'] = subjects.loc[subjects['subject'] == nickname, 'sert-cre'].values[0]
-
-# Exclude artifact neurons
-merged_df = merged_df[merged_df['roc_auc'] < ARTIFACT_ROC]
 
 # Calculate summary statistics
 summary_df = merged_df[merged_df['expression'] == 1].groupby(['type']).sum()

@@ -20,7 +20,7 @@ from brainbox.singlecell import calculate_peths
 from brainbox.population.decode import get_spike_counts_in_bins
 from brainbox.plot import peri_event_time_histogram
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
-from serotonin_functions import paths, remap, query_ephys_sessions, load_opto_times
+from serotonin_functions import paths, remap, query_ephys_sessions, load_opto_times, get_artifact_neurons
 from one.api import ONE
 from ibllib.atlas import AllenAtlas
 lda = LinearDiscriminantAnalysis()
@@ -28,13 +28,13 @@ one = ONE()
 ba = AllenAtlas()
 
 # Settings
-MIN_NEURONS = 10  # per region
-PLOT = False
+MIN_NEURONS = 5  # per region
+PLOT = True
 T_BEFORE = 1
 T_AFTER = 2
 BASELINE = 0.5
 BIN_SIZE = 0.05
-_, fig_path, save_path, repo_path = paths(return_repo_path=True)
+_, fig_path, save_path = paths()
 fig_path = join(fig_path, 'Ephys', 'Population', 'LightMod')
 save_path = join(save_path)
 
@@ -44,7 +44,7 @@ eids, _ = query_ephys_sessions(one=one)
 # Get binning time vectors
 BIN_CENTERS = np.arange(-T_BEFORE, T_AFTER, BIN_SIZE) + (BIN_SIZE / 2)
 
-artifact_neurons = pd.read_csv(join(repo_path, 'artifact_neurons.csv'))
+artifact_neurons = get_artifact_neurons()
 pop_act_df = pd.DataFrame()
 for i, eid in enumerate(eids):
 
@@ -164,6 +164,7 @@ for i, eid in enumerate(eids):
             ax.yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
             plt.tight_layout()
             plt.savefig(join(fig_path, f'{region}_{subject}_{date}_{probe}.pdf'))
+            plt.savefig(join(fig_path, f'{region}_{subject}_{date}_{probe}.png'), dpi=300)
             plt.close(f)
 
 pop_act_df.to_csv(join(save_path, 'pop_act_opto_per_region.csv'), index=False)

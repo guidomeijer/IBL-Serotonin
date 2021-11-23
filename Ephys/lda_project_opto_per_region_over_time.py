@@ -30,12 +30,12 @@ ba = AllenAtlas()
 
 # Settings
 MIN_NEURONS = 5  # per region
-PLOT = False
+PLOT = True
 T_BEFORE = 1
 T_AFTER = 2
 BIN_SIZE = 0.1
 _, fig_path, save_path, repo_path = paths(return_repo_path=True)
-fig_path = join(fig_path, 'decoding_opto_pulses')
+fig_path = join(fig_path, 'Ephys', 'LDA', 'LDA_passive_regions')
 save_path = join(save_path)
 
 # Query sessions
@@ -126,9 +126,17 @@ for i, eid in enumerate(eids):
                 else:
                     lda_dist[b] = np.nan
 
+            # Plot
+            if PLOT:
+
+
+
+            # Add to dataframe
             lda_dist_df = lda_dist_df.append(pd.DataFrame(data={
                 'subject': subject, 'date': date, 'probe': probe, 'eid': eid,
                 'lda_dist': lda_dist, 'region': region, 'time': BIN_CENTERS}))
+
+
 
 lda_dist_df.to_csv(join(save_path, 'lda_opto_per_region.csv'), index=False)
 

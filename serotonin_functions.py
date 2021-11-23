@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+1# -*- coding: utf-8 -*-
 """
 Created on Wed Jan 22 16:22:01 2020
 
@@ -82,7 +82,8 @@ def figure_style():
                  })
     matplotlib.rcParams['pdf.fonttype'] = 42
     matplotlib.rcParams['ps.fonttype'] = 42
-    colors = {'sert': sns.color_palette('Dark2')[0],
+    colors = {'general': sns.color_palette('Set2')[2],
+              'sert': sns.color_palette('Dark2')[0],
               'wt': [0.75, 0.75, 0.75],
               'left': sns.color_palette('colorblind')[1],
               'right': sns.color_palette('colorblind')[0],
@@ -342,7 +343,7 @@ def load_exp_smoothing_trials(eids, stimulated=None, rt_cutoff=0.2, after_probe_
         except:
             print(f'Could not load trials for {eid}')
 
-    if (len(session_uuids) == 0) and (stimulated is not None and stimulated != 'rt'):
+    if (len(session_uuids) == 0) and (stimulated is not None):
         return [], [], [], [], [], []
     elif len(session_uuids) == 0:
         return [], [], [], [], []
@@ -360,7 +361,7 @@ def load_exp_smoothing_trials(eids, stimulated=None, rt_cutoff=0.2, after_probe_
     stim_side = np.array([np.concatenate((stim_sides_arr[k],
                                           np.zeros(max_len-len(stim_sides_arr[k]))))
                           for k in range(len(stim_sides_arr))])
-    if stimulated is not None and stimulated != 'rt':
+    if stimulated is not None:
         opto_stim = np.array([np.concatenate((stimulated_arr[k], np.zeros(max_len-len(stimulated_arr[k]))))
                               for k in range(len(stimulated_arr))])
     session_uuids = np.array(session_uuids)
@@ -370,10 +371,10 @@ def load_exp_smoothing_trials(eids, stimulated=None, rt_cutoff=0.2, after_probe_
         actions = np.array([np.squeeze(actions)])
         prob_left = np.array([np.squeeze(prob_left)])
         stim_side = np.array([np.squeeze(stim_side)])
-        if stimulated is not None and stimulated != 'rt':
+        if stimulated is not None:
             opto_stim = np.array([np.squeeze(opto_stim)])
 
-    if stimulated is not None and stimulated != 'rt':
+    if stimulated is not None:
         return actions, stimuli, stim_side, prob_left, opto_stim, session_uuids
     else:
         return actions, stimuli, stim_side, prob_left, session_uuids
@@ -561,7 +562,7 @@ def get_bias(trials):
     return bias_right - bias_left
 
 
-def fit_glm(behav, prior_blocks=True, opto_stim=False, folds=5):
+def fit_glm(behav, prior_blocks=True, opto_stim=False, rt_cutoff=None, folds=5):
 
     # drop trials with contrast-level 50, only rarely present (should not be its own regressor)
     behav = behav[np.abs(behav.signed_contrast) != 50]
@@ -572,6 +573,9 @@ def fit_glm(behav, prior_blocks=True, opto_stim=False, folds=5):
         model_str = model_str + ' + laser_stimulation'
     if prior_blocks:
         model_str = model_str + ' + block_id'
+    if rt_cutoff is not None:
+        behav['rt_cutoff'] = (behav['reaction_times'] > rt_cutoff).astype(int)
+        model_str = model_str + ' + rt_cutoff'
 
     # use patsy to easily build design matrix
     endog, exog = patsy.dmatrices(model_str, data=behav.dropna(subset=['trial_feedback_type', 'choice', 'previous_choice', 'previous_outcome']).reset_index(),
