@@ -107,6 +107,12 @@ for i, nickname in enumerate(subjects['subject']):
                                      / np.shape(trials.loc[(trials['laser_probability'] == 0.75)
                                                            & (trials['laser_stimulation'] == 0), 'right_choice'] == 1)[0])
 
+    # Get performance
+    perf_opto = (trials.loc[trials['laser_stimulation'] == 1, 'correct'].sum()
+                 / trials.loc[trials['laser_stimulation'] == 1, 'correct'].shape[0]) * 100
+    perf_no_opto = (trials.loc[trials['laser_stimulation'] == 0, 'correct'].sum()
+                    / trials.loc[trials['laser_stimulation'] == 0, 'correct'].shape[0]) * 100
+
     # Get RT
     rt_no_stim = trials[(trials['laser_stimulation'] == 0)
                         & (trials['laser_probability'] == 0.25)].median()['reaction_times']
@@ -123,7 +129,8 @@ for i, nickname in enumerate(subjects['subject']):
         'side_bias_stim': side_bias_stim, 'side_bias_probe_stim': side_bias_probe_stim,
         'side_bias_probe_no_stim': side_bias_probe_no_stim, 'rt_no_stim': rt_no_stim,
         'rt_stim': rt_stim, 'rt_catch_no_stim': rt_catch_no_stim, 'rt_catch_stim': rt_catch_stim,
-        'bias_fit_stim': bias_fit_stim, 'bias_fit_no_stim': bias_fit_no_stim}))
+        'bias_fit_stim': bias_fit_stim, 'bias_fit_no_stim': bias_fit_no_stim,
+        'perf_stim': perf_opto, 'perf_no_stim': perf_no_opto}))
 
     # Get lapse rates
     lapse_l_l_ns = trials.loc[(trials['probabilityLeft'] == 0.8) & (trials['signed_contrast'] == -1)
@@ -329,6 +336,13 @@ for i, subject in enumerate(bias_df['subject']):
              color = colors[bias_df.loc[bias_df['subject'] == subject, 'sert-cre'].values[0]], marker='o', ms=2)
 ax7.set(xlabel='', xticks=[1, 2], xticklabels=['No stim', 'Stim'], ylabel='Median reaction time',
         yscale='log', yticks=[1], yticklabels=[1])
+
+for i, subject in enumerate(bias_df['subject']):
+    ax8.plot([1, 2], [bias_df.loc[bias_df['subject'] == subject, 'perf_no_stim'],
+                      bias_df.loc[bias_df['subject'] == subject, 'perf_stim']],
+             color = colors[bias_df.loc[bias_df['subject'] == subject, 'sert-cre'].values[0]], marker='o', ms=2)
+ax8.set(xlabel='', xticks=[1, 2], xticklabels=['No stim', 'Stim'], ylabel='Performance (%)',
+        ylim=[65, 85])
 
 plt.tight_layout()
 sns.despine(trim=True)
