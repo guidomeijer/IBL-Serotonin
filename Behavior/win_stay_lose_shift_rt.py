@@ -58,7 +58,7 @@ for i, nickname in enumerate(subjects['subject']):
     params = fit_glm(trials, rt_cutoff=RT_CUTOFF)
 
     # Add to dataframe
-    results_df = results_df.append(params, ignore_index=True)
+    results_df = results_single_df.append(params, ignore_index=True)
     results_df.loc[results_df.shape[0]-1, 'subject'] = nickname
     results_df.loc[results_df.shape[0]-1, 'sert-cre'] = subjects.loc[i, 'sert-cre']
 
@@ -67,7 +67,7 @@ for i, nickname in enumerate(subjects['subject']):
 
 colors, dpi = figure_style()
 colors = [colors['wt'], colors['sert']]
-f, (ax1, ax2) = plt.subplots(1, 2, figsize=(4, 2), dpi=dpi)
+f, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(2, 3, figsize=(6, 3), dpi=dpi)
 xticks = [0.01, 0.05, 0.5, 5, 10, 60]
 ax1.hist(np.log10(all_trials['reaction_times']), bins=20)
 ax1.set(xlabel='log-transformed reaction times (s)', ylabel='Trials',
@@ -82,7 +82,5 @@ ax2.set(xlabel='', xticks=[1, 2], xticklabels=['Short RT', 'Long RT'], ylabel='M
 
 plt.tight_layout()
 sns.despine(trim=True)
-plt.savefig(join(fig_path, 'GLM_reaction_time_split'), dpi=300)
-
 
 

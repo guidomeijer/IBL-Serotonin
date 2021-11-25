@@ -19,7 +19,7 @@ from one.api import ONE
 one = ONE()
 
 # Settings
-REMOVE_OLD_FIT = True
+REMOVE_OLD_FIT = False
 RT_CUTOFF = 0.4
 POSTERIOR = 'posterior_mean'
 _, fig_path, save_path = paths()

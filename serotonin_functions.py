@@ -411,6 +411,39 @@ def load_opto_times(eid, one=None):
         opto_train_times = opto_train_times[np.where(np.diff(opto_train_times) > 300)[0][0]+1:]
         return opto_train_times
 
+def load_opto_pulse_times(eid, part='begin', one=None):
+        if one is None:
+            one = ONE()
+
+        # Load in laser pulses
+        try:
+            one.load_datasets(eid, datasets=[
+                '_spikeglx_ephysData_g0_t0.nidq.cbin', '_spikeglx_ephysData_g0_t0.nidq.meta',
+                '_spikeglx_ephysData_g0_t0.nidq.ch'], download_only=True)
+        except:
+            one.load_datasets(eid, datasets=[
+                '_spikeglx_ephysData_g1_t0.nidq.cbin', '_spikeglx_ephysData_g1_t0.nidq.meta',
+                '_spikeglx_ephysData_g1_t0.nidq.ch'], download_only=True)
+        session_path = one.eid2path(eid)
+        nidq_file = glob(str(session_path.joinpath('raw_ephys_data/_spikeglx_ephysData_g*_t0.nidq.cbin')))[0]
+        sr = spikeglx.Reader(nidq_file)
+        if part == 'begin':
+            opto_trace = sr.read_sync_analog(slice(0, int(1000 * sr.fs)))[:, 1]
+            opto_times = np.arange(0, int(1000 * sr.fs)) / sr.fs
+        elif part == 'end':
+            offset = int((sr.shape[0] / sr.fs - 1000) * sr.fs)
+            opto_trace = sr.read_sync_analog(slice(offset, offset + int(1000 * sr.fs)))[:, 1]
+            opto_times = np.arange(offset, offset + len(opto_trace)) / sr.fs
+
+        # Get all pulse times
+        opto_high_times = opto_times[opto_trace > 1]
+        if len(opto_high_times) == 0:
+            print(f'No pulses found for {eid}')
+            return []
+        else:
+            opto_pulses = opto_high_times[np.concatenate(([True], np.diff(opto_high_times) > 0.01))]
+            return opto_pulses
+
 
 def query_bwm_sessions(selection='all', return_subjects=False, one=None):
     if one is None:
@@ -562,7 +595,7 @@ def get_bias(trials):
     return bias_right - bias_left
 
 
-def fit_glm(behav, prior_blocks=True, opto_stim=False, rt_cutoff=None, folds=5):
+def fit_glm(behav, prior_blocks=True, opto_stim=False, rt_cutoff=None, folds=3):
 
     # drop trials with contrast-level 50, only rarely present (should not be its own regressor)
     behav = behav[np.abs(behav.signed_contrast) != 50]
@@ -573,13 +606,13 @@ def fit_glm(behav, prior_blocks=True, opto_stim=False, rt_cutoff=None, folds=5):
         model_str = model_str + ' + laser_stimulation'
     if prior_blocks:
         model_str = model_str + ' + block_id'
-    if rt_cutoff is not None:
-        behav['rt_cutoff'] = (behav['reaction_times'] > rt_cutoff).astype(int)
-        model_str = model_str + ' + rt_cutoff'
+
+    # drop NaNs
+    behav = behav.dropna(subset=['trial_feedback_type', 'choice', 'previous_choice',
+                                 'previous_outcome', 'reaction_times']).reset_index(drop=True)
 
     # use patsy to easily build design matrix
-    endog, exog = patsy.dmatrices(model_str, data=behav.dropna(subset=['trial_feedback_type', 'choice', 'previous_choice', 'previous_outcome']).reset_index(),
-                                  return_type='dataframe')
+    endog, exog = patsy.dmatrices(model_str, data=behav, return_type='dataframe')
 
     # remove the one column (with 0 contrast) that has no variance
     if 'stimulus_side:C(contrast, Treatment)[0.0]' in exog.columns:
@@ -590,7 +623,7 @@ def fit_glm(behav, prior_blocks=True, opto_stim=False, rt_cutoff=None, folds=5):
 
     # rename columns
     exog.rename(columns={'Intercept': 'bias',
-              'stimulus_side:C(contrast, Treatment)[6.25]': '6.25',
+             'stimulus_side:C(contrast, Treatment)[6.25]': '6.25',
              'stimulus_side:C(contrast, Treatment)[12.5]': '12.5',
              'stimulus_side:C(contrast, Treatment)[25.0]': '25',
              'stimulus_side:C(contrast, Treatment)[50.0]': '50',
@@ -612,23 +645,63 @@ def fit_glm(behav, prior_blocks=True, opto_stim=False, rt_cutoff=None, folds=5):
     # ADD MODEL ACCURACY - cross-validate
 
     kf = KFold(n_splits=folds, shuffle=True)
-    acc = np.array([])
-    for train, test in kf.split(endog):
-        X_train, X_test, y_train, y_test = exog.loc[train], exog.loc[test], \
-                                           endog.loc[train], endog.loc[test]
-        # fit again
-        logit_model = sm.Logit(y_train, X_train)
-        res = logit_model.fit_regularized(disp=False)  # run silently
 
-        # compute the accuracy on held-out data [from Luigi]:
-        # suppose you are predicting Pr(Left), let's call it p,
-        # the % match is p if the actual choice is left, or 1-p if the actual choice is right
-        # if you were to simulate it, in the end you would get these numbers
-        y_test['pred'] = res.predict(X_test)
-        y_test.loc[y_test['choice'] == 0, 'pred'] = 1 - y_test.loc[y_test['choice'] == 0, 'pred']
-        acc = np.append(acc, y_test['pred'].mean())
+    if rt_cutoff is None:
+        acc = np.array([])
+        for train, test in kf.split(endog):
+            X_train, X_test, y_train, y_test = exog.loc[train], exog.loc[test], \
+                                               endog.loc[train], endog.loc[test]
+            # fit again
+            logit_model = sm.Logit(y_train, X_train)
+            res = logit_model.fit_regularized(disp=False)  # run silently
+
+            # compute the accuracy on held-out data [from Luigi]:
+            # suppose you are predicting Pr(Left), let's call it p,
+            # the % match is p if the actual choice is left, or 1-p if the actual choice is right
+            # if you were to simulate it, in the end you would get these numbers
+            y_test['pred'] = res.predict(X_test)
+            y_test.loc[y_test['choice'] == 0, 'pred'] = 1 - y_test.loc[y_test['choice'] == 0, 'pred']
+            acc = np.append(acc, y_test['pred'].mean())
+
+        # average prediction accuracy over the K folds
+        params['accuracy'] = np.mean(acc)
+    else:
+        acc_rt_short , acc_rt_long = np.array([]), np.array([])
+        exog_short = exog[behav['reaction_times'] < rt_cutoff].copy().reset_index(drop=True)
+        exog_long = exog[behav['reaction_times'] > rt_cutoff].copy().reset_index(drop=True)
+        endog_short = endog[behav['reaction_times'] < rt_cutoff].copy().reset_index(drop=True)
+        endog_long = endog[behav['reaction_times'] > rt_cutoff].copy().reset_index(drop=True)
+        for train, test in kf.split(endog_short):
+            X_train, X_test, y_train, y_test = exog_short.loc[train], exog_short.loc[test], \
+                                               endog_short.loc[train], endog_short.loc[test]
+            # fit again
+            logit_model = sm.Logit(y_train, X_train)
+            res = logit_model.fit_regularized(disp=False)  # run silently
+
+            # compute the accuracy on held-out data [from Luigi]:
+            # suppose you are predicting Pr(Left), let's call it p,
+            # the % match is p if the actual choice is left, or 1-p if the actual choice is right
+            # if you were to simulate it, in the end you would get these numbers
+            y_test['pred'] = res.predict(X_test)
+            y_test.loc[y_test['choice'] == 0, 'pred'] = 1 - y_test.loc[y_test['choice'] == 0, 'pred']
+            acc_rt_short = np.append(acc_rt_short, y_test['pred'].mean())
+        for train, test in kf.split(endog_long):
+            X_train, X_test, y_train, y_test = exog_long.loc[train], exog_long.loc[test], \
+                                               endog_long.loc[train], endog_long.loc[test]
+            # fit again
+            logit_model = sm.Logit(y_train, X_train)
+            res = logit_model.fit_regularized(disp=False)  # run silently
+
+            # compute the accuracy on held-out data [from Luigi]:
+            # suppose you are predicting Pr(Left), let's call it p,
+            # the % match is p if the actual choice is left, or 1-p if the actual choice is right
+            # if you were to simulate it, in the end you would get these numbers
+            y_test['pred'] = res.predict(X_test)
+            y_test.loc[y_test['choice'] == 0, 'pred'] = 1 - y_test.loc[y_test['choice'] == 0, 'pred']
+            acc_rt_long = np.append(acc_rt_long, y_test['pred'].mean())
 
     # average prediction accuracy over the K folds
-    params['accuracy'] = np.mean(acc)
+    params['accuracy_rt_short'] = np.mean(acc_rt_short)
+    params['accuracy_rt_long'] = np.mean(acc_rt_long)
 
     return params  # wide df
