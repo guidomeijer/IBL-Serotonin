@@ -17,7 +17,7 @@ from one.api import ONE
 one = ONE()
 
 # Settings
-RT_CUTOFF = 0.5
+RT_CUTOFF = 0.4
 REWARD_WIN = 10  # trials
 CHOICE_WIN = 5  # trials
 MIN_TRIALS = 5  # for estimating reward bias
@@ -37,7 +37,7 @@ for i, nickname in enumerate(subjects['subject']):
     for j, eid in enumerate(eids):
         try:
             if subjects.loc[i, 'sert-cre'] == 1:
-                trials = load_trials(eid, laser_stimulation=True, patch_old_opto=True, one=one)
+                trials = load_trials(eid, laser_stimulation=True, patch_old_opto=False, one=one)
             else:
                 trials = load_trials(eid, laser_stimulation=True, patch_old_opto=False, one=one)
         except:
@@ -50,22 +50,13 @@ for i, nickname in enumerate(subjects['subject']):
             stim_trials = trials_slice[trials_slice['laser_stimulation'] == 1]
             if stim_trials.shape[0] >= MIN_TRIALS:
                 rew_win = np.zeros(stim_trials.shape[0])
-                rew_win[(stim_trials['choice'] == -1) & (stim_trials['feedbackType'] == 1)] = -1
-                rew_win[(stim_trials['choice'] == -1) & (stim_trials['feedbackType'] == -1)] = 1
-                rew_win[(stim_trials['choice'] == 1) & (stim_trials['feedbackType'] == 1)] = 1
-                rew_win[(stim_trials['choice'] == 1) & (stim_trials['feedbackType'] == -1)] = -1
-                trials.loc[t, 'rew_bias_opto'] = np.sum(rew_win)
+                trials.loc[t, 'rew_bias_opto'] = np.sum(stim_trials['choice'])
 
             # reward bias no opto
             no_stim_trials = trials_slice[trials_slice['laser_stimulation'] == 0]
             if no_stim_trials.shape[0] >= MIN_TRIALS:
                 rew_win = np.zeros(no_stim_trials.shape[0])
-                rew_win[(no_stim_trials['choice'] == -1) & (no_stim_trials['feedbackType'] == 1)] = -1
-                rew_win[(no_stim_trials['choice'] == -1) & (no_stim_trials['feedbackType'] == -1)] = 1
-                rew_win[(no_stim_trials['choice'] == 1) & (no_stim_trials['feedbackType'] == 1)] = 1
-                rew_win[(no_stim_trials['choice'] == 1) & (no_stim_trials['feedbackType'] == -1)] = -1
-                rew_bias_no_opto = np.sum(rew_win)
-                trials.loc[t, 'rew_bias_no_opto'] = np.sum(rew_win)
+                trials.loc[t, 'rew_bias_no_opto'] = np.sum(no_stim_trials['choice'])
 
             # choice bias short rt
             trials_slice = trials[t+REWARD_WIN+1:t+REWARD_WIN+CHOICE_WIN+1]
@@ -129,5 +120,5 @@ ax4.get_legend().remove()
 
 plt.tight_layout(pad=3)
 sns.despine(trim=True)
-plt.savefig(join(fig_path, 'rew_bias_choice_bias'), dpi=300)
+plt.savefig(join(fig_path, 'corr_choice_history'), dpi=300)
 
