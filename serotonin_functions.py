@@ -308,12 +308,8 @@ def load_exp_smoothing_trials(eids, stimulated=None, rt_cutoff=0.2, after_probe_
     for j, eid in enumerate(eids):
         try:
             # Load in trials vectors
-            if stimulated is not None and stimulated != 'rt':
-                trials = load_trials(eid, invert_stimside=True, laser_stimulation=True,
-                                     patch_old_opto=patch_old_opto, one=one)
-            else:
-                trials = load_trials(eid, invert_stimside=True, laser_stimulation=False,
-                                     patch_old_opto=patch_old_opto, one=one)
+            trials = load_trials(eid, invert_stimside=True, laser_stimulation=True,
+                                 patch_old_opto=patch_old_opto, one=one)
             if trials.shape[0] < min_trials:
                 continue
             if stimulated == 'all':

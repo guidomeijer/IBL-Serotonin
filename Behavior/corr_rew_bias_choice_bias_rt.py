@@ -50,10 +50,12 @@ for i, nickname in enumerate(subjects['subject']):
             stim_trials = trials_slice[trials_slice['laser_stimulation'] == 1]
             if stim_trials.shape[0] >= MIN_TRIALS:
                 rew_win = np.zeros(stim_trials.shape[0])
+
                 rew_win[(stim_trials['choice'] == -1) & (stim_trials['feedbackType'] == 1)] = -1
                 rew_win[(stim_trials['choice'] == -1) & (stim_trials['feedbackType'] == -1)] = 1
                 rew_win[(stim_trials['choice'] == 1) & (stim_trials['feedbackType'] == 1)] = 1
                 rew_win[(stim_trials['choice'] == 1) & (stim_trials['feedbackType'] == -1)] = -1
+
                 trials.loc[t, 'rew_bias_opto'] = np.sum(rew_win)
 
             # reward bias no opto

@@ -12,7 +12,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import torch
-from models.expSmoothing_prevAction_SE import expSmoothing_prevAction_SE as exp_prev_action
+from models.expSmoothing_prevAction_4lr import expSmoothing_prevAction_4lr as exp_prev_action
 from serotonin_functions import (paths, load_exp_smoothing_trials, figure_style, load_subjects,
                                  query_opto_sessions, behavioral_criterion)
 from one.api import ONE
@@ -41,29 +41,41 @@ for i, nickname in enumerate(subjects['subject']):
     # Get trial data
     actions, stimuli, stim_side, prob_left, rt_low_high, session_uuids = load_exp_smoothing_trials(
         eids, stimulated='rt', rt_cutoff=RT_CUTOFF, one=one)
+    _, _, _, _, stimulated, _= load_exp_smoothing_trials(eids, stimulated='block', one=one)
+    stim_rt = np.zeros(stimulated.shape)
+    stim_rt[(stimulated == 0) & (rt_low_high == 0)] = 0
+    stim_rt[(stimulated == 0) & (rt_low_high == 1)] = 1
+    stim_rt[(stimulated == 1) & (rt_low_high == 0)] = 2
+    stim_rt[(stimulated == 1) & (rt_low_high == 1)] = 3
+    stim_rt = torch.tensor(stim_rt.astype(int))
 
     if len(session_uuids) == 0:
         continue
 
     # Fit models
     model = exp_prev_action('./model_fit_results/', session_uuids, '%s_rt' % nickname,
-                            actions, stimuli, stim_side, torch.tensor(rt_low_high))
+                            actions, stimuli, stim_side, torch.tensor(stim_rt))
     model.load_or_train(nb_steps=2000, remove_old=REMOVE_OLD_FIT)
     param_prevaction = model.get_parameters(parameter_type=POSTERIOR)
+
     output_prevaction = model.compute_signal(signal=['prior', 'score'], act=actions, stim=stimuli, side=stim_side)
     priors_prevaction = output_prevaction['prior']
-    results_df = results_df.append(pd.DataFrame(data={'tau_pa': [1/param_prevaction[0], 1/param_prevaction[1]],
-                                                      'opto_stim': ['fast', 'slow'],
-                                                      'sert-cre': subjects.loc[i, 'sert-cre'],
-                                                      'subject': nickname}))
+    results_df = results_df.append(pd.DataFrame(data={
+        'tau_pa': 1/param_prevaction[:4], 'opto_stim': [0, 0, 1, 1], 'subject': nickname,
+        'reaction_time': ['fast', 'slow', 'fast', 'slow'], 'sert-cre': subjects.loc[i, 'sert-cre']}))
 results_df = results_df.reset_index(drop=True)
 # %% Plot
 colors, dpi = figure_style()
-f, ax1 = plt.subplots(1, 1, figsize=(2, 2), dpi=dpi)
-sns.lineplot(x='opto_stim', y='tau_pa', hue='sert-cre', style='subject', estimator=None,
-             data=results_df, dashes=False, markers=['o']*int(results_df.shape[0]/2),
-             legend=None, ax=ax1, palette=[colors['wt'], colors['sert']])
-ax1.set(xlabel='', ylabel='Lenght of integration window (tau)', title=f'RT cutoff: {RT_CUTOFF} s')
+f, (ax1, ax2) = plt.subplots(1, 2, figsize=(4, 2), dpi=dpi)
+sns.lineplot(x='opto_stim', y='tau_pa', hue='reaction_time', style='subject', estimator=None,
+             data=results_df[results_df['sert-cre'] == 1],
+             legend='brief', ax=ax1, palette=[colors['enhanced'], colors['suppressed']])
+ax1.set(xlabel='', ylabel='Lenght of integration window (tau)', title='SERT')
+
+sns.lineplot(x='opto_stim', y='tau_pa', hue='reaction_time', style='subject', estimator=None,
+             data=results_df[results_df['sert-cre'] == 0], dashes=False,
+             legend=None, ax=ax2, palette=[colors['enhanced'], colors['suppressed']])
+ax2.set(xlabel='', ylabel='Lenght of integration window (tau)', title='WT')
 
 sns.despine(trim=True)
 plt.tight_layout()
