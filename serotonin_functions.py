@@ -12,9 +12,9 @@ import matplotlib.pyplot as plt
 from sklearn.utils import shuffle
 import pandas as pd
 import tkinter as tk
+import pathlib
 import patsy
 import statsmodels.api as sm
-import pathlib
 from sklearn.model_selection import KFold
 from os.path import join
 from glob import glob
@@ -33,7 +33,7 @@ DATE_LIGHT_SHIELD = '2021-06-08'
 
 
 def load_subjects(behavior=None):
-    subjects = pd.read_csv(join('..', 'subjects.csv'))
+    subjects = pd.read_csv(join(pathlib.Path(__file__).parent.resolve(), 'subjects.csv'))
     subjects = subjects[~((subjects['expression'] == 0) & (subjects['sert-cre'] == 1))]
     if behavior:
         subjects = subjects[subjects['include_behavior'] == 1]
@@ -381,14 +381,9 @@ def load_opto_times(eid, one=None):
         one = ONE()
 
     # Load in laser pulses
-    try:
-        one.load_datasets(eid, datasets=[
-            '_spikeglx_ephysData_g0_t0.nidq.cbin', '_spikeglx_ephysData_g0_t0.nidq.meta',
-            '_spikeglx_ephysData_g0_t0.nidq.ch'], download_only=True)
-    except:
-        one.load_datasets(eid, datasets=[
-            '_spikeglx_ephysData_g1_t0.nidq.cbin', '_spikeglx_ephysData_g1_t0.nidq.meta',
-            '_spikeglx_ephysData_g1_t0.nidq.ch'], download_only=True)
+    one.load_datasets(eid, datasets=[
+        '_spikeglx_ephysData_g*_t0.nidq.cbin', '_spikeglx_ephysData_g*_t0.nidq.meta',
+        '_spikeglx_ephysData_g*_t0.nidq.ch'], download_only=True)
     session_path = one.eid2path(eid)
     nidq_file = glob(str(session_path.joinpath('raw_ephys_data/_spikeglx_ephysData_g*_t0.nidq.cbin')))[0]
     sr = spikeglx.Reader(nidq_file)
@@ -407,19 +402,15 @@ def load_opto_times(eid, one=None):
         opto_train_times = opto_train_times[np.where(np.diff(opto_train_times) > 300)[0][0]+1:]
         return opto_train_times
 
+
 def load_opto_pulse_times(eid, part='begin', one=None):
         if one is None:
             one = ONE()
 
         # Load in laser pulses
-        try:
-            one.load_datasets(eid, datasets=[
-                '_spikeglx_ephysData_g0_t0.nidq.cbin', '_spikeglx_ephysData_g0_t0.nidq.meta',
-                '_spikeglx_ephysData_g0_t0.nidq.ch'], download_only=True)
-        except:
-            one.load_datasets(eid, datasets=[
-                '_spikeglx_ephysData_g1_t0.nidq.cbin', '_spikeglx_ephysData_g1_t0.nidq.meta',
-                '_spikeglx_ephysData_g1_t0.nidq.ch'], download_only=True)
+        one.load_datasets(eid, datasets=[
+            '_spikeglx_ephysData_g*_t0.nidq.cbin', '_spikeglx_ephysData_g*_t0.nidq.meta',
+            '_spikeglx_ephysData_g*_t0.nidq.ch'], download_only=True)
         session_path = one.eid2path(eid)
         nidq_file = glob(str(session_path.joinpath('raw_ephys_data/_spikeglx_ephysData_g*_t0.nidq.cbin')))[0]
         sr = spikeglx.Reader(nidq_file)
@@ -439,6 +430,27 @@ def load_opto_pulse_times(eid, part='begin', one=None):
         else:
             opto_pulses = opto_high_times[np.concatenate(([True], np.diff(opto_high_times) > 0.01))]
             return opto_pulses
+
+
+def load_lfp(eid, probe, time_start, time_end, one=None):
+    one = one or ONE()
+
+    # Download LFP data
+    lfp_paths, _ = one.load_datasets(eid, download_only=True, datasets=[
+        '_spikeglx_ephysData_g*_t0.imec*.lf.cbin', '_spikeglx_ephysData_g*_t0.imec*.lf.meta',
+        '_spikeglx_ephysData_g*_t0.imec*.lf.ch'], collections=[f'raw_ephys_data/{probe}'] * 3)
+    sr = spikeglx.Reader(lfp_paths[0])
+
+    # Convert time to samples
+    samples_start = int(time_start * sr.fs)
+    samples_end = int(time_end * sr.fs)
+
+    # Load in lfp slice
+    signal = sr.read(nsel=slice(samples_start, samples_end, None), csel=slice(None, None, None))[0]
+    signal = signal.T
+    time = np.arange(samples_start, samples_end) / sr.fs
+
+    return signal, time
 
 
 def query_bwm_sessions(selection='all', return_subjects=False, one=None):
