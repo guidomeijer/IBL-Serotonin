@@ -376,7 +376,20 @@ def load_exp_smoothing_trials(eids, stimulated=None, rt_cutoff=0.2, after_probe_
         return actions, stimuli, stim_side, prob_left, session_uuids
 
 
-def load_opto_times(eid, one=None):
+def load_passive_opto_times(eid, return_off_times=False, one=None):
+    """
+    Load in the time stamps of the optogenetic stimulation at the end of the recording, after the
+    taks and the spontaneous activity.
+
+    Returns
+    opto_train_times : 1D array
+        Timestamps of the start of each pulse train
+    opto_pulse_times : 1D array
+        Timestamps of all individual pulses
+    opto_off_times : 1D array
+        Timestamps of when the light pulse goes off
+    """
+
     if one is None:
         one = ONE()
 
@@ -387,23 +400,28 @@ def load_opto_times(eid, one=None):
     session_path = one.eid2path(eid)
     nidq_file = glob(str(session_path.joinpath('raw_ephys_data/_spikeglx_ephysData_g*_t0.nidq.cbin')))[0]
     sr = spikeglx.Reader(nidq_file)
-    offset = int((sr.shape[0] / sr.fs - 1800) * sr.fs)
-    opto_trace = sr.read_sync_analog(slice(offset, offset + int(1800 * sr.fs)))[:, 1]
+    offset = int((sr.shape[0] / sr.fs - 1000) * sr.fs)
+    opto_trace = sr.read_sync_analog(slice(offset, offset + int(1000 * sr.fs)))[:, 1]
     opto_times = np.arange(offset, offset + len(opto_trace)) / sr.fs
 
     # Get start times of pulse trains
-    opto_high_times = opto_times[opto_trace > 1]
-    if len(opto_high_times) == 0:
+    opto_on_times = opto_times[np.concatenate((np.diff(opto_trace), [0])) > 1]
+    opto_off_times = opto_times[np.concatenate((np.diff(opto_trace), [0])) < -1]
+
+    if len(opto_on_times) == 0:
         print(f'No pulses found for {eid}')
         return []
     else:
-        opto_train_times = opto_high_times[np.concatenate(([True], np.diff(opto_high_times) > 1))]
+        # Find the opto pulses after the spontaneous activity (after a long break, here 300s)
+        opto_train_times = opto_on_times[np.concatenate(([True], np.diff(opto_on_times) > 1))]
         assert np.sum(np.diff(opto_train_times) > 300) == 1, 'Could not find passive laser pulses'
         opto_train_times = opto_train_times[np.where(np.diff(opto_train_times) > 300)[0][0]+1:]
-        return opto_train_times
+        opto_on_times = opto_on_times[np.where(np.diff(opto_on_times) > 300)[0][0]+1:]
+        opto_off_times = opto_off_times[np.where(np.diff(opto_off_times) > 300)[0][0]+1:]
+        return opto_train_times, opto_on_times, opto_off_times
 
 
-def load_opto_pulse_times(eid, part='begin', one=None):
+def load_opto_pulse_times(eid, part='begin', time_slice=400, one=None):
         if one is None:
             one = ONE()
 
@@ -415,11 +433,11 @@ def load_opto_pulse_times(eid, part='begin', one=None):
         nidq_file = glob(str(session_path.joinpath('raw_ephys_data/_spikeglx_ephysData_g*_t0.nidq.cbin')))[0]
         sr = spikeglx.Reader(nidq_file)
         if part == 'begin':
-            opto_trace = sr.read_sync_analog(slice(0, int(1000 * sr.fs)))[:, 1]
-            opto_times = np.arange(0, int(1000 * sr.fs)) / sr.fs
+            opto_trace = sr.read_sync_analog(slice(0, int(time_slice * sr.fs)))[:, 1]
+            opto_times = np.arange(0, int(time_slice * sr.fs)) / sr.fs
         elif part == 'end':
-            offset = int((sr.shape[0] / sr.fs - 1000) * sr.fs)
-            opto_trace = sr.read_sync_analog(slice(offset, offset + int(1000 * sr.fs)))[:, 1]
+            offset = int((sr.shape[0] / sr.fs - time_slice) * sr.fs)
+            opto_trace = sr.read_sync_analog(slice(offset, offset + int(time_slice * sr.fs)))[:, 1]
             opto_times = np.arange(offset, offset + len(opto_trace)) / sr.fs
 
         # Get all pulse times
@@ -432,7 +450,7 @@ def load_opto_pulse_times(eid, part='begin', one=None):
             return opto_pulses
 
 
-def load_lfp(eid, probe, time_start, time_end, one=None):
+def load_lfp(eid, probe, time_start, time_end, relative_to='begin', one=None):
     one = one or ONE()
 
     # Download LFP data
@@ -442,8 +460,12 @@ def load_lfp(eid, probe, time_start, time_end, one=None):
     sr = spikeglx.Reader(lfp_paths[0])
 
     # Convert time to samples
-    samples_start = int(time_start * sr.fs)
-    samples_end = int(time_end * sr.fs)
+    if relative_to == 'begin':
+        samples_start = int(time_start * sr.fs)
+        samples_end = int(time_end * sr.fs)
+    elif relative_to == 'end':
+        samples_start = sr.shape[0] - int(time_start * sr.fs)
+        samples_end = sr.shape[0] - int(time_end * sr.fs)
 
     # Load in lfp slice
     signal = sr.read(nsel=slice(samples_start, samples_end, None), csel=slice(None, None, None))[0]

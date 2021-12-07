@@ -25,7 +25,8 @@ _, fig_path, _ = paths()
 fig_path = join(fig_path, 'Pupil')
 
 # Query and load data
-eids = one.search(task_protocol='_iblrig_tasks_opto_ephysChoiceWorld', dataset=['_ibl_leftCamera.dlc.pqt'])
+eids = one.search(task_protocol='_iblrig_tasks_opto_ephysChoiceWorld',
+                  dataset=['_ibl_leftCamera.dlc.pqt'])
 subjects = pd.read_csv(join('..', 'subjects.csv'))
 
 results_df, pupil_size = pd.DataFrame(), pd.DataFrame()
@@ -92,7 +93,8 @@ for i, eid in enumerate(eids):
                 & (video_times < (trial_start + time_bin) + (BIN_SIZE / 2))]) - baseline
         pupil_size = pupil_size.append(pd.DataFrame(data={
             'diameter': this_diameter, 'baseline_subtracted': baseline_subtracted, 'eid': eid,
-            'subject': nickname, 'trial': t, 'time': TIME_BINS, 'expression': expression}))
+            'subject': nickname, 'trial': t, 'time': TIME_BINS, 'expression': expression,
+            'date': date}))
 
     # Add to overal dataframe
     pupil_size = pupil_size.reset_index(drop=True)
@@ -101,24 +103,29 @@ for i, eid in enumerate(eids):
         'baseline_subtracted': pupil_size.groupby('time').median()['baseline_subtracted'],
         'subject': nickname, 'expression': expression}))
 
-    # Plot this animal
-    colors, dpi = figure_style()
+
+# Plot
+colors, dpi = figure_style()
+for i, subject in enumerate(np.unique(pupil_size['subject'])):
+    expression = subjects.loc[subjects['subject'] == subject, 'expression'].values[0]
     f, (ax1, ax2) = plt.subplots(1, 2, figsize=(4, 2), dpi=dpi)
 
     lineplt = sns.lineplot(x='time', y='diameter', estimator=np.median,
-                           data=pupil_size, color=colors['stim'], ci=68, ax=ax1, legend=None)
-    ax1.set(title='%s, expression: %d' % (nickname, expression),
+                           data=pupil_size[pupil_size['subject'] == subject],
+                           color=colors['stim'], ci=68, ax=ax1, legend=None)
+    ax1.set(title='%s, expression: %d' % (subject, expression),
             ylabel='Pupil size (%)', xlabel='Time relative to trial start(s)',
             xticks=np.arange(-1, 3.1))
 
     lineplt = sns.lineplot(x='time', y='baseline_subtracted', estimator=np.median,
-                           data=pupil_size, color=colors['stim'], ci=68, ax=ax2, legend=None)
-    ax2.set(title='%s, expression: %d' % (nickname, expression),
-            ylabel='Pupil size (%)', xlabel='Time relative to trial start(s)',
+                           data=pupil_size[pupil_size['subject'] == subject],
+                           color=colors['stim'], ci=68, ax=ax2, legend=None)
+    ax2.set(title='%s, expression: %d' % (subject, expression),
+            ylabel='Baseline subtracted\npupil size (%)', xlabel='Time relative to trial start(s)',
             xticks=np.arange(-1, 3.1))
 
     plt.tight_layout()
     sns.despine(trim=True)
 
-    plt.savefig(join(fig_path, f'{nickname}_{date}_pupil_opto_passive.png'))
-    plt.savefig(join(fig_path, f'{nickname}_{date}_pupil_opto_passive.pdf'))
+    plt.savefig(join(fig_path, f'{subject}_pupil_opto_passive.png'))
+    plt.savefig(join(fig_path, f'{subject}_pupil_opto_passive.pdf'))
