@@ -21,7 +21,8 @@ import brainbox.io.one as bbone
 from brainbox.population.decode import get_spike_counts_in_bins
 from brainbox.plot import peri_event_time_histogram
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
-from serotonin_functions import paths, remap, query_ephys_sessions, load_opto_times
+from serotonin_functions import (paths, remap, query_ephys_sessions, load_passive_opto_times,
+                                 get_artifact_neurons, figure_style)
 from one.api import ONE
 from ibllib.atlas import AllenAtlas
 lda = LinearDiscriminantAnalysis()
@@ -31,10 +32,10 @@ ba = AllenAtlas()
 # Settings
 MIN_NEURONS = 5  # per region
 PLOT = True
-T_BEFORE = 1
-T_AFTER = 2
-BIN_SIZE = 0.1
-_, fig_path, save_path, repo_path = paths(return_repo_path=True)
+T_BEFORE = 0.5
+T_AFTER = 1.5
+BIN_SIZE = 0.2
+_, fig_path, save_path = paths()
 fig_path = join(fig_path, 'Ephys', 'LDA', 'LDA_passive_regions')
 save_path = join(save_path)
 
@@ -45,7 +46,7 @@ eids, _ = query_ephys_sessions(one=one)
 BIN_CENTERS = np.arange(-T_BEFORE, T_AFTER, BIN_SIZE) + (BIN_SIZE / 2)
 
 lda_dist_df = pd.DataFrame()
-artifact_neurons = pd.read_csv(join(repo_path, 'artifact_neurons.csv'))
+artifact_neurons = get_artifact_neurons()
 for i, eid in enumerate(eids):
 
     # Get session details
@@ -56,7 +57,7 @@ for i, eid in enumerate(eids):
 
     # Load in laser pulse times
     try:
-        opto_train_times = load_opto_times(eid, one=one)
+        opto_train_times, _ = load_passive_opto_times(eid, one=one)
     except:
         print('Session does not have passive laser pulses')
         continue
@@ -128,15 +129,20 @@ for i, eid in enumerate(eids):
 
             # Plot
             if PLOT:
-
-
+                colors, dpi = figure_style()
+                f, ax1 = plt.subplots(1, 1, figsize=(3, 3), dpi=dpi)
+                ax1.plot(BIN_CENTERS, lda_dist, zorder=2)
+                ax1.plot([0, 0], ax1.get_ylim(), ls='--', color='red', zorder=1)
+                ax1.set(xlabel='Time (s)', ylabel='LDA score', title=f'{region}')
+                plt.tight_layout()
+                sns.despine(trim=True)
+                plt.savefig(join(fig_path, f'{region}_{subject}_{date}_{probe}'), dpi=300)
+                plt.close(f)
 
             # Add to dataframe
             lda_dist_df = lda_dist_df.append(pd.DataFrame(data={
                 'subject': subject, 'date': date, 'probe': probe, 'eid': eid,
                 'lda_dist': lda_dist, 'region': region, 'time': BIN_CENTERS}))
-
-
 
 lda_dist_df.to_csv(join(save_path, 'lda_opto_per_region.csv'), index=False)
 

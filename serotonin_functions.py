@@ -418,7 +418,10 @@ def load_passive_opto_times(eid, return_off_times=False, one=None):
         opto_train_times = opto_train_times[np.where(np.diff(opto_train_times) > 300)[0][0]+1:]
         opto_on_times = opto_on_times[np.where(np.diff(opto_on_times) > 300)[0][0]+1:]
         opto_off_times = opto_off_times[np.where(np.diff(opto_off_times) > 300)[0][0]+1:]
-        return opto_train_times, opto_on_times, opto_off_times
+        if return_off_times:
+            return opto_train_times, opto_on_times, opto_off_times
+        else:
+            return opto_train_times, opto_on_times
 
 
 def load_opto_pulse_times(eid, part='begin', time_slice=400, one=None):
