@@ -6,22 +6,13 @@ By: Guido Meijer
 """
 
 import numpy as np
-from os.path import join, isdir
+from os.path import join, isfile
 import matplotlib.pyplot as plt
-from glob import glob
-from matplotlib.ticker import FormatStrFormatter
 import pandas as pd
-from os import mkdir
 import seaborn as sns
-import multiprocessing
-from ibllib.io import spikeglx
-from brainbox.lfp import butter_filter
-from brainbox.task.closed_loop import roc_single_event
-from brainbox.metrics.single_units import spike_sorting_metrics
 from serotonin_functions import figure_style
 import brainbox.io.one as bbone
 from scipy.signal import periodogram
-from brainbox.plot import peri_event_time_histogram
 from serotonin_functions import (paths, remap, query_ephys_sessions, load_passive_opto_times,
                                  load_lfp, remap)
 from one.api import ONE
@@ -30,6 +21,7 @@ ba = AllenAtlas()
 one = ONE()
 
 # Settings
+EXCLUDE = ['ZFM-02180_2021-05-19', 'ZFM-02600_2021-08-26']
 PLOT = True
 T_BEFORE = 1  # for plotting
 T_AFTER = 2
@@ -38,7 +30,7 @@ BASELINE = [-1, 0]
 BIN_SIZE = 0.25
 THETA = [5, 15]
 BETA = [15, 35]
-GAMMA = [40, 100]
+GAMMA = [50, 120]
 _, fig_path, save_path = paths()
 fig_path = join(fig_path, 'Ephys', 'LFP')
 save_path = join(save_path, 'LFP')
@@ -46,6 +38,7 @@ save_path = join(save_path, 'LFP')
 # Query sessions
 eids, _, subjects = query_ephys_sessions(return_subjects=True, one=one)
 
+all_lfp_df = pd.DataFrame()
 for i, eid in enumerate(eids):
 
     # Get session details
@@ -75,21 +68,13 @@ for i, eid in enumerate(eids):
         if 'acronym' not in channels[probe].keys():
             print(f'No brain regions found for {eid}')
             continue
+        if not isfile(join(save_path, f'{subject}_{date}_{probe}_cleaned_lfp.npy')):
+            print(f'Artifact removal not run for {subject}, {date}')
+            continue
 
         # Load in lfp
-        lfp, time = load_lfp(eid, probe, time_start=opto_on_times[0]-10, time_end=opto_on_times[-1]+10,
-                             relative_to='begin', one=one)
-
-        # Remove light artifacts
-        print('Remove light artifacts from LFP trace')
-        for ch in range(lfp.shape[0]):
-            if np.mod(ch, 24) == 0:
-                print(f'Channel {ch+1} of {lfp.shape[0]}..')
-            for of, p_time in enumerate(np.sort(np.concatenate((opto_on_times, opto_off_times)))):
-                pulse_ind = np.argmin(np.abs(time - p_time))
-                lfp[ch, pulse_ind-3:pulse_ind+3] = lfp[ch, pulse_ind-3]
-                lfp[ch, pulse_ind+3:] = lfp[ch, pulse_ind+3:] + (lfp[ch, pulse_ind] - lfp[ch, pulse_ind+4])
-        np.save(join(save_path, f'{subject}_{date}_{probe}_cleaned_lfp'), lfp)
+        lfp = np.load(join(save_path, f'{subject}_{date}_{probe}_cleaned_lfp.npy'))
+        time = np.load(join(save_path, f'{subject}_{date}_{probe}_timestamps.npy'))
 
         # Load in channels
         collections = one.list_collections(eid)
@@ -133,6 +118,9 @@ for i, eid in enumerate(eids):
                     'theta': theta, 'theta_perc': theta_p, 'beta': beta, 'beta_perc': beta_p,
                     'gamma': gamma, 'gamma_perc': gamma_p, 'time': BIN_CENTERS}), ignore_index=True)
 
+            # Add to overall dataframe
+            #asd
+
             # Plot
             colors, dpi = figure_style()
             f, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(8, 3), dpi=dpi)
@@ -159,20 +147,5 @@ for i, eid in enumerate(eids):
 
             plt.tight_layout()
             sns.despine(trim=True)
-            plt.savefig(join(fig_path, f'{region}_{subject}_{date}'))
+            plt.savefig(join(fig_path, f'{region}_{subject}_{date}_{probe}'))
             plt.close(f)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
