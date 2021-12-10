@@ -453,14 +453,22 @@ def load_opto_pulse_times(eid, part='begin', time_slice=400, one=None):
             return opto_pulses
 
 
-def load_lfp(eid, probe, time_start, time_end, relative_to='begin', one=None):
+def load_lfp(eid, probe, time_start, time_end, relative_to='begin', destriped=False, one=None):
     one = one or ONE()
+    destriped_lfp_path = join(paths()[2], 'LFP')
 
     # Download LFP data
-    lfp_paths, _ = one.load_datasets(eid, download_only=True, datasets=[
-        '_spikeglx_ephysData_g*_t0.imec*.lf.cbin', '_spikeglx_ephysData_g*_t0.imec*.lf.meta',
-        '_spikeglx_ephysData_g*_t0.imec*.lf.ch'], collections=[f'raw_ephys_data/{probe}'] * 3)
-    sr = spikeglx.Reader(lfp_paths[0])
+    if destriped:
+        ses_details = one.get_details(eid)
+        subject = ses_details['subject']
+        date = ses_details['start_time'][:10]
+        lfp_path = join(destriped_lfp_path, f'{subject}_{date}_{probe}_destriped_lfp.cbin')
+    else:
+        lfp_paths, _ = one.load_datasets(eid, download_only=True, datasets=[
+            '_spikeglx_ephysData_g*_t0.imec*.lf.cbin', '_spikeglx_ephysData_g*_t0.imec*.lf.meta',
+            '_spikeglx_ephysData_g*_t0.imec*.lf.ch'], collections=[f'raw_ephys_data/{probe}'] * 3)
+        lfp_path = lfp_paths[0]
+    sr = spikeglx.Reader(lfp_path)
 
     # Convert time to samples
     if relative_to == 'begin':

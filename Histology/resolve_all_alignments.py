@@ -15,8 +15,11 @@ all_ins = one.alyx.rest('insertions', 'list',
 for i, ins in enumerate(all_ins):
     ins_id = ins['id']
     print(f'Resolving insertion {ins_id} [{i+1} of {len(all_ins)}]')
-    traj = one.alyx.rest('trajectories', 'list', probe_insertion=ins_id, provenance='Ephys aligned histology track')[0]
-    alignment_keys = traj['json'].keys()
+    traj = one.alyx.rest('trajectories', 'list', probe_insertion=ins_id, provenance='Ephys aligned histology track')
+    if len(traj) == 0:
+        print('No alignment found')
+        continue
+    alignment_keys = traj[0]['json'].keys()
     if len(alignment_keys) == 0:
         print('No alignement found')
         continue
