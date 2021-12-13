@@ -10,3 +10,5 @@ paths.py
 serotonin_paths.py
 
 Histology/.ipynb_checkpoints/
+
+.idea/
