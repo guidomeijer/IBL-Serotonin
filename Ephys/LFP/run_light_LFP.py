@@ -14,14 +14,15 @@ from serotonin_functions import figure_style
 import brainbox.io.one as bbone
 from scipy.signal import periodogram
 from serotonin_functions import (paths, remap, query_ephys_sessions, load_passive_opto_times,
-                                 load_lfp, remap)
+                                 load_lfp)
 from one.api import ONE
 from ibllib.atlas import AllenAtlas
 ba = AllenAtlas()
 one = ONE()
 
 # Settings
-EXCLUDE = ['ZFM-02180_2021-05-19', 'ZFM-02600_2021-08-26']
+DESTRIPED_LFP = False
+# EXCLUDE = ['ZFM-02180_2021-05-19', 'ZFM-02600_2021-08-26']
 PLOT = True
 T_BEFORE = 1  # for plotting
 T_AFTER = 2
@@ -42,10 +43,13 @@ all_lfp_df = pd.DataFrame()
 for i, eid in enumerate(eids):
 
     # Get session details
-    ses_details = one.get_details(eid)
-    subject = ses_details['subject']
-    date = ses_details['start_time'][:10]
-
+    try:
+        ses_details = one.get_details(eid)
+        subject = ses_details['subject']
+        date = ses_details['start_time'][:10]
+    except:
+        print('Weird error getting session data')
+        continue
     print(f'Starting {subject}, {date}')
 
     # Load in laser pulse times
@@ -68,13 +72,18 @@ for i, eid in enumerate(eids):
         if 'acronym' not in channels[probe].keys():
             print(f'No brain regions found for {eid}')
             continue
-        if not isfile(join(save_path, f'{subject}_{date}_{probe}_cleaned_lfp.npy')):
-            print(f'Artifact removal not run for {subject}, {date}')
-            continue
 
         # Load in lfp
-        lfp = np.load(join(save_path, f'{subject}_{date}_{probe}_cleaned_lfp.npy'))
-        time = np.load(join(save_path, f'{subject}_{date}_{probe}_timestamps.npy'))
+        if DESTRIPED_LFP and not isfile(join(save_path, f'{subject}_{date}_{probe}_cleaned_lfp.npy')):
+            print(f'Artifact removal not run for {subject}, {date}')
+            continue
+        elif DESTRIPED_LFP:
+            lfp = np.load(join(save_path, f'{subject}_{date}_{probe}_cleaned_lfp.npy'))
+            time = np.load(join(save_path, f'{subject}_{date}_{probe}_timestamps.npy'))
+        else:
+            lfp, time = load_lfp(eid, probe, time_start=opto_on_times[0]-10,
+                                 time_end=opto_on_times[-1]+10,
+                                 relative_to='begin', one=one)
 
         # Load in channels
         collections = one.list_collections(eid)
