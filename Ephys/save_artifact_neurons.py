@@ -8,7 +8,8 @@ By: Guido Meijer
 from os.path import join
 import pandas as pd
 
-REPO_PATH = '/home/guido/Repositories/IBL-Serotonin'
+#REPO_PATH = '/home/guido/Repositories/IBL-Serotonin'
+REPO_PATH = 'C:\\Users\\guido\\Repositories\\IBL-Serotonin'
 artifact_neurons = pd.DataFrame()
 
 # ZFM-02180, 2021-05-21
@@ -18,19 +19,19 @@ artifact_neurons = artifact_neurons.append(pd.DataFrame(data={
 
 # ZFM-02600, 2021-08-26
 artifact_neurons = artifact_neurons.append(pd.DataFrame(data={
-    'subject': 'ZFM-02600', 'date': '2021-05-26', 'eid': 'c8f68575-e5a8-4960-a690-0149c5c4683f', 'probe': 'probe00',
-    'neuron_id': [333, 365, 364]}))
+    'subject': 'ZFM-02600', 'date': '2021-08-26', 'eid': 'c8f68575-e5a8-4960-a690-0149c5c4683f', 'probe': 'probe00',
+    'neuron_id': [19, 20, 30, 31, 68, 69, 94, 104, 105, 255, 256, 287]}))
 artifact_neurons = artifact_neurons.append(pd.DataFrame(data={
-    'subject': 'ZFM-02600', 'date': '2021-05-26', 'eid': 'c8f68575-e5a8-4960-a690-0149c5c4683f', 'probe': 'probe01',
-    'neuron_id': [557]}))
+    'subject': 'ZFM-02600', 'date': '2021-08-26', 'eid': 'c8f68575-e5a8-4960-a690-0149c5c4683f', 'probe': 'probe01',
+    'neuron_id': [0, 24, 364, 557, 625, 627, 628]}))
 
 # ZFM-02600, 2021-08-27
 artifact_neurons = artifact_neurons.append(pd.DataFrame(data={
-    'subject': 'ZFM-02600', 'date': '2021-05-27', 'eid': '0d24afce-9d3c-449e-ac9f-577eefefbd7e', 'probe': 'probe00',
-    'neuron_id': [489]}))
+    'subject': 'ZFM-02600', 'date': '2021-08-27', 'eid': '0d24afce-9d3c-449e-ac9f-577eefefbd7e', 'probe': 'probe00',
+    'neuron_id': [382, 406]}))
 artifact_neurons = artifact_neurons.append(pd.DataFrame(data={
-    'subject': 'ZFM-02600', 'date': '2021-05-27', 'eid': '0d24afce-9d3c-449e-ac9f-577eefefbd7e', 'probe': 'probe01',
-    'neuron_id': [290, 291]}))
+    'subject': 'ZFM-02600', 'date': '2021-08-27', 'eid': '0d24afce-9d3c-449e-ac9f-577eefefbd7e', 'probe': 'probe01',
+    'neuron_id': [3, 4, 260, 261]}))
 
 artifact_neurons.to_csv(join(REPO_PATH, 'artifact_neurons.csv'), index=False)
 

@@ -20,12 +20,13 @@ from brainbox.singlecell import calculate_peths
 from brainbox.population.decode import get_spike_counts_in_bins
 from brainbox.plot import peri_event_time_histogram
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
-from serotonin_functions import paths, remap, query_ephys_sessions, load_opto_times, get_artifact_neurons
+from serotonin_functions import paths, remap, query_ephys_sessions, load_passive_opto_times, get_artifact_neurons
 from one.api import ONE
-from ibllib.atlas import AllenAtlas
+from ibllib.atlas import AllenAtlas, BrainRegions
 lda = LinearDiscriminantAnalysis()
 one = ONE()
 ba = AllenAtlas()
+br = BrainRegions()
 
 # Settings
 MIN_NEURONS = 5  # per region
@@ -33,16 +34,14 @@ PLOT = True
 T_BEFORE = 1
 T_AFTER = 2
 BASELINE = 0.5
-BIN_SIZE = 0.05
+BIN_CENTERS = np.arange(-0.9, 1.91, 0.2)
+BIN_SIZE = 0.2
 _, fig_path, save_path = paths()
 fig_path = join(fig_path, 'Ephys', 'Population', 'LightMod')
 save_path = join(save_path)
 
 # Query sessions
 eids, _ = query_ephys_sessions(one=one)
-
-# Get binning time vectors
-BIN_CENTERS = np.arange(-T_BEFORE, T_AFTER, BIN_SIZE) + (BIN_SIZE / 2)
 
 artifact_neurons = get_artifact_neurons()
 pop_act_df = pd.DataFrame()
@@ -56,7 +55,7 @@ for i, eid in enumerate(eids):
 
     # Load in laser pulse times
     try:
-        opto_train_times = load_opto_times(eid, one=one)
+        opto_train_times, _ = load_passive_opto_times(eid, one=one)
     except:
         print('Session does not have passive laser pulses')
         continue
@@ -73,14 +72,11 @@ for i, eid in enumerate(eids):
     for p, probe in enumerate(spikes.keys()):
 
         # Filter neurons that pass QC
-        if 'metrics' in clusters[probe].keys():
-            clusters_pass = np.where(clusters[probe]['metrics']['label'] == 1)[0]
-        else:
-            print('Calculating neuron QC metrics..')
-            qc_metrics, _ = spike_sorting_metrics(spikes[probe].times, spikes[probe].clusters,
-                                                  spikes[probe].amps, spikes[probe].depths,
-                                                  cluster_ids=np.arange(clusters[probe].channels.size))
-            clusters_pass = np.where(qc_metrics['label'] == 1)[0]
+        print('Calculating neuron QC metrics..')
+        qc_metrics, _ = spike_sorting_metrics(spikes[probe].times, spikes[probe].clusters,
+                                              spikes[probe].amps, spikes[probe].depths,
+                                              cluster_ids=np.arange(clusters[probe].channels.size))
+        clusters_pass = np.where(qc_metrics['label'] == 1)[0]
 
         # Select spikes of passive period
         start_passive = opto_train_times[0] - 360
@@ -94,7 +90,7 @@ for i, eid in enumerate(eids):
             continue
 
         # Get regions from Beryl atlas
-        clusters[probe]['acronym'] = remap(clusters[probe]['atlas_id'])
+        clusters[probe]['acronym'] = remap(clusters[probe]['atlas_id'], combine=True, brainregions=br)
         clusters_regions = clusters[probe]['acronym'][clusters_pass]
 
         # Loop over regions
@@ -114,39 +110,12 @@ for i, eid in enumerate(eids):
                                        T_BEFORE, T_AFTER, BIN_SIZE)
             pop_act = peth['means'][0]
             time_vector = peth['tscale']
-            pop_act_baseline = pop_act - np.median(pop_act[(time_vector > -BASELINE) & (time_vector < 0)])
-
-            # Get response matrix
-            sparsity, noise_corr, coef_var = np.zeros(time_vector.shape), np.zeros(time_vector.shape), np.zeros(time_vector.shape)
-            for b, bin_center in enumerate(time_vector):
-                times = np.column_stack(((opto_train_times + (bin_center - BIN_SIZE / 2)),
-                                         (opto_train_times + (bin_center + BIN_SIZE / 2))))
-                population_activity, cluster_ids = get_spike_counts_in_bins(spks_region, clus_region, times)
-                population_activity = population_activity.T
-
-                # Calculate population sparsity
-                sparsity[b] = ((1 - (1 / population_activity.shape[1])
-                                * ((np.sum(np.mean(population_activity, axis=0))**2)
-                                   / (np.sum(np.mean(population_activity, axis=0)**2))))
-                               / (1 - (1 / population_activity.shape[1])))
-
-                # Calculate noise correlations (remove neurons that do not spike at all)
-                if population_activity[:, np.sum(population_activity, axis=0) > 0].shape[1] > 1:
-                    corr_arr = np.corrcoef(population_activity[:, np.sum(population_activity, axis=0) > 0], rowvar=False)
-                    corr_arr = corr_arr[np.triu_indices(corr_arr.shape[0])]
-                    corr_arr = corr_arr[corr_arr != 1]
-                    noise_corr[b] = np.mean(corr_arr)
-                else:
-                    noise_corr[b] = np.nan
-
-                # Get coefficient of variation
-                coef_var[b] = np.std(np.mean(population_activity, axis=0)) / np.mean(np.mean(population_activity, axis=0))
+            pop_act_baseline = pop_act - np.mean(pop_act[(time_vector > -BASELINE) & (time_vector < 0)])
 
             # Add to dataframe
             pop_act_df = pop_act_df.append(pd.DataFrame(data={
                 'subject': subject, 'date': date, 'probe': probe, 'eid': eid, 'region': region, 'time': time_vector,
-                'pop_act': pop_act, 'pop_act_baseline': pop_act_baseline, 'sparsity': sparsity,
-                'noise_corr': noise_corr, 'coef_var': coef_var}))
+                'pop_act': pop_act, 'pop_act_baseline': pop_act_baseline}))
 
             # Plot
             colors, dpi = figure_style()
@@ -167,23 +136,4 @@ for i, eid in enumerate(eids):
             plt.savefig(join(fig_path, f'{region}_{subject}_{date}_{probe}.png'), dpi=300)
             plt.close(f)
 
-pop_act_df.to_csv(join(save_path, 'pop_act_opto_per_region.csv'), index=False)
-
-# %% Plot all regions
-pop_act_df = pop_act_df.reset_index(drop=True)
-
-colors, dpi = figure_style()
-g = sns.FacetGrid(data=pop_act_df, col='region', col_wrap=5)
-g.map(sns.lineplot, 'time', 'sparsity')
-
-g = sns.FacetGrid(data=pop_act_df, col='region', col_wrap=5)
-g.map(sns.lineplot, 'time', 'noise_corr')
-
-g = sns.FacetGrid(data=pop_act_df, col='region', col_wrap=5)
-g.map(sns.lineplot, 'time', 'coef_var')
-
-g = sns.FacetGrid(data=pop_act_df, col='region', col_wrap=5)
-g.map(sns.lineplot, 'time', 'pop_act')
-
-
-
+pop_act_df.to_csv(join(save_path, 'multi_unit_activity.csv'), index=False)

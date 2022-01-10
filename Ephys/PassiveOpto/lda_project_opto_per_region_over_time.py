@@ -6,20 +6,13 @@ By: Guido Meijer
 """
 
 import numpy as np
-from os.path import join, isdir
+from os.path import join
 import matplotlib.pyplot as plt
-from glob import glob
-from matplotlib.ticker import FormatStrFormatter
 import pandas as pd
-from os import mkdir
-from ibllib.io import spikeglx
 import seaborn as sns
 from brainbox.metrics.single_units import spike_sorting_metrics
-from brainbox.task.closed_loop import roc_single_event
-from serotonin_functions import figure_style
 import brainbox.io.one as bbone
 from brainbox.population.decode import get_spike_counts_in_bins
-from brainbox.plot import peri_event_time_histogram
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from serotonin_functions import (paths, remap, query_ephys_sessions, load_passive_opto_times,
                                  get_artifact_neurons, figure_style)
@@ -92,7 +85,7 @@ for i, eid in enumerate(eids):
         clusters_pass = np.array([i for i in clusters_pass if i not in artifact_neurons.loc[
             (artifact_neurons['eid'] == eid) & (artifact_neurons['probe'] == probe), 'neuron_id'].values])
         if clusters_pass.shape[0] == 0:
-                continue
+            continue
 
         # Get regions from Beryl atlas
         clusters[probe]['acronym'] = remap(clusters[probe]['atlas_id'])

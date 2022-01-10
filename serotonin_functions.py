@@ -228,16 +228,34 @@ def load_trials(eid, laser_stimulation=False, invert_choice=False, invert_stimsi
     return trials
 
 
-def remap(ids, source='Allen', dest='Beryl', output='acronym'):
-    br = BrainRegions()
+def combine_regions(acronyms):
+    regions = np.array(['root'] * len(acronyms), dtype=object)
+    regions[np.in1d(acronyms, ['ILA', 'PL', 'MOs', 'ACAd', 'ACAv'])] = 'mPFC'
+    regions[np.in1d(acronyms, ['ORBl', 'ORBm'])] = 'Orbitofrontal'
+    regions[np.in1d(acronyms, ['PO', 'LP', 'LD', 'RT'])] = 'Thalamus'
+    regions[np.in1d(acronyms, ['SCm', 'SCs', 'SCig', 'SCsg', 'SCdg'])] = 'Superior colliculus'
+    regions[np.in1d(acronyms, ['RSPv', 'RSPd'])] = 'Retrosplenial'
+    regions[np.in1d(acronyms, ['PIR'])] = 'Piriform'
+    regions[np.in1d(acronyms, ['SNr', 'SNc', 'SNl'])] = 'Substantia nigra'
+    regions[np.in1d(acronyms, ['VISa', 'VISam'])] = 'PPC'
+    regions[np.in1d(acronyms, ['ZI'])] = 'Zona incerta'
+    regions[np.in1d(acronyms, ['MEA', 'CEA', 'BLA'])] = 'Amygdala'
+    regions[np.in1d(acronyms, ['CP', 'STR', 'STRd', 'STRv'])] = 'Striatum'
+    regions[np.in1d(acronyms, ['CA1', 'CA3', 'DG'])] = 'Hippocampus'
+    return regions
+
+
+def remap(ids, source='Allen', dest='Beryl', combine=False, brainregions=None):
+    br = brainregions or BrainRegions()
     _, inds = ismember(ids, br.id[br.mappings[source]])
     ids = br.id[br.mappings[dest][inds]]
-    if output == 'id':
-        return br.id[br.mappings[dest][inds]]
-    elif output == 'acronym':
-        return br.get(br.id[br.mappings[dest][inds]])['acronym']
-
-
+    acronyms = br.get(br.id[br.mappings[dest][inds]])['acronym']
+    if combine:
+        return combine_regions(acronyms)
+    else:
+        return acronyms
+    
+    
 def get_full_region_name(acronyms):
     brainregions = BrainRegions()
     full_region_names = []

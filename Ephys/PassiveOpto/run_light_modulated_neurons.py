@@ -8,17 +8,15 @@ By: Guido Meijer
 import numpy as np
 from os.path import join, isdir
 import matplotlib.pyplot as plt
-from glob import glob
 from matplotlib.ticker import FormatStrFormatter
 import pandas as pd
 from os import mkdir
-from ibllib.io import spikeglx
 from brainbox.task.closed_loop import roc_single_event
 from brainbox.metrics.single_units import spike_sorting_metrics
 from serotonin_functions import figure_style
 import brainbox.io.one as bbone
 from brainbox.plot import peri_event_time_histogram
-from serotonin_functions import paths, remap, query_ephys_sessions, load_opto_times, remove_artifact_neurons
+from serotonin_functions import paths, remap, query_ephys_sessions, load_passive_opto_times, remove_artifact_neurons
 from one.api import ONE
 from ibllib.atlas import AllenAtlas
 ba = AllenAtlas()
@@ -56,7 +54,7 @@ for i, eid in enumerate(eids):
 
     # Load in laser pulse times
     try:
-        opto_train_times = load_opto_times(eid, one=one)
+        opto_train_times, _ = load_passive_opto_times(eid, one=one)
     except:
         print('Session does not have passive laser pulses')
         continue
@@ -151,7 +149,7 @@ for i, eid in enumerate(eids):
                 if not isdir(join(fig_path, 'Recordings', f'{subject}_{date}')):
                     mkdir(join(fig_path, 'Recordings', f'{subject}_{date}'))
                 plt.savefig(join(fig_path, 'Recordings', f'{subject}_{date}',
-                                 f'{region}_{subject}_{date}_{probe}_neuron{cluster}'), dpi=300)
+                                 f'{subject}_{date}_{probe}_neuron{cluster}_{region}'), dpi=300)
                 plt.close(p)
 
 # Save output
