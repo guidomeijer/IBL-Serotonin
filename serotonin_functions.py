@@ -232,7 +232,7 @@ def combine_regions(acronyms):
     regions = np.array(['root'] * len(acronyms), dtype=object)
     regions[np.in1d(acronyms, ['ILA', 'PL', 'MOs', 'ACAd', 'ACAv'])] = 'mPFC'
     regions[np.in1d(acronyms, ['ORBl', 'ORBm'])] = 'Orbitofrontal'
-    regions[np.in1d(acronyms, ['PO', 'LP', 'LD', 'RT'])] = 'Thalamus'
+    regions[np.in1d(acronyms, ['PO', 'LP', 'LD', 'RT', 'VAL'])] = 'Thalamus'
     regions[np.in1d(acronyms, ['SCm', 'SCs', 'SCig', 'SCsg', 'SCdg'])] = 'Superior colliculus'
     regions[np.in1d(acronyms, ['RSPv', 'RSPd'])] = 'Retrosplenial'
     regions[np.in1d(acronyms, ['PIR'])] = 'Piriform'
@@ -412,13 +412,17 @@ def load_passive_opto_times(eid, return_off_times=False, one=None):
         one = ONE()
 
     # Load in laser pulses
-    one.load_datasets(eid, datasets=[
-        '_spikeglx_ephysData_g*_t0.nidq.cbin', '_spikeglx_ephysData_g*_t0.nidq.meta',
-        '_spikeglx_ephysData_g*_t0.nidq.ch'], download_only=True)
+    try:
+        one.load_datasets(eid, datasets=[
+            '_spikeglx_ephysData_g*_t0.nidq.cbin', '_spikeglx_ephysData_g*_t0.nidq.meta',
+            '_spikeglx_ephysData_g*_t0.nidq.ch'], download_only=True)
+    except:
+        print('Error loading opto trace')
+        return [], []        
     session_path = one.eid2path(eid)
     nidq_file = glob(str(session_path.joinpath('raw_ephys_data/_spikeglx_ephysData_g*_t0.nidq.cbin')))[0]
     sr = spikeglx.Reader(nidq_file)
-    offset = int((sr.shape[0] / sr.fs - 1000) * sr.fs)
+    offset = int((sr.shape[0] / sr.fs - 720) * sr.fs)
     opto_trace = sr.read_sync_analog(slice(offset, sr.shape[0]))[:, 1]
     opto_times = np.arange(offset, sr.shape[0]) / sr.fs
 
@@ -428,14 +432,21 @@ def load_passive_opto_times(eid, return_off_times=False, one=None):
 
     if len(opto_on_times) == 0:
         print(f'No pulses found for {eid}')
-        return []
+        return [], []
     else:
-        # Find the opto pulses after the spontaneous activity (after a long break, here 300s)
+        # Find the opto pulses after the spontaneous activity (after a long break, here 100s)
         opto_train_times = opto_on_times[np.concatenate(([True], np.diff(opto_on_times) > 1))]
-        assert np.sum(np.diff(opto_train_times) > 300) == 1, 'Could not find passive laser pulses'
-        opto_train_times = opto_train_times[np.where(np.diff(opto_train_times) > 300)[0][0]+1:]
-        opto_on_times = opto_on_times[np.where(np.diff(opto_on_times) > 300)[0][0]+1:]
-        opto_off_times = opto_off_times[np.where(np.diff(opto_off_times) > 300)[0][0]+1:]
+        
+        if np.sum(np.diff(opto_train_times) > 100) > 0:
+            first_pulse = np.where(np.diff(opto_train_times) > 100)[0][0]+1
+        elif opto_train_times[0] - opto_times[0] > 100:
+            first_pulse = 0
+        else:
+            print('Could not find passive laser pulses')
+            return [], []
+        opto_train_times = opto_train_times[first_pulse:]
+        opto_on_times = opto_on_times[first_pulse:]
+        opto_off_times = opto_off_times[first_pulse:]
         if return_off_times:
             return opto_train_times, opto_on_times, opto_off_times
         else:

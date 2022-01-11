@@ -10,11 +10,11 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 from os.path import join
-from serotonin_functions import paths, figure_style, combine_regions
+from serotonin_functions import paths, figure_style, combine_regions, load_subjects
 
 # Settings
-MIN_NEURONS = 10
-MIN_PERC = 3
+MIN_NEURONS = 15
+MIN_PERC = 0
 
 # Paths
 _, fig_path, save_path = paths()
@@ -32,7 +32,7 @@ light_neurons = light_neurons.reset_index(drop=True)
 light_neurons = light_neurons.drop(index=[i for i, j in enumerate(light_neurons['full_region']) if 'void' in j])
 
 # Add expression
-subjects = pd.read_csv(join('..', 'subjects.csv'))
+subjects = load_subjects()
 for i, nickname in enumerate(np.unique(light_neurons['subject'])):
     light_neurons.loc[light_neurons['subject'] == nickname, 'expression'] = subjects.loc[subjects['subject'] == nickname, 'expression'].values[0]
     light_neurons.loc[light_neurons['subject'] == nickname, 'sert-cre'] = subjects.loc[subjects['subject'] == nickname, 'sert-cre'].values[0]
@@ -108,23 +108,15 @@ f, (ax1, ax2) = plt.subplots(1, 2, figsize=(8, 4), dpi=dpi)
 sns.boxplot(x='roc_auc', y='full_region', data=light_neurons[light_neurons['expression'] == 1],
             ax=ax1, fliersize=0, order=ordered_regions['full_region'], color='lightgrey')
 ax1.plot([0, 0], [0, summary_df.shape[0]], color='r', ls='--')
-ax1.set(ylabel='', xlim=[-0.6, 0.6], xticks=np.arange(-0.6, 0.61, 0.2), xlabel='Modulation index')
+ax1.set(ylabel='', xlim=[-0.7, 0.7], xticks=np.arange(-0.6, 0.61, 0.2), xlabel='Modulation index')
 
 sns.boxplot(x='roc_auc', y='full_region', data=light_neurons[light_neurons['expression'] == 0],
             ax=ax2, fliersize=0, order=ordered_regions['full_region'], color='lightgrey')
 ax2.plot([0, 0], [0, summary_df.shape[0]], color='r', ls='--')
-ax2.set(ylabel='', xlim=[-0.6, 0.6], xticks=np.arange(-0.6, 0.61, 0.2), xlabel='Modulation index')
+ax2.set(ylabel='', xlim=[-0.7, 0.7], xticks=np.arange(-0.6, 0.61, 0.2), xlabel='Modulation index')
 
 plt.tight_layout()
 sns.despine(trim=True)
 plt.savefig(join(fig_path, 'Ephys', 'light_modulation_index_per_region.pdf'))
 plt.savefig(join(fig_path, 'Ephys', 'light_modulation_index_per_region.png'))
 
-f, (ax1, ax2) = plt.subplots(1, 2, figsize=(8, 4), dpi=dpi)
-sns.kdeplot(data=light_neurons, x='roc_auc', hue='region', ax=ax1,
-            hue_order=ordered_regions['full_region'], palette='coolwarm_r')
-
-plt.tight_layout()
-sns.despine(trim=True)
-plt.savefig(join(fig_path, 'Ephys', 'light_modulation_distribution_per_merged_region.pdf'))
-plt.savefig(join(fig_path, 'Ephys', 'light_modulation_distribution_per_merged_region.png'))

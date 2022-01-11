@@ -24,7 +24,7 @@ one = ONE()
 
 # Settings
 PLOT = True
-OVERWRITE = True
+OVERWRITE = False
 NEURON_QC = True
 T_BEFORE = 1  # for plotting
 T_AFTER = 2

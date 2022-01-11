@@ -10,7 +10,7 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 from os.path import join
-from serotonin_functions import paths, figure_style
+from serotonin_functions import paths, figure_style, load_subjects
 
 # Settings
 HISTOLOGY = True
@@ -27,7 +27,7 @@ else:
     all_neurons = pd.read_csv(join(save_path, 'light_modulated_neurons_no_histology.csv'))
 
 # Add genotype
-subjects = pd.read_csv(join('..', 'subjects.csv'))
+subjects = load_subjects()
 for i, nickname in enumerate(np.unique(all_neurons['subject'])):
     all_neurons.loc[all_neurons['subject'] == nickname, 'expression'] = subjects.loc[subjects['subject'] == nickname, 'expression'].values[0]
     all_neurons.loc[all_neurons['subject'] == nickname, 'sert-cre'] = subjects.loc[subjects['subject'] == nickname, 'sert-cre'].values[0]
@@ -67,7 +67,7 @@ summary_df['expression'] = (summary_df['expression'] > 0).astype(int)
 
 sns.swarmplot(x='expression', y='perc_mod', data=summary_df, ax=ax3,
               palette=[colors['wt'], colors['sert']])
-ax3.set(ylabel='Modulated neurons (%)', xlabel='', xticklabels=['Wild type\ncontrol', 'Sert-Cre'], ylim=[0, 20])
+ax3.set(ylabel='Modulated neurons (%)', xlabel='', xticklabels=['Wild type\ncontrol', 'Sert-Cre'], ylim=[0, 60])
 
 plt.tight_layout(pad=2)
 sns.despine(trim=True)

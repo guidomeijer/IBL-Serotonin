@@ -119,21 +119,22 @@ for i, eid in enumerate(eids):
 
             # Plot
             colors, dpi = figure_style()
-            f, ax = plt.subplots(1, 1, figsize=(2, 2), dpi=dpi)
+            f, ax = plt.subplots(1, 1, figsize=(2, 2.5), dpi=dpi)
             peri_event_time_histogram(spks_region, np.ones(spks_region.shape), opto_train_times, 1,
                                       t_before=T_BEFORE, t_after=T_AFTER, bin_size=BIN_SIZE, ax=ax,
                                       error_bars='sem', pethline_kwargs={'color': 'black', 'lw': 1},
                                       errbar_kwargs={'color': 'black', 'alpha': 0.3},
-                                      eventline_kwargs={'lw': 0})
+                                      eventline_kwargs={'lw': 0}, include_raster=True)
             ax.set(ylim=[ax.get_ylim()[0], ax.get_ylim()[1] + ax.get_ylim()[1] * 0.2])
             ax.plot([0, 1], [ax.get_ylim()[1] - ax.get_ylim()[1] * 0.05,
                              ax.get_ylim()[1] - ax.get_ylim()[1] * 0.05], lw=2, color='royalblue')
-            ax.set(ylabel='Population activity (spks/s)', xlabel='Time (s)', title=region,
+            ax.set(ylabel='Multi-unit activity (spks/s)', xlabel='Time (s)', title=region,
                     yticks=np.linspace(0, np.round(ax.get_ylim()[1]), 3))
             ax.yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
             plt.tight_layout()
             plt.savefig(join(fig_path, f'{region}_{subject}_{date}_{probe}.pdf'))
             plt.savefig(join(fig_path, f'{region}_{subject}_{date}_{probe}.png'), dpi=300)
+            
             plt.close(f)
 
 pop_act_df.to_csv(join(save_path, 'multi_unit_activity.csv'), index=False)

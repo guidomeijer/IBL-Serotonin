@@ -76,55 +76,115 @@ for i, eid in enumerate(np.unique(light_neurons['eid'])):
                 # Calculate percentage change in firing rate
                 peth_perc = ((peths['means'][n, :]
                               - np.mean(peths['means'][n, ((tscale > BASELINE[0]) & (tscale < BASELINE[1]))]))
-                             / (peths['means'][n, :]) + np.mean(peths['means'][n, ((tscale > BASELINE[0]) & (tscale < BASELINE[1]))]))
+                             / np.mean(peths['means'][n, ((tscale > BASELINE[0]) & (tscale < BASELINE[1]))])) * 100
+                
+                # Calculate percentage change in firing rate
+                peth_ratio = ((peths['means'][n, :]
+                               - np.mean(peths['means'][n, ((tscale > BASELINE[0]) & (tscale < BASELINE[1]))]))
+                              / (peths['means'][n, :]
+                                 + np.mean(peths['means'][n, ((tscale > BASELINE[0]) & (tscale < BASELINE[1]))])))
                 
                 # Add to dataframe
                 peths_df = peths_df.append(pd.DataFrame(index=[peths_df.shape[0]], data={
-                    'peth': [peths['means'][n, :]], 'peth_perc': [peth_perc],
+                    'peth': [peths['means'][n, :]], 'peth_perc': [peth_perc], 'peth_ratio': [peth_ratio],
                     'region': these_neurons.loc[index, 'full_region'], 'modulation': these_neurons.loc[index, 'roc_auc'],
                     'neuron_id': these_neurons.loc[index, 'neuron_id'], 'subject': these_neurons.loc[index, 'subject'],
                     'eid': these_neurons.loc[index, 'eid']}))
             
 # %% Plot
 
-VMIN = -100
-VMAX = 100
+VMIN = -1
+VMAX = 1
 
 # Plot all neurons
 peths_df = peths_df.sort_values('modulation', ascending=False)
 colors, dpi = figure_style()
 f, ax1 = plt.subplots(1, 1, figsize=(6, 4), dpi=dpi)
-img = ax1.imshow(np.array(peths_df['peth_perc'].tolist()), cmap=sns.diverging_palette(220, 20, as_cmap=True), 
+img = ax1.imshow(np.array(peths_df['peth_ratio'].tolist()), cmap=sns.diverging_palette(220, 20, as_cmap=True), 
                  vmin=VMIN, vmax=VMAX, extent=[-T_BEFORE, T_AFTER, -1, 1])
 cbar = f.colorbar(img, ax=ax1, shrink=0.7)
-cbar.ax.set_ylabel('% change in firing rate', rotation=270)
+cbar.ax.set_ylabel('Ratio change in firing rate', rotation=270, labelpad=10)
 ax1.set(xlabel='Time (s)', yticks=[], title=f'All significantly modulated neurons (n={peths_df.shape[0]})')
 ax1.plot([0, 0], [-1, 1], ls='--', color='k')
 
+plt.tight_layout()
+plt.savefig(join(fig_path, 'all_neurons'), dpi=300)
+
 # Plot per region
 peths_df = peths_df.sort_values(['region', 'modulation'], ascending=[True, False])
-f, ((ax1, ax2, ax3, ax4, ax5, ax6), (ax7, ax8, ax9, ax10, ax11, ax12)) = plt.subplots(2, 6, figsize=(8, 4), dpi=dpi)
+f, ((ax1, ax2, ax3, ax4, ax5, ax6), (ax7, ax8, ax9, ax10, ax11, ax12)) = plt.subplots(2, 6, figsize=(9, 4), dpi=dpi)
 
 these_peths = peths_df[peths_df['region'] == 'Amygdala']
-img = ax1.imshow(np.array(these_peths['peth_perc'].tolist()), cmap=sns.diverging_palette(220, 20, as_cmap=True), 
+img = ax1.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=sns.diverging_palette(220, 20, as_cmap=True), 
                  vmin=VMIN, vmax=VMAX, extent=[-T_BEFORE, T_AFTER, -1, 1])
-ax1.set(xlabel='Time (s)', yticks=[], title=f'Amygdala (n={peths_df.shape[0]})')
+ax1.set(xlabel='Time (s)', yticks=[], title=f'Amygdala (n={these_peths.shape[0]})')
 ax1.plot([0, 0], [-1, 1], ls='--', color='k')
 
 these_peths = peths_df[peths_df['region'] == 'Hippocampus']
-img = ax2.imshow(np.array(these_peths['peth_perc'].tolist()), cmap=sns.diverging_palette(220, 20, as_cmap=True), 
+img = ax2.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=sns.diverging_palette(220, 20, as_cmap=True), 
                  vmin=VMIN, vmax=VMAX, extent=[-T_BEFORE, T_AFTER, -1, 1])
-ax2.set(xlabel='Time (s)', yticks=[], title=f'Hippocampus (n={peths_df.shape[0]})')
+ax2.set(xlabel='Time (s)', yticks=[], title=f'Hippocampus (n={these_peths.shape[0]})')
 ax2.plot([0, 0], [-1, 1], ls='--', color='k')
 
 these_peths = peths_df[peths_df['region'] == 'Orbitofrontal']
-img = ax3.imshow(np.array(these_peths['peth_perc'].tolist()), cmap=sns.diverging_palette(220, 20, as_cmap=True), 
+img = ax3.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=sns.diverging_palette(220, 20, as_cmap=True), 
                  vmin=VMIN, vmax=VMAX, extent=[-T_BEFORE, T_AFTER, -1, 1])
-ax3.set(xlabel='Time (s)', yticks=[], title=f'Orbitofrontal (n={peths_df.shape[0]})')
+ax3.set(xlabel='Time (s)', yticks=[], title=f'Orbitofrontal (n={these_peths.shape[0]})')
 ax3.plot([0, 0], [-1, 1], ls='--', color='k')
 
+these_peths = peths_df[peths_df['region'] == 'PPC']
+img = ax4.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=sns.diverging_palette(220, 20, as_cmap=True), 
+                 vmin=VMIN, vmax=VMAX, extent=[-T_BEFORE, T_AFTER, -1, 1])
+ax4.set(xlabel='Time (s)', yticks=[], title=f'PPC (n={these_peths.shape[0]})')
+ax4.plot([0, 0], [-1, 1], ls='--', color='k')
 
+these_peths = peths_df[peths_df['region'] == 'Piriform']
+img = ax5.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=sns.diverging_palette(220, 20, as_cmap=True), 
+                 vmin=VMIN, vmax=VMAX, extent=[-T_BEFORE, T_AFTER, -1, 1])
+ax5.set(xlabel='Time (s)', yticks=[], title=f'Piriform (n={these_peths.shape[0]})')
+ax5.plot([0, 0], [-1, 1], ls='--', color='k')
 
-     
-        
-        
+these_peths = peths_df[peths_df['region'] == 'Retrosplenial']
+img = ax6.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=sns.diverging_palette(220, 20, as_cmap=True), 
+                 vmin=VMIN, vmax=VMAX, extent=[-T_BEFORE, T_AFTER, -1, 1])
+ax6.set(xlabel='Time (s)', yticks=[], title=f'Retrosplenial (n={these_peths.shape[0]})')
+ax6.plot([0, 0], [-1, 1], ls='--', color='k')
+
+these_peths = peths_df[peths_df['region'] == 'Striatum']
+img = ax7.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=sns.diverging_palette(220, 20, as_cmap=True), 
+                 vmin=VMIN, vmax=VMAX, extent=[-T_BEFORE, T_AFTER, -1, 1])
+ax7.set(xlabel='Time (s)', yticks=[], title=f'Striatum (n={these_peths.shape[0]})')
+ax7.plot([0, 0], [-1, 1], ls='--', color='k')
+
+these_peths = peths_df[peths_df['region'] == 'Substantia nigra']
+img = ax8.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=sns.diverging_palette(220, 20, as_cmap=True), 
+                 vmin=VMIN, vmax=VMAX, extent=[-T_BEFORE, T_AFTER, -1, 1])
+ax8.set(xlabel='Time (s)', yticks=[], title=f'Substantia nigra (n={these_peths.shape[0]})')
+ax8.plot([0, 0], [-1, 1], ls='--', color='k')
+
+these_peths = peths_df[peths_df['region'] == 'Superior colliculus']
+img = ax9.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=sns.diverging_palette(220, 20, as_cmap=True), 
+                 vmin=VMIN, vmax=VMAX, extent=[-T_BEFORE, T_AFTER, -1, 1])
+ax9.set(xlabel='Time (s)', yticks=[], title=f'Superior colliculus (n={these_peths.shape[0]})')
+ax9.plot([0, 0], [-1, 1], ls='--', color='k')
+
+these_peths = peths_df[peths_df['region'] == 'Thalamus']
+img = ax10.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=sns.diverging_palette(220, 20, as_cmap=True), 
+                 vmin=VMIN, vmax=VMAX, extent=[-T_BEFORE, T_AFTER, -1, 1])
+ax10.set(xlabel='Time (s)', yticks=[], title=f'Thalamus (n={these_peths.shape[0]})')
+ax10.plot([0, 0], [-1, 1], ls='--', color='k')
+
+these_peths = peths_df[peths_df['region'] == 'Zona incerta']
+img = ax11.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=sns.diverging_palette(220, 20, as_cmap=True), 
+                 vmin=VMIN, vmax=VMAX, extent=[-T_BEFORE, T_AFTER, -1, 1])
+ax11.set(xlabel='Time (s)', yticks=[], title=f'Zona incerta (n={these_peths.shape[0]})')
+ax11.plot([0, 0], [-1, 1], ls='--', color='k')
+
+these_peths = peths_df[peths_df['region'] == 'mPFC']
+img = ax12.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=sns.diverging_palette(220, 20, as_cmap=True), 
+                 vmin=VMIN, vmax=VMAX, extent=[-T_BEFORE, T_AFTER, -1, 1])
+ax12.set(xlabel='Time (s)', yticks=[], title=f'mPFC (n={these_peths.shape[0]})')
+ax12.plot([0, 0], [-1, 1], ls='--', color='k')
+
+plt.tight_layout()
+plt.savefig(join(fig_path, 'per_merged_region'), dpi=300)
