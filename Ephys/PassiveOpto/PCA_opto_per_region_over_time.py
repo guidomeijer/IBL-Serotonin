@@ -20,7 +20,7 @@ import brainbox.io.one as bbone
 from brainbox.population.decode import get_spike_counts_in_bins
 from brainbox.plot import peri_event_time_histogram
 from sklearn.decomposition import PCA
-from serotonin_functions import (paths, remap, query_ephys_sessions, load_opto_times,
+from serotonin_functions import (paths, combine_regions, query_ephys_sessions, load_passive_opto_times,
                                  get_artifact_neurons)
 from one.api import ONE
 from ibllib.atlas import AllenAtlas
@@ -29,7 +29,7 @@ ba = AllenAtlas()
 pca = PCA(n_components=3)
 
 # Settings
-MIN_NEURONS = 5  # per region
+MIN_NEURONS = 10  # per region
 BIN_SIZE = 0.3  # sec
 BIN_CENTERS = np.arange(-1, 2.1, 0.2)  # sec
 PLOT = True
@@ -51,7 +51,7 @@ for i, eid in enumerate(eids):
 
     # Load in laser pulse times
     try:
-        opto_train_times = load_opto_times(eid, one=one)
+        opto_train_times, _ = load_passive_opto_times(eid, one=one)
     except:
         print('Session does not have passive laser pulses')
         continue
@@ -94,11 +94,13 @@ for i, eid in enumerate(eids):
         clusters_pass = clusters_pass[np.isin(clusters_pass, np.unique(spikes[probe].clusters))]
 
         # Get regions from Beryl atlas
-        clusters[probe]['acronym'] = remap(clusters[probe]['atlas_id'])
+        clusters[probe]['acronym'] = combine_regions(clusters[probe]['acronym'])
         clusters_regions = clusters[probe]['acronym'][clusters_pass]
 
         # Loop over regions
         for r, region in enumerate(np.unique(clusters_regions)):
+            if region == 'root':
+                continue
 
             # Select spikes and clusters in this brain region
             clusters_in_region = clusters_pass[clusters_regions == region]

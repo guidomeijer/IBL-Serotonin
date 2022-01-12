@@ -14,7 +14,7 @@ from brainbox.metrics.single_units import spike_sorting_metrics
 import brainbox.io.one as bbone
 from brainbox.population.decode import get_spike_counts_in_bins
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
-from serotonin_functions import (paths, remap, query_ephys_sessions, load_passive_opto_times,
+from serotonin_functions import (paths, combine_regions, query_ephys_sessions, load_passive_opto_times,
                                  get_artifact_neurons, figure_style)
 from one.api import ONE
 from ibllib.atlas import AllenAtlas
@@ -23,7 +23,7 @@ one = ONE()
 ba = AllenAtlas()
 
 # Settings
-MIN_NEURONS = 5  # per region
+MIN_NEURONS = 10  # per region
 PLOT = True
 T_BEFORE = 0.5
 T_AFTER = 1.5
@@ -67,14 +67,11 @@ for i, eid in enumerate(eids):
     for p, probe in enumerate(spikes.keys()):
 
         # Filter neurons that pass QC
-        if 'metrics' in clusters[probe].keys():
-            clusters_pass = np.where(clusters[probe]['metrics']['label'] == 1)[0]
-        else:
-            print('Calculating neuron QC metrics..')
-            qc_metrics, _ = spike_sorting_metrics(spikes[probe].times, spikes[probe].clusters,
-                                                  spikes[probe].amps, spikes[probe].depths,
-                                                  cluster_ids=np.arange(clusters[probe].channels.size))
-            clusters_pass = np.where(qc_metrics['label'] == 1)[0]
+        print('Calculating neuron QC metrics..')
+        qc_metrics, _ = spike_sorting_metrics(spikes[probe].times, spikes[probe].clusters,
+                                              spikes[probe].amps, spikes[probe].depths,
+                                              cluster_ids=np.arange(clusters[probe].channels.size))
+        clusters_pass = np.where(qc_metrics['label'] == 1)[0]
 
         # Select spikes of passive period
         start_passive = opto_train_times[0] - 360
@@ -88,7 +85,7 @@ for i, eid in enumerate(eids):
             continue
 
         # Get regions from Beryl atlas
-        clusters[probe]['acronym'] = remap(clusters[probe]['atlas_id'])
+        clusters[probe]['acronym'] = combine_regions(clusters[probe]['acronym'])
         clusters_regions = clusters[probe]['acronym'][clusters_pass]
 
         # Get a number of random onset times in the spontaneous activity as control
@@ -99,6 +96,8 @@ for i, eid in enumerate(eids):
 
         # Loop over regions
         for r, region in enumerate(np.unique(clusters_regions)):
+            if region == 'root':
+                continue
 
             # Select spikes and clusters in this brain region
             clusters_in_region = clusters_pass[clusters_regions == region]

@@ -124,7 +124,8 @@ for i, eid in enumerate(eids):
                                       t_before=T_BEFORE, t_after=T_AFTER, bin_size=BIN_SIZE, ax=ax,
                                       error_bars='sem', pethline_kwargs={'color': 'black', 'lw': 1},
                                       errbar_kwargs={'color': 'black', 'alpha': 0.3},
-                                      eventline_kwargs={'lw': 0}, include_raster=True)
+                                      eventline_kwargs={'lw': 0}, include_raster=True,
+                                      raster_kwargs={'color': 'black', 'lw': 0.1})
             ax.set(ylim=[ax.get_ylim()[0], ax.get_ylim()[1] + ax.get_ylim()[1] * 0.2])
             ax.plot([0, 1], [ax.get_ylim()[1] - ax.get_ylim()[1] * 0.05,
                              ax.get_ylim()[1] - ax.get_ylim()[1] * 0.05], lw=2, color='royalblue')
@@ -134,7 +135,6 @@ for i, eid in enumerate(eids):
             plt.tight_layout()
             plt.savefig(join(fig_path, f'{region}_{subject}_{date}_{probe}.pdf'))
             plt.savefig(join(fig_path, f'{region}_{subject}_{date}_{probe}.png'), dpi=300)
-            
             plt.close(f)
 
 pop_act_df.to_csv(join(save_path, 'multi_unit_activity.csv'), index=False)

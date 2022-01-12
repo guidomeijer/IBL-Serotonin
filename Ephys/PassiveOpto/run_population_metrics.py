@@ -18,7 +18,8 @@ from brainbox.metrics.single_units import spike_sorting_metrics
 from serotonin_functions import figure_style
 import brainbox.io.one as bbone
 from brainbox.plot import peri_event_time_histogram
-from serotonin_functions import paths, remap, query_ephys_sessions, load_passive_opto_times, get_artifact_neurons
+from serotonin_functions import (paths, combine_regions, query_ephys_sessions, load_passive_opto_times,
+                                 get_artifact_neurons)
 from one.api import ONE
 from ibllib.atlas import AllenAtlas, BrainRegions
 ba = AllenAtlas()
@@ -94,7 +95,7 @@ for i, eid in enumerate(eids):
             continue
 
         # Get regions from Beryl atlas
-        clusters[probe]['acronym'] = remap(clusters[probe]['atlas_id'], combine=True, brainregions=br)
+        clusters[probe]['acronym'] = combine_regions(clusters[probe]['acronym'])
         clusters_regions = clusters[probe]['acronym'][clusters_pass]
 
         # Loop over regions
