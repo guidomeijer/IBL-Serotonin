@@ -12,7 +12,7 @@ import pandas as pd
 import seaborn as sns
 from serotonin_functions import figure_style
 import brainbox.io.one as bbone
-from scipy.signal import periodogram
+from scipy.signal import welch
 from serotonin_functions import (paths, remap, query_ephys_sessions, load_passive_opto_times,
                                  load_lfp)
 from one.api import ONE
@@ -24,22 +24,16 @@ one = ONE()
 DESTRIPED_LFP = False
 # EXCLUDE = ['ZFM-02180_2021-05-19', 'ZFM-02600_2021-08-26']
 PLOT = True
-T_BEFORE = 1  # for plotting
-T_AFTER = 2
-BIN_CENTERS = np.arange(-1, 2.01, 0.2)
 BASELINE = [-1, 0]
-BIN_SIZE = 0.25
-THETA = [5, 15]
-BETA = [15, 35]
-GAMMA = [50, 120]
+STIM = [0, 1]
+WINDOW_SIZE = 1024
 _, fig_path, save_path = paths()
-fig_path = join(fig_path, 'Ephys', 'LFP')
+fig_path = join(fig_path, 'Ephys', 'LFP', 'Ratio')
 save_path = join(save_path, 'LFP')
 
 # Query sessions
 eids, _, subjects = query_ephys_sessions(return_subjects=True, one=one)
-
-all_lfp_df = pd.DataFrame()
+lfp_df = pd.DataFrame()
 for i, eid in enumerate(eids):
 
     # Get session details
@@ -94,67 +88,59 @@ for i, eid in enumerate(eids):
         chan_ind = one.load_dataset(eid, dataset='channels.rawInd.npy', collection=collection)
 
         # Remap to Beryl atlas
-        channels[probe]['acronym'] = remap(channels[probe]['atlas_id'])
+        channels[probe]['region'] = remap(channels[probe]['atlas_id'], combine=True)
 
-        # Get LFP power per brain region
-        for r, region in enumerate(np.unique(channels[probe]['acronym'])):
-            lfp_df = pd.DataFrame()
-            print(f'Processing {region}')
-            region_chan = chan_ind[channels[probe]['acronym'] == region]
-            for t, pulse_onset in enumerate(opto_train_times):
-                theta, beta, gamma = np.zeros(BIN_CENTERS.shape), np.zeros(BIN_CENTERS.shape), np.zeros(BIN_CENTERS.shape)
-                for b, bin_center in enumerate(BIN_CENTERS):
-                    f, Pxx = periodogram(
-                        lfp[np.ix_(np.isin(np.arange(lfp.shape[0]), region_chan),
-                                   (time > pulse_onset + (bin_center - (BIN_SIZE / 2)))
-                                   & (time < pulse_onset + (bin_center + (BIN_SIZE / 2))))],
-                        fs=2500)
-                    Pxx = np.mean(Pxx, axis=0)
-                    theta[b] = Pxx[(f >= THETA[0]) & (f <= THETA[1])].mean()
-                    beta[b] = Pxx[(f >= BETA[0]) & (f <= BETA[1])].mean()
-                    gamma[b] = Pxx[(f >= GAMMA[0]) & (f <= GAMMA[1])].mean()
+        # Loop over laser pulse trains
+        pulse_lfp_df = pd.DataFrame()
+        for p, pulse_start in enumerate(opto_train_times):
 
-                # Baseline subtraction
-                theta_p = ((theta - theta[(BIN_CENTERS >= BASELINE[0]) & (BIN_CENTERS <= BASELINE[1])].mean())
-                           / theta[(BIN_CENTERS >= BASELINE[0]) & (BIN_CENTERS <= BASELINE[1])].mean()) * 100
-                beta_p = ((beta - beta[(BIN_CENTERS >= BASELINE[0]) & (BIN_CENTERS <= BASELINE[1])].mean())
-                          / beta[(BIN_CENTERS >= BASELINE[0]) & (BIN_CENTERS <= BASELINE[1])].mean()) * 100
-                gamma_p = ((gamma - gamma[(BIN_CENTERS >= BASELINE[0]) & (BIN_CENTERS <= BASELINE[1])].mean())
-                           / gamma[(BIN_CENTERS >= BASELINE[0]) & (BIN_CENTERS <= BASELINE[1])].mean()) * 100
+            # Get baseline LFP power
+            _, pBL = welch(lfp[:, (time >= pulse_start + BASELINE[0])
+                               & (time <= pulse_start + BASELINE[1])],
+                           fs=2500, window='hanning', nperseg=WINDOW_SIZE)
+            freq, pStim = welch(lfp[:, (time >= pulse_start + STIM[0])
+                                    & (time <= pulse_start + STIM[1])],
+                                fs=2500, window='hanning', nperseg=WINDOW_SIZE)
 
-                # Add to dataframe
-                lfp_df = lfp_df.append(pd.DataFrame(data={
-                    'theta': theta, 'theta_perc': theta_p, 'beta': beta, 'beta_perc': beta_p,
-                    'gamma': gamma, 'gamma_perc': gamma_p, 'time': BIN_CENTERS}), ignore_index=True)
+            # Select frequencies of interest
+            pBL = pBL[:, (freq >= 2) & (freq <= 200)]
+            pStim = pStim[:, (freq >= 2) & (freq <= 200)]
+            freq = freq[(freq >= 2) & (freq <= 200)]
 
-            # Add to overall dataframe
-            #asd
+            # Loop over brain regions
+            for b, region in enumerate(np.unique(channels[probe]['region'])):
+                if region == 'root':
+                    continue
 
-            # Plot
-            colors, dpi = figure_style()
-            f, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(8, 3), dpi=dpi)
-            sns.lineplot(x='time', y='theta_perc', data=lfp_df, ax=ax1, label='theta')
-            sns.lineplot(x='time', y='beta_perc', data=lfp_df, ax=ax1, label='beta')
-            ax1.legend(frameon=False)
-            ax1.set(xlabel='Time (s)', ylabel='Change in LFP power (%)', title=f'{region}')
+                # Get median LFP power over channels in region
+                region_chan = chan_ind[channels[probe]['region'] == region]
+                pulse_lfp_df = pulse_lfp_df.append(pd.DataFrame(data={
+                    'baseline': 10 * np.log(np.median(pBL[region_chan, :], axis=0)),
+                    'stim': 10 * np.log(np.median(pStim[region_chan, :], axis=0)),
+                    'Hz': freq, 'region': region, 'pulse': p}), ignore_index=True)
 
-            sns.lineplot(x='time', y='gamma_perc', data=lfp_df, ax=ax2, label='gamma')
-            ax2.legend(frameon=False)
-            ax2.set(xlabel='Time (s)', ylabel='Change in LFP power (%)')
+        # Get ratio over stim/baseline (here it's inverted because both values are negative)
+        pulse_lfp_df['ratio'] = pulse_lfp_df['baseline'] / pulse_lfp_df['stim']
 
-            ch_plot = np.random.choice(region_chan)
-            plot_pulse_times = (opto_on_times - opto_on_times[0]) * 1000
-            ax3.plot((time[((time > opto_on_times[0] - 0.01) & (time < opto_on_times[0] + 0.2))]\
-                      - opto_on_times[0]) * 1000, lfp[ch_plot, ((time > opto_on_times[0] - 0.01)
-                                                                   & (time < opto_on_times[0] + 0.2))],
-                     zorder=2)
-            y_lim = ax3.get_ylim()
-            for pp in range(10):
-                ax3.plot([plot_pulse_times[pp], plot_pulse_times[pp]], y_lim, ls='--', color='r',
-                         lw=0.5, zorder=1)
-            ax3.set(xlabel='Time (ms)', ylabel='uV', xlim=[-10, 200])
+        # Add to overall dataframe
+        median_lfp_df = pulse_lfp_df.groupby(['Hz', 'region']).median().reset_index()
+        median_lfp_df = median_lfp_df.drop(labels=['pulse'], axis=1)
+        median_lfp_df['subject'] = subject
+        median_lfp_df['date'] = date
+        median_lfp_df['probe'] = probe
+        lfp_df = lfp_df.append(median_lfp_df, ignore_index=True)
 
+        # Plot this recording
+        colors, dpi = figure_style()
+        for r, region in enumerate(np.unique(pulse_lfp_df['region'])):
+            f, ax1 = plt.subplots(1, 1, figsize=(2.5, 2), dpi=dpi)
+            plt.plot([0, 200], [1, 1], ls='--', color='gray')
+            sns.lineplot(data=pulse_lfp_df[pulse_lfp_df['region'] == region], x='Hz', y='ratio', palette='Set2', ax=ax1)
+            ax1.set(ylabel='LFP ratio (stim/baseline)', xlabel='Frequency (Hz)')
             plt.tight_layout()
             sns.despine(trim=True)
             plt.savefig(join(fig_path, f'{region}_{subject}_{date}_{probe}'))
             plt.close(f)
+
+# Save result
+lfp_df.to_csv(join(save_path, 'LFP_ratio_opto.csv'), index=False)
