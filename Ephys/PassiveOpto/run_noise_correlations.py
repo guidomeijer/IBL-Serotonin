@@ -13,6 +13,7 @@ from matplotlib.ticker import FormatStrFormatter
 from brainbox.population.decode import get_spike_counts_in_bins
 import pandas as pd
 from os import mkdir
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from brainbox.task.closed_loop import roc_single_event
 from brainbox.metrics.single_units import spike_sorting_metrics
 from serotonin_functions import figure_style
@@ -161,20 +162,26 @@ for i, eid in enumerate(eids):
         
     # Plot result
     colors, dpi = figure_style()
-    f, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(8, 3), dpi=dpi)
+    f, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(10, 3), dpi=dpi)
     
     corr_mat_bl[np.diag_indices_from(corr_mat_bl)] = 0
     ax1.imshow(corr_mat_bl, cmap='coolwarm', vmin=-0.5, vmax=0.5)
+    ax1.
     ax1.set(title='Baseline')
     
     corr_mat_stim[np.diag_indices_from(corr_mat_stim)] = 0
     ax2.imshow(corr_mat_stim, cmap='coolwarm', vmin=-0.5, vmax=0.5)
     ax2.set(title='Stim')
         
+    axin = inset_axes(ax3, width="5%", height="100%", loc='lower left',
+                      bbox_to_anchor=(1.05, 0, 1, 1),
+                      bbox_transform=ax3.transAxes, borderpad=0)
     img = ax3.imshow(corr_mat_stim - corr_mat_bl, cmap='coolwarm', vmin=-0.5, vmax=0.5)
     ax3.set(title='Stim-Baseline')
-    cbar = f.colorbar(img, shrink=0.7, ax=ax3)
+    
+    cbar = f.colorbar(img, cax=axin)
     cbar.ax.set_ylabel('Correlation (r)', rotation=270, labelpad=10)
+    cbar.ax.set_yticks(np.arange(-0.5, 0.6, 0.25))
     
     plt.tight_layout()
     plt.savefig(join(fig_path, f'{subject}_{date}.jpg'), dpi=300)
