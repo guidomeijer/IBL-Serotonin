@@ -10,7 +10,7 @@ from iblvideo import run_session
 from one.api import ONE
 one = ONE()
 
-
+"""
 sessions = one.alyx.rest('sessions', 'list', django='project__name__icontains,ibl_fiberfluo_pilot_01,'
                                                    '~subject__nickname__icontains,ZFM-03450')
 eids = [i['url'][-36:] for i in sessions]
@@ -24,4 +24,7 @@ for i, eid in enumerate(eids):
     print(f'\n\nProcessing session {eid} [{i + 1} of {len(sessions)}]\n\n')
     status = run_session(eid, machine='guido', cams=['left'], one=one, frames=10000, clobber=True,
                          overwrite=False)
+"""
+status = run_session('315349d8-eb22-4c9b-871d-833f875e6641', machine='guido', cams=['left'],
+                     one=one, frames=10000, clobber=True, overwrite=True)
 

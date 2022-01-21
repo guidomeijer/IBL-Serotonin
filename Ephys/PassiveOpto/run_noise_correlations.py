@@ -100,7 +100,7 @@ for i, eid in enumerate(eids):
         if clusters_pass.shape[0] == 0:
             continue
 
-        # Get merged regions 
+        # Get merged regions
         clusters[probe]['region'] = remap(clusters[probe]['atlas_id'], combine=True)
         clusters_regions = clusters[probe]['region'][clusters_pass]
 
@@ -128,7 +128,7 @@ for i, eid in enumerate(eids):
             else:
                 pop_act_bl = np.hstack((pop_act_bl, pop_vector))
                 pop_regions = np.concatenate((pop_regions, np.array([region] * pop_vector.shape[1])))
-                
+
             # Get stim activity over all neurons
             times = np.column_stack((((opto_train_times + STIM[0]),
                                      ((opto_train_times + STIM[1])))))
@@ -138,51 +138,53 @@ for i, eid in enumerate(eids):
                 pop_act_stim = pop_vector
             else:
                 pop_act_stim = np.hstack((pop_act_stim, pop_vector))
-            
+
     # Remove neurons that do not spike at all
     incl_neurons = (np.sum(pop_act_bl, axis=0) > 0) & (np.sum(pop_act_stim, axis=0) > 0)
     pop_act_bl = pop_act_bl[:, incl_neurons]
     pop_act_stim = pop_act_stim[:, incl_neurons]
     pop_regions = pop_regions[incl_neurons]
-    
+
     # Calculate noise correlations for baseline
     corr_mat_bl = np.corrcoef(pop_act_bl, rowvar=False)
     mean_corr_arr = corr_mat_bl[np.triu_indices(corr_mat_bl.shape[0])]
     mean_corr_arr = mean_corr_arr[mean_corr_arr != 1]
     mean_corr_bl = np.mean(mean_corr_arr)
-    
+
     # Calculate noise correlations for stim
     corr_mat_stim = np.corrcoef(pop_act_stim, rowvar=False)
     mean_corr_arr = corr_mat_stim[np.triu_indices(corr_mat_stim.shape[0])]
     mean_corr_arr = mean_corr_arr[mean_corr_arr != 1]
     mean_corr_stim = np.mean(mean_corr_arr)
-        
+
     # Get change in correlation
     corr_mat_change = corr_mat_stim - corr_mat_bl
-        
+
     # Plot result
     colors, dpi = figure_style()
     f, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(10, 3), dpi=dpi)
-    
+
     corr_mat_bl[np.diag_indices_from(corr_mat_bl)] = 0
     ax1.imshow(corr_mat_bl, cmap='coolwarm', vmin=-0.5, vmax=0.5)
-    ax1.
+
     ax1.set(title='Baseline')
-    
+
     corr_mat_stim[np.diag_indices_from(corr_mat_stim)] = 0
     ax2.imshow(corr_mat_stim, cmap='coolwarm', vmin=-0.5, vmax=0.5)
     ax2.set(title='Stim')
-        
+
     axin = inset_axes(ax3, width="5%", height="100%", loc='lower left',
                       bbox_to_anchor=(1.05, 0, 1, 1),
                       bbox_transform=ax3.transAxes, borderpad=0)
     img = ax3.imshow(corr_mat_stim - corr_mat_bl, cmap='coolwarm', vmin=-0.5, vmax=0.5)
     ax3.set(title='Stim-Baseline')
-    
+
     cbar = f.colorbar(img, cax=axin)
     cbar.ax.set_ylabel('Correlation (r)', rotation=270, labelpad=10)
     cbar.ax.set_yticks(np.arange(-0.5, 0.6, 0.25))
-    
-    plt.tight_layout()
+
+    #plt.tight_layout()
+    asd
+
     plt.savefig(join(fig_path, f'{subject}_{date}.jpg'), dpi=300)
     plt.close(f)

@@ -232,7 +232,12 @@ def combine_regions(acronyms):
     regions = np.array(['root'] * len(acronyms), dtype=object)
     regions[np.in1d(acronyms, ['ILA', 'PL', 'MOs', 'ACAd', 'ACAv'])] = 'mPFC'
     regions[np.in1d(acronyms, ['ORBl', 'ORBm'])] = 'Orbitofrontal'
-    regions[np.in1d(acronyms, ['PO', 'LP', 'LD', 'RT', 'VAL'])] = 'Thalamus'
+    #regions[np.in1d(acronyms, ['PO', 'LP', 'LD', 'RT', 'VAL'])] = 'Thalamus'
+    regions[np.in1d(acronyms, ['PO'])] = 'PO'
+    regions[np.in1d(acronyms, ['LP'])] = 'LP'
+    regions[np.in1d(acronyms, ['LD'])] = 'LD'
+    regions[np.in1d(acronyms, ['RT'])] = 'RT'
+    regions[np.in1d(acronyms, ['VAL'])] = 'VAL'
     regions[np.in1d(acronyms, ['SCm', 'SCs', 'SCig', 'SCsg', 'SCdg'])] = 'Superior colliculus'
     regions[np.in1d(acronyms, ['RSPv', 'RSPd'])] = 'Retrosplenial'
     regions[np.in1d(acronyms, ['PIR'])] = 'Piriform'
@@ -254,8 +259,8 @@ def remap(ids, source='Allen', dest='Beryl', combine=False, brainregions=None):
         return combine_regions(acronyms)
     else:
         return acronyms
-    
-    
+
+
 def get_full_region_name(acronyms):
     brainregions = BrainRegions()
     full_region_names = []
@@ -418,7 +423,7 @@ def load_passive_opto_times(eid, return_off_times=False, one=None):
             '_spikeglx_ephysData_g*_t0.nidq.ch'], download_only=True)
     except:
         print('Error loading opto trace')
-        return [], []        
+        return [], []
     session_path = one.eid2path(eid)
     nidq_file = glob(str(session_path.joinpath('raw_ephys_data/_spikeglx_ephysData_g*_t0.nidq.cbin')))[0]
     sr = spikeglx.Reader(nidq_file)
@@ -436,7 +441,7 @@ def load_passive_opto_times(eid, return_off_times=False, one=None):
     else:
         # Find the opto pulses after the spontaneous activity (after a long break, here 100s)
         opto_train_times = opto_on_times[np.concatenate(([True], np.diff(opto_on_times) > 1))]
-        
+
         if np.sum(np.diff(opto_train_times) > 100) > 0:
             first_pulse = np.where(np.diff(opto_train_times) > 100)[0][0]+1
         elif opto_train_times[0] - opto_times[0] > 100:
