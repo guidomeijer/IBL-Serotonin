@@ -14,7 +14,7 @@ from brainbox.metrics.single_units import spike_sorting_metrics
 import brainbox.io.one as bbone
 from brainbox.population.decode import get_spike_counts_in_bins
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
-from serotonin_functions import (paths, combine_regions, query_ephys_sessions, load_passive_opto_times,
+from serotonin_functions import (paths, remap, query_ephys_sessions, load_passive_opto_times,
                                  get_artifact_neurons, figure_style)
 from one.api import ONE
 from ibllib.atlas import AllenAtlas
@@ -84,9 +84,9 @@ for i, eid in enumerate(eids):
         if clusters_pass.shape[0] == 0:
             continue
 
-        # Get regions from Beryl atlas
-        clusters[probe]['acronym'] = combine_regions(clusters[probe]['acronym'])
-        clusters_regions = clusters[probe]['acronym'][clusters_pass]
+        # Get merged regions 
+        clusters[probe]['region'] = remap(clusters[probe]['atlas_id'], combine=True)
+        clusters_regions = clusters[probe]['region'][clusters_pass]
 
         # Get a number of random onset times in the spontaneous activity as control
         control_times = np.random.uniform(low=start_passive, high=opto_train_times[0],

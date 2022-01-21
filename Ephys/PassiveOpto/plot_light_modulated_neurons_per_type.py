@@ -10,7 +10,8 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 from os.path import join
-from serotonin_functions import paths, figure_style, get_full_region_name
+from serotonin_functions import (paths, figure_style, get_full_region_name,
+                                 load_subjects)
 
 # Paths
 _, fig_path, save_path = paths()
@@ -31,7 +32,7 @@ merged_df = merged_df.reset_index(drop=True)
 merged_df = merged_df.drop(index=[i for i, j in enumerate(merged_df['region']) if 'void' in j])
 
 # Add expression
-subjects = pd.read_csv(join('..', 'subjects.csv'))
+subjects = load_subjects()
 for i, nickname in enumerate(np.unique(merged_df['subject'])):
     merged_df.loc[merged_df['subject'] == nickname, 'expression'] = subjects.loc[subjects['subject'] == nickname, 'expression'].values[0]
     merged_df.loc[merged_df['subject'] == nickname, 'sert-cre'] = subjects.loc[subjects['subject'] == nickname, 'sert-cre'].values[0]
