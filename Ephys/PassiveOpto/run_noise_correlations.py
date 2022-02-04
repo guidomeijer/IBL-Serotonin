@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import FormatStrFormatter
 from brainbox.population.decode import get_spike_counts_in_bins
 import pandas as pd
+import seaborn as sns
 from os import mkdir
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from brainbox.task.closed_loop import roc_single_event
@@ -167,33 +168,48 @@ for i, eid in enumerate(eids):
     corr_mat_bl[np.diag_indices_from(corr_mat_bl)] = 0
     ax1.imshow(corr_mat_bl, cmap='coolwarm', vmin=-0.5, vmax=0.5)
     plt_regions, plt_reg_loc = np.unique(pop_regions, return_counts=True)
-    for l, loc in enumerate(np.cumsum(plt_reg_loc)):
-        ax1.plot([0, corr_mat_bl.shape[1]-1], [loc, loc], color='w', ls='--')
-        ax1.plot([plt_reg_loc[l], plt_reg_loc[l]], [0, corr_mat_bl.shape[1]-1], color='w', ls='--')
-    ax1.set(title='Baseline')
+    for l, loc in enumerate(np.cumsum(plt_reg_loc)[:-1]):
+        ax1.plot([0, corr_mat_bl.shape[1]-1], [loc, loc], color='k', ls='--')
+        ax1.plot([loc, loc], [0, corr_mat_bl.shape[1]-1], color='k', ls='--')
+    ax1.set(xticks=np.cumsum(plt_reg_loc) - (plt_reg_loc / 2),
+            xticklabels=np.unique(pop_regions),
+            yticks=np.cumsum(plt_reg_loc) - (plt_reg_loc / 2),
+            yticklabels=np.unique(pop_regions))
+    ax1.set_title('Baseline', fontweight='bold')
+    for key, spine in ax1.spines.items():
+        spine.set_visible(False)
+    ax1.tick_params(axis=u'both', which=u'both',length=0)
 
     corr_mat_stim[np.diag_indices_from(corr_mat_stim)] = 0
     ax2.imshow(corr_mat_stim, cmap='coolwarm', vmin=-0.5, vmax=0.5)
-    for l, loc in enumerate(np.cumsum(plt_reg_loc)):
-        ax2.plot([0, corr_mat_bl.shape[1]-1], [loc, loc], ls='--')
-        ax2.plot([loc, loc], [0, corr_mat_bl.shape[1]-1], color='w', ls='--')
-    ax2.set(title='Stim')
+    for l, loc in enumerate(np.cumsum(plt_reg_loc)[:-1]):
+        ax2.plot([0, corr_mat_bl.shape[1]-1], [loc, loc], color='k', ls='--')
+        ax2.plot([loc, loc], [0, corr_mat_bl.shape[1]-1], color='k', ls='--')
+    ax2.set(xticks=np.cumsum(plt_reg_loc) - (plt_reg_loc / 2),
+            xticklabels=np.unique(pop_regions), yticks=[])
+    ax2.set_title('5-HT stimulation', fontweight='bold')
+    for key, spine in ax2.spines.items():
+        spine.set_visible(False)
+    ax2.tick_params(axis=u'both', which=u'both',length=0)
 
     axin = inset_axes(ax3, width="5%", height="100%", loc='lower left',
                       bbox_to_anchor=(1.05, 0, 1, 1),
                       bbox_transform=ax3.transAxes, borderpad=0)
     img = ax3.imshow(corr_mat_stim - corr_mat_bl, cmap='coolwarm', vmin=-0.5, vmax=0.5)
-    for l, loc in enumerate(np.cumsum(plt_reg_loc)):
-        ax3.plot([0, corr_mat_bl.shape[1]-1], [loc, loc], color='w', ls='--')
-        ax3.plot([loc, loc], [0, corr_mat_bl.shape[1]-1], color='w', ls='--')
-    ax3.set(title='Stim-Baseline')
+    for l, loc in enumerate(np.cumsum(plt_reg_loc)[:-1]):
+        ax3.plot([0, corr_mat_bl.shape[1]-1], [loc, loc], color='k', ls='--')
+        ax3.plot([loc, loc], [0, corr_mat_bl.shape[1]-1], color='k', ls='--')
+    ax3.set(xticks=np.cumsum(plt_reg_loc) - (plt_reg_loc / 2),
+            xticklabels=np.unique(pop_regions), yticks=[])
+    ax3.set_title('Stim-Baseline', fontweight='bold')
+    for key, spine in ax3.spines.items():
+        spine.set_visible(False)
+    ax3.tick_params(axis=u'both', which=u'both',length=0)
 
     cbar = f.colorbar(img, cax=axin)
     cbar.ax.set_ylabel('Correlation (r)', rotation=270, labelpad=10)
     cbar.ax.set_yticks(np.arange(-0.5, 0.6, 0.25))
 
-    #plt.tight_layout()
-    asd
-
     plt.savefig(join(fig_path, f'{subject}_{date}.jpg'), dpi=300)
+    plt.savefig(join(fig_path, f'{subject}_{date}.pdf'))
     plt.close(f)
