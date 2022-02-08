@@ -152,11 +152,11 @@ for i, eid in enumerate(eids):
                 if not isdir(join(fig_path, 'Regions', f'{region}')):
                     mkdir(join(fig_path, 'Regions', f'{region}'))
                 plt.savefig(join(fig_path, 'Regions', region,
-                                 f'{region}_{subject}_{date}_{probe}_neuron{cluster}'), dpi=300)
+                                 f'{region}_{subject}_{date}_{probe}_neuron{cluster}'), dpi=600)
                 if not isdir(join(fig_path, 'Recordings', f'{subject}_{date}')):
                     mkdir(join(fig_path, 'Recordings', f'{subject}_{date}'))
                 plt.savefig(join(fig_path, 'Recordings', f'{subject}_{date}',
-                                 f'{subject}_{date}_{probe}_neuron{cluster}_{region}'), dpi=300)
+                                 f'{subject}_{date}_{probe}_neuron{cluster}_{region}'), dpi=600)
                 plt.close(p)
 
 # Save output

@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 from os.path import join
 from serotonin_functions import paths, figure_style, load_subjects, plot_scalar_on_slice
 from ibllib.atlas import AllenAtlas
-ba = AllenAtlas()
+ba = AllenAtlas(res_um=10)
 
 # Settings
 HISTOLOGY = True
@@ -81,6 +81,7 @@ cb_ax = f.add_axes([0.88, 0.35, 0.01, 0.3])
 cbar = f.colorbar(mappable=ax1.images[0], cax=cb_ax)
 cbar.ax.set_ylabel('% modulated neurons', rotation=270, labelpad=10)
 plt.savefig(join(map_path, 'perc_mod_neurons.jpg'), dpi=300)
+plt.savefig(join(map_path, 'perc_mod_neurons.pdf'))
 
 # %%
 # Plot brain map slices
@@ -110,6 +111,7 @@ cb_ax = f.add_axes([0.88, 0.35, 0.01, 0.3])
 cbar = f.colorbar(mappable=ax1.images[0], cax=cb_ax)
 cbar.ax.set_ylabel('Modulation index', rotation=270, labelpad=10)
 plt.savefig(join(map_path, 'modulation_index.jpg'), dpi=300)
+plt.savefig(join(map_path, 'modulation_index.pdf'))
 
 # %%
 # Plot brain map slices
@@ -139,6 +141,7 @@ cb_ax = f.add_axes([0.88, 0.35, 0.01, 0.3])
 cbar = f.colorbar(mappable=ax1.images[0], cax=cb_ax)
 cbar.ax.set_ylabel('Modulation variance', rotation=270, labelpad=10)
 plt.savefig(join(map_path, 'modulation_variance.jpg'), dpi=300)
+plt.savefig(join(map_path, 'modulation_variance.pdf'))
 
 # %% Plot
 f, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(4, 3.5), dpi=dpi)
