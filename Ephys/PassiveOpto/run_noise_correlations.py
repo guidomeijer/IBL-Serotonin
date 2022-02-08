@@ -36,7 +36,7 @@ STIM = [0, 0.5]
 PLOT = True
 NEURON_QC = True
 _, fig_path, save_path = paths()
-fig_path = join(fig_path, 'Ephys', 'Correlations', 'Recordings')
+fig_path = join(fig_path, 'Ephys', 'Correlations')
 
 # Query sessions
 eids, _, subjects = query_ephys_sessions(return_subjects=True, one=one)
@@ -44,10 +44,10 @@ eids, _, subjects = query_ephys_sessions(return_subjects=True, one=one)
 # Get artifact neurons
 artifact_neurons = get_artifact_neurons()
 
-eids = [eids[3]]
+#eids = [eids[3]]
 
 # %%
-pop_df = pd.DataFrame()
+corr_df = pd.DataFrame()
 for i, eid in enumerate(eids):
 
     # Get session details
@@ -102,7 +102,7 @@ for i, eid in enumerate(eids):
             continue
 
         # Get merged regions
-        clusters[probe]['region'] = remap(clusters[probe]['atlas_id'], combine=True)
+        clusters[probe]['region'] = remap(clusters[probe]['atlas_id'], combine=True, split_thalamus=True)
         clusters_regions = clusters[probe]['region'][clusters_pass]
 
         # Loop over regions
@@ -161,20 +161,31 @@ for i, eid in enumerate(eids):
     # Get change in correlation
     corr_mat_change = corr_mat_stim - corr_mat_bl
 
+    # Get change in correlation per region into dataframe
+    for r, region in enumerate(np.unique(pop_regions)):
+        reg_change = corr_mat_change[np.ix_(pop_regions == region, pop_regions == region)]
+        corr_change = np.mean(reg_change[np.triu_indices(reg_change.shape[0], k=1)])
+        corr_df = pd.concat((corr_df, pd.DataFrame(index=[corr_df.shape[0] + 1], data={
+            'corr_change': corr_change, 'region': region, 'subject': subject, 'date': date})))
+
     # Plot result
+    plt_regions, plt_reg_ind, plt_reg_loc = np.unique(pop_regions, return_counts=True, return_index=True)
+    plt_regions = plt_regions[np.argsort(plt_reg_ind)]
+    plt_reg_loc = plt_reg_loc[np.argsort(plt_reg_ind)]
+
     colors, dpi = figure_style()
-    f, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(10, 3), dpi=dpi)
+    f, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(10, 5), dpi=dpi)
 
     corr_mat_bl[np.diag_indices_from(corr_mat_bl)] = 0
     ax1.imshow(corr_mat_bl, cmap='coolwarm', vmin=-0.5, vmax=0.5)
-    plt_regions, plt_reg_loc = np.unique(pop_regions, return_counts=True)
     for l, loc in enumerate(np.cumsum(plt_reg_loc)[:-1]):
         ax1.plot([0, corr_mat_bl.shape[1]-1], [loc, loc], color='k', ls='--')
         ax1.plot([loc, loc], [0, corr_mat_bl.shape[1]-1], color='k', ls='--')
     ax1.set(xticks=np.cumsum(plt_reg_loc) - (plt_reg_loc / 2),
-            xticklabels=np.unique(pop_regions),
+            xticklabels=plt_regions,
             yticks=np.cumsum(plt_reg_loc) - (plt_reg_loc / 2),
-            yticklabels=np.unique(pop_regions))
+            yticklabels=plt_regions)
+    ax1.tick_params(axis='x', labelrotation=90)
     ax1.set_title('Baseline', fontweight='bold')
     for key, spine in ax1.spines.items():
         spine.set_visible(False)
@@ -186,11 +197,12 @@ for i, eid in enumerate(eids):
         ax2.plot([0, corr_mat_bl.shape[1]-1], [loc, loc], color='k', ls='--')
         ax2.plot([loc, loc], [0, corr_mat_bl.shape[1]-1], color='k', ls='--')
     ax2.set(xticks=np.cumsum(plt_reg_loc) - (plt_reg_loc / 2),
-            xticklabels=np.unique(pop_regions), yticks=[])
+            xticklabels=plt_regions, yticks=[])
     ax2.set_title('5-HT stimulation', fontweight='bold')
     for key, spine in ax2.spines.items():
         spine.set_visible(False)
     ax2.tick_params(axis=u'both', which=u'both',length=0)
+    ax2.tick_params(axis='x', labelrotation=90)
 
     axin = inset_axes(ax3, width="5%", height="100%", loc='lower left',
                       bbox_to_anchor=(1.05, 0, 1, 1),
@@ -200,11 +212,12 @@ for i, eid in enumerate(eids):
         ax3.plot([0, corr_mat_bl.shape[1]-1], [loc, loc], color='k', ls='--')
         ax3.plot([loc, loc], [0, corr_mat_bl.shape[1]-1], color='k', ls='--')
     ax3.set(xticks=np.cumsum(plt_reg_loc) - (plt_reg_loc / 2),
-            xticklabels=np.unique(pop_regions), yticks=[])
+            xticklabels=plt_regions, yticks=[])
     ax3.set_title('Stim-Baseline', fontweight='bold')
     for key, spine in ax3.spines.items():
         spine.set_visible(False)
     ax3.tick_params(axis=u'both', which=u'both',length=0)
+    ax3.tick_params(axis='x', labelrotation=90)
 
     cbar = f.colorbar(img, cax=axin)
     cbar.ax.set_ylabel('Correlation (r)', rotation=270, labelpad=10)
@@ -212,4 +225,10 @@ for i, eid in enumerate(eids):
 
     plt.savefig(join(fig_path, f'{subject}_{date}.jpg'), dpi=300)
     plt.savefig(join(fig_path, f'{subject}_{date}.pdf'))
+
     plt.close(f)
+
+
+colors, dpi = figure_style()
+f, ax1 = plt.subplots(1, 1, figsize=(4, 4), dpi=dpi)
+sns.swarmplot(x='region', y='corr_change', data=corr_df, ax=ax1)

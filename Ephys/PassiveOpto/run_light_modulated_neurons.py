@@ -24,12 +24,12 @@ one = ONE()
 
 # Settings
 PLOT = True
-OVERWRITE = False
+OVERWRITE = True
 NEURON_QC = True
 T_BEFORE = 1  # for plotting
 T_AFTER = 2
-PRE_TIME = [1, 0]  # for significance testing
-POST_TIME = [0, 1]
+PRE_TIME = [0.5, 0]  # for significance testing
+POST_TIME = [0.5, 1]
 BIN_SIZE = 0.05
 PERMUTATIONS = 500
 _, fig_path, save_path = paths()
@@ -137,11 +137,18 @@ for i, eid in enumerate(eids):
                 ax.set(ylim=[ax.get_ylim()[0], ax.get_ylim()[1] + ax.get_ylim()[1] * 0.2])
                 ax.plot([0, 1], [ax.get_ylim()[1] - ax.get_ylim()[1] * 0.05,
                                  ax.get_ylim()[1] - ax.get_ylim()[1] * 0.05], lw=2, color='royalblue')
+                """
                 ax.set(ylabel='spikes/s', xlabel='Time (s)',
                        title=f'Modulation index: {roc_auc[cluster_ids == cluster][0]:.2f}',
                        yticks=np.linspace(0, np.round(ax.get_ylim()[1]), 3))
                 ax.yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
+                """
+                ax.set(ylabel='Firing rate (spks/s)', xlabel='Time (s)',
+                       yticks=[np.round(ax.get_ylim()[1])],
+                       ylim=[ax.get_ylim()[0], np.round(ax.get_ylim()[1])])
+                ax.yaxis.set_major_formatter(FormatStrFormatter('%.0f'))
                 plt.tight_layout()
+
                 if not isdir(join(fig_path, 'Regions', f'{region}')):
                     mkdir(join(fig_path, 'Regions', f'{region}'))
                 plt.savefig(join(fig_path, 'Regions', region,
@@ -153,5 +160,5 @@ for i, eid in enumerate(eids):
                 plt.close(p)
 
 # Save output
-light_neurons = remove_artifact_neurons(light_neurons)  # remove artifacts
-light_neurons.to_csv(join(save_path, 'light_modulated_neurons.csv'), index=False)
+#light_neurons = remove_artifact_neurons(light_neurons)  # remove artifacts
+#light_neurons.to_csv(join(save_path, 'light_modulated_neurons.csv'), index=False)

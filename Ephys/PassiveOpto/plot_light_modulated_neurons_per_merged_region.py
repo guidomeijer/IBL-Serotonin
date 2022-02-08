@@ -23,7 +23,7 @@ _, fig_path, save_path = paths()
 light_neurons = pd.read_csv(join(save_path, 'light_modulated_neurons.csv'))
 
 # Get full region names
-light_neurons['full_region'] = combine_regions(light_neurons['region'])
+light_neurons['full_region'] = combine_regions(light_neurons['region'], split_thalamus=False)
 
 # Drop root and void
 light_neurons = light_neurons.reset_index(drop=True)

@@ -16,12 +16,14 @@ import pathlib
 import patsy
 import statsmodels.api as sm
 from sklearn.model_selection import KFold
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from os.path import join
 from glob import glob
 from datetime import datetime
 from brainbox.io.spikeglx import spikeglx
 from iblutil.numerical import ismember
 from ibllib.atlas import BrainRegions
+from ibllib.atlas import AllenAtlas
 from one.api import ONE
 
 # This is the date at which I fixed a crucial bug in the laser driver, all optogenetics data
@@ -228,16 +230,19 @@ def load_trials(eid, laser_stimulation=False, invert_choice=False, invert_stimsi
     return trials
 
 
-def combine_regions(acronyms):
+def combine_regions(acronyms, split_thalamus=True):
     regions = np.array(['root'] * len(acronyms), dtype=object)
     regions[np.in1d(acronyms, ['ILA', 'PL', 'MOs', 'ACAd', 'ACAv'])] = 'mPFC'
     regions[np.in1d(acronyms, ['ORBl', 'ORBm'])] = 'Orbitofrontal'
-    #regions[np.in1d(acronyms, ['PO', 'LP', 'LD', 'RT', 'VAL'])] = 'Thalamus'
-    regions[np.in1d(acronyms, ['PO'])] = 'PO'
-    regions[np.in1d(acronyms, ['LP'])] = 'LP'
-    regions[np.in1d(acronyms, ['LD'])] = 'LD'
-    regions[np.in1d(acronyms, ['RT'])] = 'RT'
-    regions[np.in1d(acronyms, ['VAL'])] = 'VAL'
+    if split_thalamus:
+        regions[np.in1d(acronyms, ['PO'])] = 'Thalamus (PO)'
+        regions[np.in1d(acronyms, ['LP'])] = 'Thalamus (LP)'
+        regions[np.in1d(acronyms, ['LD'])] = 'Thalamus (LD)'
+        regions[np.in1d(acronyms, ['RT'])] = 'Thalamus (RT)'
+        regions[np.in1d(acronyms, ['VAL'])] = 'Thalamus (VAL)'
+    else:
+        regions[np.in1d(acronyms, ['PO', 'LP', 'LD', 'RT', 'VAL'])] = 'Thalamus'
+
     regions[np.in1d(acronyms, ['SCm', 'SCs', 'SCig', 'SCsg', 'SCdg'])] = 'Superior colliculus'
     regions[np.in1d(acronyms, ['RSPv', 'RSPd'])] = 'Retrosplenial'
     regions[np.in1d(acronyms, ['PIR'])] = 'Piriform'
@@ -250,13 +255,13 @@ def combine_regions(acronyms):
     return regions
 
 
-def remap(ids, source='Allen', dest='Beryl', combine=False, brainregions=None):
+def remap(ids, source='Allen', dest='Beryl', combine=False, split_thalamus=False, brainregions=None):
     br = brainregions or BrainRegions()
     _, inds = ismember(ids, br.id[br.mappings[source]])
     ids = br.id[br.mappings[dest][inds]]
     acronyms = br.get(br.id[br.mappings[dest][inds]])['acronym']
     if combine:
-        return combine_regions(acronyms)
+        return combine_regions(acronyms, split_thalamus=split_thalamus)
     else:
         return acronyms
 
@@ -520,56 +525,120 @@ def load_lfp(eid, probe, time_start, time_end, relative_to='begin', destriped=Fa
     return signal, time
 
 
-def query_bwm_sessions(selection='all', return_subjects=False, one=None):
-    if one is None:
-        one = ONE()
-    if selection == 'all':
-        # Query all ephysChoiceWorld sessions
-        ins = one.alyx.rest('insertions', 'list',
-                        django='session__project__name__icontains,ibl_neuropixel_brainwide_01,'
-                               'session__qc__lt,50')
-    elif selection == 'aligned':
-        # Query all sessions with at least one alignment
-        ins = one.alyx.rest('insertions', 'list',
-                        django='session__project__name__icontains,ibl_neuropixel_brainwide_01,'
-                               'session__qc__lt,50,'
-                               'json__extended_qc__alignment_count__gt,0')
-    elif selection == 'resolved':
-        # Query all sessions with resolved alignment
-         ins = one.alyx.rest('insertions', 'list',
-                        django='session__project__name__icontains,ibl_neuropixel_brainwide_01,'
-                               'session__qc__lt,50,'
-                               'json__extended_qc__alignment_resolved,True')
-    elif selection == 'aligned-behavior':
-        # Query sessions with at least one alignment and that meet behavior criterion
-        ins = one.alyx.rest('insertions', 'list',
-                        django='session__project__name__icontains,ibl_neuropixel_brainwide_01,'
-                               'session__qc__lt,50,'
-                               'json__extended_qc__alignment_count__gt,0,'
-                               'session__extended_qc__behavior,1')
-    elif selection == 'resolved-behavior':
-        # Query sessions with resolved alignment and that meet behavior criterion
-        ins = one.alyx.rest('insertions', 'list',
-                        django='session__project__name__icontains,ibl_neuropixel_brainwide_01,'
-                               'session__qc__lt,50,'
-                               'json__extended_qc__alignment_resolved,True,'
-                               'session__extended_qc__behavior,1')
-    else:
-        ins = []
+def plot_scalar_on_slice(
+        regions, values, coord=-1000, slice='coronal', mapping='Beryl', hemisphere='left',
+        cmap='viridis', background='boundary', clevels=None, brain_atlas=None, colorbar=False, ax=None):
+    """
+    Function to plot scalar value per allen region on histology slice
+    :param regions: array of acronyms of Allen regions
+    :param values: array of scalar value per acronym. If hemisphere is 'both' and different values want to be shown on each
+    hemispheres, values should contain 2 columns, 1st column for LH values, 2nd column for RH values
+    :param coord: coordinate of slice in um (not needed when slice='top')
+    :param slice: orientation of slice, options are 'coronal', 'sagittal', 'horizontal', 'top' (top view of brain)
+    :param mapping: atlas mapping to use, options are 'Allen', 'Beryl' or 'Cosmos'
+    :param hemisphere: hemisphere to display, options are 'left', 'right', 'both'
+    :param background: background slice to overlay onto, options are 'image' or 'boundary'
+    :param cmap: colormap to use
+    :param clevels: min max color levels [cim, cmax]
+    :param brain_atlas: AllenAtlas object
+    :param colorbar: whether to plot a colorbar
+    :param ax: optional axis object to plot on
+    :return:
+    """
 
-    # Get list of eids and probes
-    all_eids = np.array([i['session'] for i in ins])
-    all_probes = np.array([i['name'] for i in ins])
-    all_subjects = np.array([i['session_info']['subject'] for i in ins])
-    eids, ind_unique = np.unique(all_eids, return_index=True)
-    subjects = all_subjects[ind_unique]
-    probes = []
-    for i, eid in enumerate(eids):
-        probes.append(all_probes[[s == eid for s in all_eids]])
-    if return_subjects:
-        return eids, probes, subjects
+    if clevels is None:
+        clevels = (np.min(values), np.max(values))
+
+    ba = brain_atlas or AllenAtlas()
+    br = ba.regions
+
+    # Find the mapping to use
+    map_ext = '-lr'
+    map = mapping + map_ext
+
+    region_values = np.zeros_like(br.id) * np.nan
+
+    if len(values.shape) == 2:
+        for r, vL, vR in zip(regions, values[:, 0], values[:, 1]):
+            region_values[np.where(br.acronym[br.mappings[map]] == r)[0][0]] = vR
+            region_values[np.where(br.acronym[br.mappings[map]] == r)[0][1]] = vL
     else:
-        return eids, probes
+        for r, v in zip(regions, values):
+            region_values[np.where(br.acronym[br.mappings[map]] == r)[0]] = v
+
+        lr_divide = int((br.id.shape[0] - 1) / 2)
+        if hemisphere == 'left':
+            region_values[0:lr_divide] = np.nan
+        elif hemisphere == 'right':
+            region_values[lr_divide:] = np.nan
+            region_values[0] = np.nan
+
+    if ax:
+        fig = ax.get_figure()
+    else:
+        fig, ax = plt.subplots()
+
+    if background == 'boundary':
+        cmap_bound = matplotlib.cm.get_cmap("bone_r").copy()
+        cmap_bound.set_under([1, 1, 1], 0)
+
+    if slice == 'coronal':
+
+        if background == 'image':
+            ba.plot_cslice(coord / 1e6, volume='image', mapping=map, ax=ax)
+            ba.plot_cslice(
+                coord / 1e6, volume='value', region_values=region_values, mapping=map, cmap=cmap,
+                vmin=clevels[0], vmax=clevels[1], ax=ax)
+        else:
+            ba.plot_cslice(
+                coord / 1e6, volume='value', region_values=region_values, mapping=map, cmap=cmap,
+                vmin=clevels[0], vmax=clevels[1], ax=ax)
+            ba.plot_cslice(
+                coord / 1e6, volume='boundary', mapping=map, ax=ax, cmap=cmap_bound, vmin=0.01,
+                vmax=0.8)
+
+    elif slice == 'sagittal':
+        if background == 'image':
+            ba.plot_sslice(coord / 1e6, volume='image', mapping=map, ax=ax)
+            ba.plot_sslice(
+                coord / 1e6, volume='value', region_values=region_values, mapping=map, cmap=cmap,
+                vmin=clevels[0], vmax=clevels[1], ax=ax)
+        else:
+            ba.plot_sslice(
+                coord / 1e6, volume='value', region_values=region_values, mapping=map, cmap=cmap,
+                vmin=clevels[0], vmax=clevels[1], ax=ax)
+            ba.plot_sslice(
+                coord / 1e6, volume='boundary', mapping=map, ax=ax, cmap=cmap_bound, vmin=0.01,
+                vmax=0.8)
+
+    elif slice == 'horizontal':
+        if background == 'image':
+            ba.plot_hslice(coord / 1e6, volume='image', mapping=map, ax=ax)
+            ba.plot_hslice(
+                coord / 1e6, volume='value', region_values=region_values, mapping=map, cmap=cmap,
+                vmin=clevels[0], vmax=clevels[1], ax=ax)
+        else:
+            ba.plot_hslice(
+                coord / 1e6, volume='value', region_values=region_values, mapping=map, cmap=cmap,
+                vmin=clevels[0], vmax=clevels[1], ax=ax)
+            ba.plot_hslice(
+                coord / 1e6, volume='boundary', mapping=map, ax=ax, cmap=cmap_bound, vmin=0.01,
+                vmax=0.8)
+
+    elif slice == 'top':
+        if background == 'image':
+            ba.plot_top(volume='image', mapping=map, ax=ax)
+            ba.plot_top(
+                volume='value', region_values=region_values, mapping=map, cmap=cmap,
+                vmin=clevels[0], vmax=clevels[1], ax=ax)
+        else:
+            ba.plot_top(
+                volume='value', region_values=region_values, mapping=map, cmap=cmap,
+                vmin=clevels[0], vmax=clevels[1], ax=ax)
+            ba.plot_top(
+                volume='boundary', mapping=map, ax=ax, cmap=cmap_bound, vmin=0.01, vmax=0.8)
+
+    return fig, ax
 
 
 def fit_psychfunc(stim_levels, n_trials, proportion):
