@@ -121,84 +121,84 @@ these_peths = peths_df[peths_df['region'] == 'mPFC']
 img = ax_mpfc.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=sns.diverging_palette(220, 20, as_cmap=True),
                  vmin=VMIN, vmax=VMAX, extent=[-T_BEFORE, T_AFTER, -1, 1], interpolation='none')
 ax_mpfc.set(xlabel='Time (s)', yticks=[])
-ax_mpfc.set_title(f'mPFC (n={these_peths.shape[0]})', fontweight='bold')
+ax_mpfc.set_title(f'mPFC\n(n={these_peths.shape[0]})', fontweight='bold', fontsize=10)
 ax_mpfc.plot([0, 0], [-1, 1], ls='--', color='k')
 
 these_peths = peths_df[peths_df['region'] == 'Orbitofrontal']
 img = ax_orb.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=sns.diverging_palette(220, 20, as_cmap=True),
                  vmin=VMIN, vmax=VMAX, extent=[-T_BEFORE, T_AFTER, -1, 1], interpolation='none')
 ax_orb.set(xlabel='Time (s)', yticks=[])
-ax_orb.set_title(f'Orbitofrontal (n={these_peths.shape[0]})', fontweight='bold')
+ax_orb.set_title(f'Orbitofrontal\n(n={these_peths.shape[0]})', fontweight='bold', fontsize=10)
 ax_orb.plot([0, 0], [-1, 1], ls='--', color='k')
 
 these_peths = peths_df[peths_df['region'] == 'Amygdala']
 img = ax_am.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=sns.diverging_palette(220, 20, as_cmap=True),
                  vmin=VMIN, vmax=VMAX, extent=[-T_BEFORE, T_AFTER, -1, 1], interpolation='none')
 ax_am.set(xlabel='Time (s)', yticks=[])
-ax_am.set_title(f'Amygdala (n={these_peths.shape[0]})', fontweight='bold')
+ax_am.set_title(f'Amygdala\n(n={these_peths.shape[0]})', fontweight='bold', fontsize=10)
 ax_am.plot([0, 0], [-1, 1], ls='--', color='k')
 
 these_peths = peths_df[peths_df['region'] == 'PPC']
 img = ax_ppc.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=sns.diverging_palette(220, 20, as_cmap=True),
                  vmin=VMIN, vmax=VMAX, extent=[-T_BEFORE, T_AFTER, -1, 1], interpolation='none')
 ax_ppc.set(xlabel='Time (s)', yticks=[])
-ax_ppc.set_title(f'PPC (n={these_peths.shape[0]})', fontweight='bold')
+ax_ppc.set_title(f'Pos. par. cortex\n(n={these_peths.shape[0]})', fontweight='bold', fontsize=10)
 ax_ppc.plot([0, 0], [-1, 1], ls='--', color='k')
 
 these_peths = peths_df[peths_df['region'] == 'Hippocampus']
 img = ax_hc.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=sns.diverging_palette(220, 20, as_cmap=True),
                  vmin=VMIN, vmax=VMAX, extent=[-T_BEFORE, T_AFTER, -1, 1], interpolation='none')
 ax_hc.set(xlabel='Time (s)', yticks=[])
-ax_hc.set_title(f'Hippocampus (n={these_peths.shape[0]})', fontweight='bold')
+ax_hc.set_title(f'Hippocampus\n(n={these_peths.shape[0]})', fontweight='bold', fontsize=10)
 ax_hc.plot([0, 0], [-1, 1], ls='--', color='k')
 
 these_peths = peths_df[peths_df['region'] == 'Piriform']
 img = ax_pir.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=sns.diverging_palette(220, 20, as_cmap=True),
                  vmin=VMIN, vmax=VMAX, extent=[-T_BEFORE, T_AFTER, -1, 1], interpolation='none')
 ax_pir.set(xlabel='Time (s)', yticks=[])
-ax_pir.set_title(f'Piriform (n={these_peths.shape[0]})', fontweight='bold')
+ax_pir.set_title(f'Piriform\n(n={these_peths.shape[0]})', fontweight='bold', fontsize=10)
 ax_pir.plot([0, 0], [-1, 1], ls='--', color='k')
 
 these_peths = peths_df[peths_df['region'] == 'Retrosplenial']
 img = ax_rs.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=sns.diverging_palette(220, 20, as_cmap=True),
                  vmin=VMIN, vmax=VMAX, extent=[-T_BEFORE, T_AFTER, -1, 1], interpolation='none')
 ax_rs.set(xlabel='Time (s)', yticks=[])
-ax_rs.set_title(f'Retrosplenial (n={these_peths.shape[0]})', fontweight='bold')
+ax_rs.set_title(f'Retrosplenial\n(n={these_peths.shape[0]})', fontweight='bold', fontsize=10)
 ax_rs.plot([0, 0], [-1, 1], ls='--', color='k')
 
 these_peths = peths_df[peths_df['region'] == 'Striatum']
 img = ax_st.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=sns.diverging_palette(220, 20, as_cmap=True),
                  vmin=VMIN, vmax=VMAX, extent=[-T_BEFORE, T_AFTER, -1, 1], interpolation='none')
 ax_st.set(xlabel='Time (s)', yticks=[])
-ax_st.set_title(f'Striatum (n={these_peths.shape[0]})', fontweight='bold')
+ax_st.set_title(f'Striatum\n(n={these_peths.shape[0]})', fontweight='bold', fontsize=10)
 ax_st.plot([0, 0], [-1, 1], ls='--', color='k')
 
 these_peths = peths_df[peths_df['region'] == 'Substantia nigra']
 img = ax_sn.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=sns.diverging_palette(220, 20, as_cmap=True),
                  vmin=VMIN, vmax=VMAX, extent=[-T_BEFORE, T_AFTER, -1, 1], interpolation='none')
 ax_sn.set(xlabel='Time (s)', yticks=[])
-ax_sn.set_title(f'Substantia nigra (n={these_peths.shape[0]})', fontweight='bold')
+ax_sn.set_title(f'Substantia nigra\n(n={these_peths.shape[0]})', fontweight='bold', fontsize=10)
 ax_sn.plot([0, 0], [-1, 1], ls='--', color='k')
 
 these_peths = peths_df[peths_df['region'] == 'Superior colliculus']
 img = ax_sc.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=sns.diverging_palette(220, 20, as_cmap=True),
                  vmin=VMIN, vmax=VMAX, extent=[-T_BEFORE, T_AFTER, -1, 1])
 ax_sc.set(xlabel='Time (s)', yticks=[])
-ax_sc.set_title(f'Superior colliculus (n={these_peths.shape[0]})', fontweight='bold')
+ax_sc.set_title(f'Superior colliculus\n(n={these_peths.shape[0]})', fontweight='bold', fontsize=10)
 ax_sc.plot([0, 0], [-1, 1], ls='--', color='k')
 
 these_peths = peths_df[peths_df['region'] == 'Thalamus']
 img = ax_th.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=sns.diverging_palette(220, 20, as_cmap=True),
                  vmin=VMIN, vmax=VMAX, extent=[-T_BEFORE, T_AFTER, -1, 1], interpolation='none')
 ax_th.set(xlabel='Time (s)', yticks=[])
-ax_th.set_title(f'Thalamus (n={these_peths.shape[0]})', fontweight='bold')
+ax_th.set_title(f'Thalamus\n(n={these_peths.shape[0]})', fontweight='bold', fontsize=10)
 ax_th.plot([0, 0], [-1, 1], ls='--', color='k')
 
 these_peths = peths_df[peths_df['region'] == 'Zona incerta']
 img = ax_zi.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=sns.diverging_palette(220, 20, as_cmap=True),
                  vmin=VMIN, vmax=VMAX, extent=[-T_BEFORE, T_AFTER, -1, 1], interpolation='none')
 ax_zi.set(xlabel='Time (s)', yticks=[])
-ax_zi.set_title(f'Zona incerta (n={these_peths.shape[0]})', fontweight='bold')
+ax_zi.set_title(f'Zona incerta\n(n={these_peths.shape[0]})', fontweight='bold', fontsize=10)
 ax_zi.plot([0, 0], [-1, 1], ls='--', color='k')
 
 

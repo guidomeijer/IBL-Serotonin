@@ -109,7 +109,7 @@ f.subplots_adjust(right=0.85)
 # axes width 0.02 and height 0.4
 cb_ax = f.add_axes([0.88, 0.35, 0.01, 0.3])
 cbar = f.colorbar(mappable=ax1.images[0], cax=cb_ax)
-cbar.ax.set_ylabel('Modulation index', rotation=270, labelpad=10)
+cbar.ax.set_ylabel('Signed modulation index', rotation=270, labelpad=10)
 plt.savefig(join(map_path, 'modulation_index.jpg'), dpi=300)
 plt.savefig(join(map_path, 'modulation_index.pdf'))
 

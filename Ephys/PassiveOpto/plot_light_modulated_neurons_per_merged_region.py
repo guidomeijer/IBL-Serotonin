@@ -69,7 +69,7 @@ ordered_regions_no = summary_no_df.groupby('full_region').max().sort_values(
 # %% Plot
 
 colors, dpi = figure_style()
-f, (ax1, ax2) = plt.subplots(1, 2, figsize=(8, 4), dpi=dpi)
+f, (ax1, ax2) = plt.subplots(1, 2, figsize=(6, 4), dpi=dpi)
 ax1.plot([0, 0], [0, summary_df.shape[0]], color=[0.5, 0.5, 0.5], ls='--')
 sns.stripplot(x='perc_enh', y='full_region', data=summary_df, order=ordered_regions['full_region'],
               color='k', alpha=0, ax=ax1)

@@ -19,7 +19,8 @@ import pandas as pd
 _, fig_dir, data_dir = paths()
 CLUSTERING = 'gaussian'  # gaussian or k-means
 FEATURES = ['spike_width', 'pt_ratio']
-#FEATURES = ['spike_width', 'rp_slope', 'rc_slope', 'pt_ratio', 'peak_to_trough']
+#FEATURES = ['spike_width', 'spike_amp']
+#FEATURES = ['spike_width', 'rp_slope', 'rc_slope', 'pt_ratio']
 #FEATURES = ['spike_width', 'rp_slope', 'rc_slope', 'pt_ratio', 'peak_to_trough', 'firing_rate']
 #FEATURES = ['spike_width', 'firing_rate']
 
@@ -71,41 +72,44 @@ ax1.plot(time_ax, waveforms_df.loc[waveforms_df['type'] == 'RS', 'waveform'].to_
 ax1.plot(time_ax, waveforms_df.loc[waveforms_df['type'] == 'FS', 'waveform'].to_numpy().mean(),
          color=colors['FS'], label='FS')
 ax1.legend(frameon=False)
-ax1.set(ylabel='mV', xlabel='Time (ms)')
+ax1.set(ylabel='mV', xlabel='Time (ms)', xlim=[0, 3])
 
 ax2.scatter(waveforms_df.loc[waveforms_df['type'] == 'RS', 'spike_width'],
             waveforms_df.loc[waveforms_df['type'] == 'RS', 'rp_slope'], label='RS', color=colors['RS'], s=1)
 ax2.scatter(waveforms_df.loc[waveforms_df['type'] == 'FS', 'spike_width'],
             waveforms_df.loc[waveforms_df['type'] == 'FS', 'rp_slope'], label='FS', color=colors['FS'], s=1)
-ax2.set(xlabel='Spike width (ms)', ylabel='Repolarization slope')
+ax2.set(xlabel='Spike width (ms)', ylabel='Repolarization slope', xlim=[0, 1.5])
 
 ax3.scatter(waveforms_df.loc[waveforms_df['type'] == 'RS', 'spike_width'],
             waveforms_df.loc[waveforms_df['type'] == 'RS', 'firing_rate'], label='RS', color=colors['RS'], s=1)
 ax3.scatter(waveforms_df.loc[waveforms_df['type'] == 'FS', 'spike_width'],
             waveforms_df.loc[waveforms_df['type'] == 'FS', 'firing_rate'], label='FS', color=colors['FS'], s=1)
-ax3.set(xlabel='Spike width (ms)', ylabel='Firing rate (spks/s)')
+ax3.set(xlabel='Spike width (ms)', ylabel='Firing rate (spks/s)', xlim=[0, 1.5], ylim=[0, 100])
 
 ax4.scatter(waveforms_df.loc[waveforms_df['type'] == 'RS', 'spike_width'],
             waveforms_df.loc[waveforms_df['type'] == 'RS', 'pt_ratio'], label='RS', color=colors['RS'], s=1)
 ax4.scatter(waveforms_df.loc[waveforms_df['type'] == 'FS', 'spike_width'],
             waveforms_df.loc[waveforms_df['type'] == 'FS', 'pt_ratio'], label='FS', color=colors['FS'], s=1)
-ax4.set(xlabel='Spike width (ms)', ylabel='Peak-to-trough ratio')
+ax4.set(xlabel='Spike width (ms)', ylabel='Peak-to-trough ratio', xlim=[0, 1.5], ylim=[0, 1])
 
 ax5.scatter(waveforms_df.loc[waveforms_df['type'] == 'RS', 'spike_width'],
             waveforms_df.loc[waveforms_df['type'] == 'RS', 'rc_slope'], label='RS', color=colors['RS'], s=1)
 ax5.scatter(waveforms_df.loc[waveforms_df['type'] == 'FS', 'spike_width'],
             waveforms_df.loc[waveforms_df['type'] == 'FS', 'rc_slope'], label='FS', color=colors['FS'], s=1)
-ax5.set(xlabel='Spike width (ms)', ylabel='Recovery slope')
+ax5.set(xlabel='Spike width (ms)', ylabel='Recovery slope', xlim=[0, 1.5])
 
 ax6.scatter(waveforms_df.loc[waveforms_df['type'] == 'RS', 'spike_width'],
             waveforms_df.loc[waveforms_df['type'] == 'RS', 'spike_amp'], label='RS', color=colors['RS'], s=1)
 ax6.scatter(waveforms_df.loc[waveforms_df['type'] == 'FS', 'spike_width'],
             waveforms_df.loc[waveforms_df['type'] == 'FS', 'spike_amp'], label='FS', color=colors['FS'], s=1)
-ax6.set(xlabel='Spike width (ms)', ylabel='Spike amplitude (uV)')
+ax6.set(xlabel='Spike width (ms)', ylabel='Spike amplitude (uV)', xlim=[0, 1.5])
 
 plt.tight_layout()
-sns.despine(trim=False)
+sns.despine(trim=True)
 plt.savefig(join(fig_dir, 'Ephys', 'NeuronType', 'neuron_type_classification'), dpi=300)
+plt.savefig(join(fig_dir, 'Ephys', 'NeuronType', 'neuron_type_classification.pdf'))
+
+# %%
 
 f, axs = plt.subplots(int(np.floor(np.sqrt(len(waveforms_df['eid'].unique())))),
                       int(np.ceil(np.sqrt(len(waveforms_df['eid'].unique())))), figsize=(8, 4), dpi=dpi)
@@ -128,3 +132,4 @@ for k in plot_wfs:
     ax1.plot(time_ax, this_waveform, color=colors[waveforms_df.loc[k, 'type']], lw=0.2)
     ax1.axis('off')
 plt.savefig(join(fig_dir, 'Ephys', 'NeuronType', 'neuron_type_classification_example_waveforms'), dpi=300)
+plt.savefig(join(fig_dir, 'Ephys', 'NeuronType', 'neuron_type_classification_example_waveforms.pdf'))
