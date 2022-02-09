@@ -91,7 +91,7 @@ for i, eid in enumerate(np.unique(light_neurons['eid'])):
                     'peth': [peths['means'][n, :]], 'peth_perc': [peth_perc], 'peth_ratio': [peth_ratio],
                     'region': these_neurons.loc[index, 'full_region'], 'modulation': these_neurons.loc[index, 'roc_auc'],
                     'neuron_id': these_neurons.loc[index, 'neuron_id'], 'subject': these_neurons.loc[index, 'subject'],
-                    'eid': these_neurons.loc[index, 'eid']})))
+                    'eid': these_neurons.loc[index, 'eid'], 'acronym': these_neurons.loc[index, 'region']})))
 
 # %% Plot
 
@@ -115,16 +115,16 @@ plt.savefig(join(fig_path, 'all_neurons'), dpi=600)
 # Plot per region
 peths_df = peths_df.sort_values(['region', 'modulation'], ascending=[True, False])
 f, ((ax_th, ax_mpfc, ax_orb, ax_am, ax_ppc, ax_pir),
-    (ax_hc, ax_rs, ax_st, ax_sc, ax_sn, ax_zi)) = plt.subplots(2, 6, figsize=(9, 4), dpi=dpi)
+    (ax_hc, ax_rs, ax_st, ax_sc, ax_zi, _)) = plt.subplots(2, 6, figsize=(9, 4), dpi=dpi)
 
-these_peths = peths_df[peths_df['region'] == 'mPFC']
+these_peths = peths_df[peths_df['region'] == 'Medial prefrontal cortex']
 img = ax_mpfc.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=sns.diverging_palette(220, 20, as_cmap=True),
                  vmin=VMIN, vmax=VMAX, extent=[-T_BEFORE, T_AFTER, -1, 1], interpolation='none')
 ax_mpfc.set(xlabel='Time (s)', yticks=[])
 ax_mpfc.set_title(f'mPFC\n(n={these_peths.shape[0]})', fontweight='bold', fontsize=10)
 ax_mpfc.plot([0, 0], [-1, 1], ls='--', color='k')
 
-these_peths = peths_df[peths_df['region'] == 'Orbitofrontal']
+these_peths = peths_df[peths_df['region'] == 'Orbitofrontal cortex']
 img = ax_orb.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=sns.diverging_palette(220, 20, as_cmap=True),
                  vmin=VMIN, vmax=VMAX, extent=[-T_BEFORE, T_AFTER, -1, 1], interpolation='none')
 ax_orb.set(xlabel='Time (s)', yticks=[])
@@ -138,7 +138,7 @@ ax_am.set(xlabel='Time (s)', yticks=[])
 ax_am.set_title(f'Amygdala\n(n={these_peths.shape[0]})', fontweight='bold', fontsize=10)
 ax_am.plot([0, 0], [-1, 1], ls='--', color='k')
 
-these_peths = peths_df[peths_df['region'] == 'PPC']
+these_peths = peths_df[peths_df['region'] == 'Posterior parietal cortex']
 img = ax_ppc.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=sns.diverging_palette(220, 20, as_cmap=True),
                  vmin=VMIN, vmax=VMAX, extent=[-T_BEFORE, T_AFTER, -1, 1], interpolation='none')
 ax_ppc.set(xlabel='Time (s)', yticks=[])
@@ -173,16 +173,9 @@ ax_st.set(xlabel='Time (s)', yticks=[])
 ax_st.set_title(f'Striatum\n(n={these_peths.shape[0]})', fontweight='bold', fontsize=10)
 ax_st.plot([0, 0], [-1, 1], ls='--', color='k')
 
-these_peths = peths_df[peths_df['region'] == 'Substantia nigra']
-img = ax_sn.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=sns.diverging_palette(220, 20, as_cmap=True),
-                 vmin=VMIN, vmax=VMAX, extent=[-T_BEFORE, T_AFTER, -1, 1], interpolation='none')
-ax_sn.set(xlabel='Time (s)', yticks=[])
-ax_sn.set_title(f'Substantia nigra\n(n={these_peths.shape[0]})', fontweight='bold', fontsize=10)
-ax_sn.plot([0, 0], [-1, 1], ls='--', color='k')
-
 these_peths = peths_df[peths_df['region'] == 'Superior colliculus']
 img = ax_sc.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=sns.diverging_palette(220, 20, as_cmap=True),
-                 vmin=VMIN, vmax=VMAX, extent=[-T_BEFORE, T_AFTER, -1, 1])
+                 vmin=VMIN, vmax=VMAX, extent=[-T_BEFORE, T_AFTER, -1, 1], interpolation='none')
 ax_sc.set(xlabel='Time (s)', yticks=[])
 ax_sc.set_title(f'Superior colliculus\n(n={these_peths.shape[0]})', fontweight='bold', fontsize=10)
 ax_sc.plot([0, 0], [-1, 1], ls='--', color='k')
@@ -205,3 +198,47 @@ ax_zi.plot([0, 0], [-1, 1], ls='--', color='k')
 plt.tight_layout()
 plt.savefig(join(fig_path, 'per_merged_region'), dpi=300)
 plt.savefig(join(fig_path, 'per_merged_region.pdf'))
+
+# %%
+
+
+# Plot per region
+peths_df = peths_df.sort_values(['region', 'modulation'], ascending=[True, False])
+f, (ax_po, ax_lp, ax_rt, ax_val, ax_ld) = plt.subplots(1, 5, figsize=(6, 3), dpi=dpi)
+
+these_peths = peths_df[peths_df['acronym'] == 'PO']
+img = ax_po.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=sns.diverging_palette(220, 20, as_cmap=True),
+                 vmin=VMIN, vmax=VMAX, extent=[-T_BEFORE, T_AFTER, -1, 1], interpolation='none')
+ax_po.set(xlabel='Time (s)', yticks=[])
+ax_po.set_title(f'PO\n(n={these_peths.shape[0]})', fontweight='bold', fontsize=10)
+ax_po.plot([0, 0], [-1, 1], ls='--', color='k')
+
+these_peths = peths_df[peths_df['acronym'] == 'LP']
+img = ax_lp.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=sns.diverging_palette(220, 20, as_cmap=True),
+                 vmin=VMIN, vmax=VMAX, extent=[-T_BEFORE, T_AFTER, -1, 1], interpolation='none')
+ax_lp.set(xlabel='Time (s)', yticks=[])
+ax_lp.set_title(f'LP\n(n={these_peths.shape[0]})', fontweight='bold', fontsize=10)
+ax_lp.plot([0, 0], [-1, 1], ls='--', color='k')
+
+these_peths = peths_df[peths_df['acronym'] == 'RT']
+img = ax_rt.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=sns.diverging_palette(220, 20, as_cmap=True),
+                 vmin=VMIN, vmax=VMAX, extent=[-T_BEFORE, T_AFTER, -1, 1], interpolation='none')
+ax_rt.set(xlabel='Time (s)', yticks=[])
+ax_rt.set_title(f'RT\n(n={these_peths.shape[0]})', fontweight='bold', fontsize=10)
+ax_rt.plot([0, 0], [-1, 1], ls='--', color='k')
+
+these_peths = peths_df[peths_df['acronym'] == 'VAL']
+img = ax_val.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=sns.diverging_palette(220, 20, as_cmap=True),
+                 vmin=VMIN, vmax=VMAX, extent=[-T_BEFORE, T_AFTER, -1, 1], interpolation='none')
+ax_val.set(xlabel='Time (s)', yticks=[])
+ax_val.set_title(f'VAL\n(n={these_peths.shape[0]})', fontweight='bold', fontsize=10)
+ax_val.plot([0, 0], [-1, 1], ls='--', color='k')
+
+these_peths = peths_df[peths_df['acronym'] == 'LD']
+img = ax_ld.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=sns.diverging_palette(220, 20, as_cmap=True),
+                 vmin=VMIN, vmax=VMAX, extent=[-T_BEFORE, T_AFTER, -1, 1], interpolation='none')
+ax_ld.set(xlabel='Time (s)', yticks=[])
+ax_ld.set_title(f'LD\n(n={these_peths.shape[0]})', fontweight='bold', fontsize=10)
+ax_ld.plot([0, 0], [-1, 1], ls='--', color='k')
+
+

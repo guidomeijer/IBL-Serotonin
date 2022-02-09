@@ -230,28 +230,56 @@ def load_trials(eid, laser_stimulation=False, invert_choice=False, invert_stimsi
     return trials
 
 
-def combine_regions(acronyms, split_thalamus=True):
+def combine_regions(acronyms, split_thalamus=True, abbreviate=False):
     regions = np.array(['root'] * len(acronyms), dtype=object)
-    regions[np.in1d(acronyms, ['ILA', 'PL', 'MOs', 'ACAd', 'ACAv'])] = 'mPFC'
-    regions[np.in1d(acronyms, ['ORBl', 'ORBm'])] = 'Orbitofrontal'
-    if split_thalamus:
-        regions[np.in1d(acronyms, ['PO'])] = 'Thalamus (PO)'
-        regions[np.in1d(acronyms, ['LP'])] = 'Thalamus (LP)'
-        regions[np.in1d(acronyms, ['LD'])] = 'Thalamus (LD)'
-        regions[np.in1d(acronyms, ['RT'])] = 'Thalamus (RT)'
-        regions[np.in1d(acronyms, ['VAL'])] = 'Thalamus (VAL)'
+    if abbreviate:
+        regions[np.in1d(acronyms, ['ILA', 'PL', 'MOs', 'ACAd', 'ACAv'])] = 'mPFC'
+        regions[np.in1d(acronyms, ['ORBl', 'ORBm'])] = 'ORB'
+        if split_thalamus:
+            regions[np.in1d(acronyms, ['PO'])] = 'PO'
+            regions[np.in1d(acronyms, ['LP'])] = 'LP'
+            regions[np.in1d(acronyms, ['LD'])] = 'LD'
+            regions[np.in1d(acronyms, ['RT'])] = 'RT'
+            regions[np.in1d(acronyms, ['VAL'])] = 'VAL'
+        else:
+            regions[np.in1d(acronyms, ['PO', 'LP', 'LD', 'RT', 'VAL'])] = 'Thal.'
+        regions[np.in1d(acronyms, ['SCm', 'SCs', 'SCig', 'SCsg', 'SCdg'])] = 'SC'
+        regions[np.in1d(acronyms, ['RSPv', 'RSPd'])] = 'RSP'
+        regions[np.in1d(acronyms, ['GPi', 'GPe'])] = 'GP'
+        regions[np.in1d(acronyms, ['MRN'])] = 'MRN'
+        regions[np.in1d(acronyms, ['ZI'])] = 'ZI'
+        regions[np.in1d(acronyms, ['LGv', 'LGd'])] = 'LG'
+        regions[np.in1d(acronyms, ['PIR'])] = 'Pir.'
+        regions[np.in1d(acronyms, ['SNr', 'SNc', 'SNl'])] = 'SN'
+        regions[np.in1d(acronyms, ['VISa', 'VISam'])] = 'PPC'
+        regions[np.in1d(acronyms, ['MEA', 'CEA', 'BLA'])] = 'Amyg.'
+        regions[np.in1d(acronyms, ['AON'])] = 'AON'
+        regions[np.in1d(acronyms, ['CP', 'STR', 'STRd', 'STRv'])] = 'Str.'
+        regions[np.in1d(acronyms, ['CA1', 'CA3', 'DG'])] = 'Hipp.'
     else:
-        regions[np.in1d(acronyms, ['PO', 'LP', 'LD', 'RT', 'VAL'])] = 'Thalamus'
-
-    regions[np.in1d(acronyms, ['SCm', 'SCs', 'SCig', 'SCsg', 'SCdg'])] = 'Superior colliculus'
-    regions[np.in1d(acronyms, ['RSPv', 'RSPd'])] = 'Retrosplenial'
-    regions[np.in1d(acronyms, ['PIR'])] = 'Piriform'
-    regions[np.in1d(acronyms, ['SNr', 'SNc', 'SNl'])] = 'Substantia nigra'
-    regions[np.in1d(acronyms, ['VISa', 'VISam'])] = 'PPC'
-    regions[np.in1d(acronyms, ['ZI'])] = 'Zona incerta'
-    regions[np.in1d(acronyms, ['MEA', 'CEA', 'BLA'])] = 'Amygdala'
-    regions[np.in1d(acronyms, ['CP', 'STR', 'STRd', 'STRv'])] = 'Striatum'
-    regions[np.in1d(acronyms, ['CA1', 'CA3', 'DG'])] = 'Hippocampus'
+        regions[np.in1d(acronyms, ['ILA', 'PL', 'MOs', 'ACAd', 'ACAv'])] = 'Medial prefrontal cortex'
+        regions[np.in1d(acronyms, ['ORBl', 'ORBm'])] = 'Orbitofrontal cortex'
+        if split_thalamus:
+            regions[np.in1d(acronyms, ['PO'])] = 'Thalamus (PO)'
+            regions[np.in1d(acronyms, ['LP'])] = 'Thalamus (LP)'
+            regions[np.in1d(acronyms, ['LD'])] = 'Thalamus (LD)'
+            regions[np.in1d(acronyms, ['RT'])] = 'Thalamus (RT)'
+            regions[np.in1d(acronyms, ['VAL'])] = 'Thalamus (VAL)'
+        else:
+            regions[np.in1d(acronyms, ['PO', 'LP', 'LD', 'RT', 'VAL'])] = 'Thalamus'
+        regions[np.in1d(acronyms, ['SCm', 'SCs', 'SCig', 'SCsg', 'SCdg'])] = 'Superior colliculus'
+        regions[np.in1d(acronyms, ['RSPv', 'RSPd'])] = 'Retrosplenial'
+        regions[np.in1d(acronyms, ['GPi', 'GPe'])] = 'Globus pallidus'
+        regions[np.in1d(acronyms, ['MRN'])] = 'Midbrain reticular nucleus'
+        regions[np.in1d(acronyms, ['AON'])] = 'Anterior olfactory nucleus'
+        regions[np.in1d(acronyms, ['ZI'])] = 'Zona incerta'
+        regions[np.in1d(acronyms, ['LGv', 'LGd'])] = 'Lateral geniculate'
+        regions[np.in1d(acronyms, ['PIR'])] = 'Piriform'
+        regions[np.in1d(acronyms, ['SNr', 'SNc', 'SNl'])] = 'Substantia nigra'
+        regions[np.in1d(acronyms, ['VISa', 'VISam'])] = 'Posterior parietal cortex'
+        regions[np.in1d(acronyms, ['MEA', 'CEA', 'BLA'])] = 'Amygdala'
+        regions[np.in1d(acronyms, ['CP', 'STR', 'STRd', 'STRv'])] = 'Striatum'
+        regions[np.in1d(acronyms, ['CA1', 'CA3', 'DG'])] = 'Hippocampus'
     return regions
 
 

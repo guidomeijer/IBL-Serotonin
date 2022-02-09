@@ -32,7 +32,8 @@ one = ONE()
 MIN_NEURONS = 5
 MIN_FR = 0.01  # spks/s
 BASELINE = [-0.5, 0]
-STIM = [0, 0.5]
+STIM = [0.5, 1]
+LABEL = 'late'
 PLOT = True
 NEURON_QC = True
 _, fig_path, save_path = paths()
@@ -223,11 +224,12 @@ for i, eid in enumerate(eids):
     cbar.ax.set_ylabel('Correlation (r)', rotation=270, labelpad=10)
     cbar.ax.set_yticks(np.arange(-0.5, 0.6, 0.25))
 
-    plt.savefig(join(fig_path, f'{subject}_{date}.jpg'), dpi=300)
-    plt.savefig(join(fig_path, f'{subject}_{date}.pdf'))
+    plt.savefig(join(fig_path, f'{subject}_{date}_{LABEL}.jpg'), dpi=300)
+    plt.savefig(join(fig_path, f'{subject}_{date}_{LABEL}.pdf'))
 
     plt.close(f)
 
+corr_df.to_csv(join(save_path, f'correlations_{LABEL}.csv'), index=False)
 
 colors, dpi = figure_style()
 f, ax1 = plt.subplots(1, 1, figsize=(4, 4), dpi=dpi)

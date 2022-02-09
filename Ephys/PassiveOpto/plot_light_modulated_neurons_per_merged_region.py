@@ -13,7 +13,7 @@ from os.path import join
 from serotonin_functions import paths, figure_style, combine_regions, load_subjects
 
 # Settings
-MIN_NEURONS = 15
+MIN_NEURONS = 5
 MIN_PERC = 0
 
 # Paths
@@ -42,6 +42,7 @@ summary_df = light_neurons[light_neurons['expression'] == 1].groupby(['full_regi
 summary_df['n_neurons'] = light_neurons[light_neurons['expression'] == 1].groupby(['full_region']).size()
 summary_df['modulation_index'] = light_neurons[light_neurons['expression'] == 1].groupby(['full_region']).mean()['roc_auc']
 summary_df = summary_df.reset_index()
+summary_df['perc_mod'] =  (summary_df['modulated'] / summary_df['n_neurons']) * 100
 summary_df['perc_enh'] =  (summary_df['enhanced'] / summary_df['n_neurons']) * 100
 summary_df['perc_supp'] =  (summary_df['suppressed'] / summary_df['n_neurons']) * 100
 summary_df = summary_df[summary_df['n_neurons'] >= MIN_NEURONS]
@@ -57,6 +58,7 @@ summary_no_df = light_neurons[light_neurons['expression'] == 0].groupby(['full_r
 summary_no_df['n_neurons'] = light_neurons[light_neurons['expression'] == 0].groupby(['full_region']).size()
 summary_no_df['modulation_index'] = light_neurons[light_neurons['expression'] == 0].groupby(['full_region']).mean()['roc_auc']
 summary_no_df = summary_no_df.reset_index()
+summary_no_df['perc_mod'] =  (summary_no_df['modulated'] / summary_no_df['n_neurons']) * 100
 summary_no_df['perc_enh'] =  (summary_no_df['enhanced'] / summary_no_df['n_neurons']) * 100
 summary_no_df['perc_supp'] =  (summary_no_df['suppressed'] / summary_no_df['n_neurons']) * 100
 summary_no_df = summary_no_df[summary_no_df['n_neurons'] >= MIN_NEURONS]
@@ -118,5 +120,19 @@ ax2.set(ylabel='', xlim=[-0.7, 0.7], xticks=np.arange(-0.6, 0.61, 0.2), xlabel='
 plt.tight_layout()
 sns.despine(trim=True)
 plt.savefig(join(fig_path, 'Ephys', 'light_modulation_index_per_region.pdf'))
-plt.savefig(join(fig_path, 'Ephys', 'light_modulation_index_per_region.png'))
+plt.savefig(join(fig_path, 'Ephys', 'light_modulation_index_per_region.png'), dpi=300)
+
+# %%
+f, ax1 = plt.subplots(1, 1, figsize=(3, 3), dpi=dpi)
+sns.barplot(x='full_region', y='perc_mod', data=summary_df.sort_values('perc_mod', ascending=False),
+            color='orange', ax=ax1)
+ax1.set(ylabel='5-HT modulated neurons (%)', xlabel='', ylim=[0, 40], yticks=np.arange(0, 41, 10))
+ax1.plot([-1, ax1.get_xlim()[1]], [5, 5], ls='--', color='grey')
+plt.xticks(rotation=90)
+ax1.margins(x=0)
+
+plt.tight_layout()
+sns.despine(trim=False)
+plt.savefig(join(fig_path, 'Ephys', 'light_modulated_neurons_per_region.pdf'))
+plt.savefig(join(fig_path, 'Ephys', 'light_modulated_neurons_per_region.png'), dpi=300)
 
