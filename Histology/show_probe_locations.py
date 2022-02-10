@@ -15,7 +15,7 @@ import matplotlib as mpl
 from one.api import ONE
 one = ONE()
 
-SUBJECT = 'ZFM-01867'
+SUBJECT = 'ZFM-02601'
 
 trajs = one.alyx.rest('trajectories', 'list', provenance='micro-manipulator')
 traj = pd.DataFrame(list(trajs))
@@ -34,7 +34,7 @@ for kix, k in enumerate(traj.session[0].keys()):
     traj[k] = tmp_var
 
 # some renaming
-traj['theta_name'] = traj['theta'].map({0: '0deg', 10:'10deg', 15:'15deg', 17:'17deg'})
+traj['theta_name'] = traj['theta'].map({0: '0deg', 10:'10deg', 15:'15deg', 17:'17deg', 30: '30deg'})
 
 traj['depth'] = round(traj.depth, -3) # round to nearest 1000
 traj['probe_label'] = traj.probe_name + ', ' + traj.theta_name + ', phi=' + traj.phi.astype(int).astype(str) + ', D=' + traj.depth.astype(int).astype(str)

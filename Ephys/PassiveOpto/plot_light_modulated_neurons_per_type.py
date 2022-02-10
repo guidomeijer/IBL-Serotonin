@@ -41,16 +41,16 @@ for i, nickname in enumerate(np.unique(merged_df['subject'])):
 summary_df = merged_df[merged_df['expression'] == 1].groupby(['type']).sum()
 summary_df['n_neurons'] = merged_df[merged_df['expression'] == 1].groupby(['type']).size()
 summary_df = summary_df.reset_index()
-summary_df['perc_enh'] =  (summary_df['enhanced'] / summary_df['n_neurons']) * 100
-summary_df['perc_supp'] =  (summary_df['suppressed'] / summary_df['n_neurons']) * 100
+summary_df['perc_enh'] =  (summary_df['enhanced_late'] / summary_df['n_neurons']) * 100
+summary_df['perc_supp'] =  (summary_df['suppressed_late'] / summary_df['n_neurons']) * 100
 summary_df['ratio'] = summary_df['perc_enh'] - summary_df['perc_supp']
 summary_df['perc_supp'] = summary_df['perc_supp']
 
 summary_no_df = merged_df[merged_df['expression'] == 0].groupby(['type']).sum()
 summary_no_df['n_neurons'] = merged_df[merged_df['expression'] == 0].groupby(['type']).size()
 summary_no_df = summary_no_df.reset_index()
-summary_no_df['perc_enh'] =  (summary_no_df['enhanced'] / summary_no_df['n_neurons']) * 100
-summary_no_df['perc_supp'] =  (summary_no_df['suppressed'] / summary_no_df['n_neurons']) * 100
+summary_no_df['perc_enh'] =  (summary_no_df['enhanced_late'] / summary_no_df['n_neurons']) * 100
+summary_no_df['perc_supp'] =  (summary_no_df['suppressed_late'] / summary_no_df['n_neurons']) * 100
 summary_no_df['ratio'] = summary_no_df['perc_enh'] - summary_no_df['perc_supp']
 summary_no_df['perc_supp'] = summary_no_df['perc_supp']
 
@@ -66,7 +66,7 @@ ax1.bar(np.arange(2) + 0.15, [summary_df.loc[summary_df['type'] == 'FS', 'perc_s
         0.3, color=[colors['suppressed'], colors['suppressed']], label='Suppressed')
 ax1.set(ylabel='Percentage modulated neurons', xticks=np.arange(2),
         xticklabels=['Fast\nspiking', 'Regular\nspiking'],
-        ylim=[0, 10])
+        ylim=[0, 14])
 ax1.legend(frameon=False)
 
 plt.tight_layout()

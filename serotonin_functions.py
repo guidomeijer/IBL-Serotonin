@@ -242,20 +242,20 @@ def combine_regions(acronyms, split_thalamus=True, abbreviate=False):
             regions[np.in1d(acronyms, ['RT'])] = 'RT'
             regions[np.in1d(acronyms, ['VAL'])] = 'VAL'
         else:
-            regions[np.in1d(acronyms, ['PO', 'LP', 'LD', 'RT', 'VAL'])] = 'Thal.'
+            regions[np.in1d(acronyms, ['PO', 'LP', 'LD', 'RT', 'VAL'])] = 'Thal'
         regions[np.in1d(acronyms, ['SCm', 'SCs', 'SCig', 'SCsg', 'SCdg'])] = 'SC'
         regions[np.in1d(acronyms, ['RSPv', 'RSPd'])] = 'RSP'
         regions[np.in1d(acronyms, ['GPi', 'GPe'])] = 'GP'
         regions[np.in1d(acronyms, ['MRN'])] = 'MRN'
         regions[np.in1d(acronyms, ['ZI'])] = 'ZI'
         regions[np.in1d(acronyms, ['LGv', 'LGd'])] = 'LG'
-        regions[np.in1d(acronyms, ['PIR'])] = 'Pir.'
+        regions[np.in1d(acronyms, ['PIR'])] = 'Pir'
         regions[np.in1d(acronyms, ['SNr', 'SNc', 'SNl'])] = 'SN'
         regions[np.in1d(acronyms, ['VISa', 'VISam'])] = 'PPC'
-        regions[np.in1d(acronyms, ['MEA', 'CEA', 'BLA'])] = 'Amyg.'
+        regions[np.in1d(acronyms, ['MEA', 'CEA', 'BLA'])] = 'Amyg'
         regions[np.in1d(acronyms, ['AON'])] = 'AON'
-        regions[np.in1d(acronyms, ['CP', 'STR', 'STRd', 'STRv'])] = 'Str.'
-        regions[np.in1d(acronyms, ['CA1', 'CA3', 'DG'])] = 'Hipp.'
+        regions[np.in1d(acronyms, ['CP', 'STR', 'STRd', 'STRv'])] = 'Str'
+        regions[np.in1d(acronyms, ['CA1', 'CA3', 'DG'])] = 'Hipp'
     else:
         regions[np.in1d(acronyms, ['ILA', 'PL', 'MOs', 'ACAd', 'ACAv'])] = 'Medial prefrontal cortex'
         regions[np.in1d(acronyms, ['ORBl', 'ORBm'])] = 'Orbitofrontal cortex'
@@ -283,13 +283,14 @@ def combine_regions(acronyms, split_thalamus=True, abbreviate=False):
     return regions
 
 
-def remap(ids, source='Allen', dest='Beryl', combine=False, split_thalamus=False, brainregions=None):
+def remap(ids, source='Allen', dest='Beryl', combine=False, split_thalamus=False, abbreviate=True,
+          brainregions=None):
     br = brainregions or BrainRegions()
     _, inds = ismember(ids, br.id[br.mappings[source]])
     ids = br.id[br.mappings[dest][inds]]
     acronyms = br.get(br.id[br.mappings[dest][inds]])['acronym']
     if combine:
-        return combine_regions(acronyms, split_thalamus=split_thalamus)
+        return combine_regions(acronyms, split_thalamus=split_thalamus, abbreviate=abbreviate)
     else:
         return acronyms
 

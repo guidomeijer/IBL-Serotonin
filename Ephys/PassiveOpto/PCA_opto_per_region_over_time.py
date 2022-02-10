@@ -17,10 +17,11 @@ from brainbox.metrics.single_units import spike_sorting_metrics
 from brainbox.task.closed_loop import roc_single_event
 from serotonin_functions import figure_style
 import brainbox.io.one as bbone
+from sklearn.preprocessing import StandardScaler
 from brainbox.population.decode import get_spike_counts_in_bins
 from brainbox.plot import peri_event_time_histogram
 from sklearn.decomposition import PCA
-from serotonin_functions import (paths, combine_regions, query_ephys_sessions, load_passive_opto_times,
+from serotonin_functions import (paths, remap, query_ephys_sessions, load_passive_opto_times,
                                  get_artifact_neurons)
 from one.api import ONE
 from ibllib.atlas import AllenAtlas
@@ -30,11 +31,15 @@ pca = PCA(n_components=3)
 
 # Settings
 MIN_NEURONS = 10  # per region
-BIN_SIZE = 0.3  # sec
-BIN_CENTERS = np.arange(-1, 2.1, 0.2)  # sec
+T_BEFORE = 0.5
+T_AFTER = 1.5
+BIN_SIZE = 0.1  # sec
 PLOT = True
 _, fig_path, save_path = paths()
 fig_path = join(fig_path, 'Ephys', 'PCA')
+
+# Get binning time vectors
+BIN_CENTERS = np.arange(-T_BEFORE, T_AFTER, BIN_SIZE) + (BIN_SIZE / 2)
 
 # Query sessions
 eids, _ = query_ephys_sessions(one=one)
@@ -94,8 +99,8 @@ for i, eid in enumerate(eids):
         clusters_pass = clusters_pass[np.isin(clusters_pass, np.unique(spikes[probe].clusters))]
 
         # Get regions from Beryl atlas
-        clusters[probe]['acronym'] = combine_regions(clusters[probe]['acronym'])
-        clusters_regions = clusters[probe]['acronym'][clusters_pass]
+        clusters[probe]['region'] = remap(clusters[probe]['atlas_id'], combine=True)
+        clusters_regions = clusters[probe]['region'][clusters_pass]
 
         # Loop over regions
         for r, region in enumerate(np.unique(clusters_regions)):
@@ -117,8 +122,21 @@ for i, eid in enumerate(eids):
                 times = np.column_stack(((opto_train_times + (bin_center - (BIN_SIZE / 2))),
                                         (opto_train_times + (bin_center + (BIN_SIZE / 2)))))
                 this_pop_vector, _ = get_spike_counts_in_bins(spks_region, clus_region, times)
-                pop_vector[t, :] = np.median(this_pop_vector.T, axis=0)
+                pop_vector[t, :] = np.mean(this_pop_vector.T, axis=0)
+
+            # Normalize data
+            ss = StandardScaler(with_mean=True, with_std=True)
+            pop_vector_norm = ss.fit_transform(pop_vector)
+
             pca_proj = pca.fit_transform(pop_vector)
+
+            colors, dpi = figure_style()
+            f, ax1 = plt.subplots(1, 1, figsize=(3, 3), dpi=dpi)
+            ax1 = plt.axes(projection='3d')
+            p = ax1.scatter3D(pca_proj[:, 0], pca_proj[:, 1], pca_proj[:, 2], c=BIN_CENTERS,
+                              cmap='twilight_r')
+            f.colorbar(p)
+
 
             # Add to dataframe
             pca_df = pca_df.append(pd.DataFrame(data={

@@ -27,7 +27,7 @@ MIN_NEURONS = 10  # per region
 PLOT = True
 T_BEFORE = 0.5
 T_AFTER = 1.5
-BIN_SIZE = 0.2
+BIN_SIZE = 0.05
 _, fig_path, save_path = paths()
 fig_path = join(fig_path, 'Ephys', 'LDA', 'LDA_passive_regions')
 save_path = join(save_path)
@@ -84,13 +84,13 @@ for i, eid in enumerate(eids):
         if clusters_pass.shape[0] == 0:
             continue
 
-        # Get merged regions 
+        # Get merged regions
         clusters[probe]['region'] = remap(clusters[probe]['atlas_id'], combine=True)
         clusters_regions = clusters[probe]['region'][clusters_pass]
 
         # Get a number of random onset times in the spontaneous activity as control
         control_times = np.random.uniform(low=start_passive, high=opto_train_times[0],
-                                          size=opto_train_times.shape[0], )
+                                          size=opto_train_times.shape[0])
         all_times = np.concatenate((control_times, opto_train_times))
         laser_on = np.concatenate((np.zeros(control_times.shape[0]), np.ones(control_times.shape[0])))
 
