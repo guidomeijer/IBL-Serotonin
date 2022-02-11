@@ -6,20 +6,17 @@ By: Guido Meijer
 """
 
 import numpy as np
-from os.path import join, isdir
+from os.path import join
 import matplotlib.pyplot as plt
-from matplotlib.ticker import FormatStrFormatter
 import pandas as pd
-from scipy.optimize import curve_fit
 import seaborn as sns
-from scipy.stats import pearsonr
+from brainbox.singlecell import calculate_peths
 from brainbox.metrics.single_units import spike_sorting_metrics
-from brainbox.task.closed_loop import roc_single_event
 from serotonin_functions import figure_style
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 import brainbox.io.one as bbone
 from sklearn.preprocessing import StandardScaler
 from brainbox.population.decode import get_spike_counts_in_bins
-from brainbox.plot import peri_event_time_histogram
 from sklearn.decomposition import PCA
 from serotonin_functions import (paths, remap, query_ephys_sessions, load_passive_opto_times,
                                  get_artifact_neurons)
@@ -33,7 +30,10 @@ pca = PCA(n_components=3)
 MIN_NEURONS = 10  # per region
 T_BEFORE = 0.5
 T_AFTER = 1.5
-BIN_SIZE = 0.1  # sec
+BASELINE = [-0.5, 0]
+BIN_SIZE = 0.01
+SMOOTHING = 0.02
+MIN_FR = 0.1
 PLOT = True
 _, fig_path, save_path = paths()
 fig_path = join(fig_path, 'Ephys', 'PCA')
@@ -114,34 +114,57 @@ for i, eid in enumerate(eids):
             if len(clusters_in_region) < MIN_NEURONS:
                 continue
 
-            # Do PCA
-            pop_vector = np.zeros((BIN_CENTERS.shape[0], clusters_in_region.shape[0]))
-            for t, bin_center in enumerate(BIN_CENTERS):
+            # Exclude neurons with too low firing rates
+            excl_neurons = []
+            for n, neuron_id in enumerate(clusters_in_region):
+                if np.sum(clus_region == neuron_id) / 360 < MIN_FR:
+                    excl_neurons.append(neuron_id)
+            clusters_in_region = np.setdiff1d(clusters_in_region, excl_neurons)
 
-                # Get population vector for time bin
-                times = np.column_stack(((opto_train_times + (bin_center - (BIN_SIZE / 2))),
-                                        (opto_train_times + (bin_center + (BIN_SIZE / 2)))))
-                this_pop_vector, _ = get_spike_counts_in_bins(spks_region, clus_region, times)
-                pop_vector[t, :] = np.mean(this_pop_vector.T, axis=0)
+            # Get smoothed firing rates
+            peths, _ = calculate_peths(spks_region, clus_region, clusters_in_region,
+                                       opto_train_times, T_BEFORE, T_AFTER, BIN_SIZE, SMOOTHING)
+            pop_vector = peths['means'].T
+            time = peths['tscale']
 
             # Normalize data
             ss = StandardScaler(with_mean=True, with_std=True)
             pop_vector_norm = ss.fit_transform(pop_vector)
 
-            pca_proj = pca.fit_transform(pop_vector)
+            # Perform PCA
+            pca_proj = pca.fit_transform(pop_vector_norm)
 
+            # Plot result
             colors, dpi = figure_style()
-            f, ax1 = plt.subplots(1, 1, figsize=(3, 3), dpi=dpi)
-            ax1 = plt.axes(projection='3d')
-            p = ax1.scatter3D(pca_proj[:, 0], pca_proj[:, 1], pca_proj[:, 2], c=BIN_CENTERS,
-                              cmap='twilight_r')
-            f.colorbar(p)
+            f = plt.figure(figsize=(6, 3), dpi=dpi)
+            ax = plt.axes(projection='3d')
+            p = ax.scatter3D(pca_proj[:, 0], pca_proj[:, 1], pca_proj[:, 2], c=peths['tscale'],
+                             cmap='twilight_r')
+            ax.set(xlabel='PCA 1', ylabel='PCA 2', zlabel='PCA 3', title=f'{region}')
+            axins = inset_axes(ax, width="5%", height="80%", loc='upper left',
+                               bbox_to_anchor=(1.3, 0., 1, 1),
+                               bbox_transform=ax.transAxes,
+                               borderpad=0,)
+            cbar = f.colorbar(p, cax=axins, shrink=0.6)
+            cbar.ax.set_ylabel('Time (s)', rotation=270, labelpad=18)
+            plt.savefig(join(fig_path, 'SinglePlots', f'{region}_{subject}_{date}.jpg'), dpi=300)
+            plt.savefig(join(fig_path, 'SinglePlots', f'{region}_{subject}_{date}.pdf'))
+            plt.close(f)
 
+            f, ax1 = plt.subplots(1, 1, figsize=(3, 3), dpi=dpi)
+            ax1.plot(time, pca_proj[:, 0])
+            ax1.plot([0, 0], ax1.get_ylim(), ls='--', color='grey')
+            ax1.set(ylabel='First principal component', xlabel='Time (s)', title=f'{region}')
+            sns.despine(trim=True)
+            plt.tight_layout()
+            plt.savefig(join(fig_path, 'SinglePlots', f'{region}_{subject}_{date}_PCA1.jpg'), dpi=300)
+            plt.savefig(join(fig_path, 'SinglePlots', f'{region}_{subject}_{date}_PCA1.pdf'))
+            plt.close(f)
 
             # Add to dataframe
             pca_df = pca_df.append(pd.DataFrame(data={
                 'subject': subject, 'date': date, 'eid': eid, 'probe': probe, 'region': region,
-                'time': bin_center, 'n_neurons': np.sum(clusters_regions == region),
+                'time': time, 'n_neurons': np.sum(clusters_regions == region),
                 'pca1': pca_proj[:, 0], 'pca2': pca_proj[:, 1], 'pca3': pca_proj[:, 2]}))
 
         pca_df.to_csv(join(save_path, 'pca_regions.csv'), index=False)
