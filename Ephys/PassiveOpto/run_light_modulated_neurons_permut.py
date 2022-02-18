@@ -9,7 +9,6 @@ import numpy as np
 from os.path import join
 import pandas as pd
 from brainbox.task.closed_loop import roc_single_event
-from zetapy import getZeta
 from brainbox.metrics.single_units import spike_sorting_metrics
 from brainbox.io.one import SpikeSortingLoader
 from serotonin_functions import (paths, remap, query_ephys_sessions, load_passive_opto_times,
@@ -88,37 +87,56 @@ for i in rec.index.values:
     spikes.times = spikes.times[spikes.times > start_passive]
 
     # Determine significant neurons
-    print('Performing ZETA tests')
-    p_values = np.empty(np.unique(spikes.clusters).shape)
-    latencies = np.empty(np.unique(spikes.clusters).shape)
-    for n, neuron_id in enumerate(np.unique(spikes.clusters)):
-        p_values[n], latencies[n], _, _=  getZeta(spikes.times[spikes.clusters == neuron_id],
-                                                  opto_train_times, intLatencyPeaks=1,
-                                                  vecRestrictRange=[0, 1])
-
-    # Calculate modulation index
+    print('Calculating modulation index for EARLY stim phase..')
     roc_auc, cluster_ids = roc_single_event(spikes.times, spikes.clusters,
                                             opto_train_times, pre_time=PRE_TIME,
                                             post_time=POST_TIME_EARLY)
     mod_idx_early = 2 * (roc_auc - 0.5)
-    enh_early = (mod_idx_early > 0) & (p_values < 0.05)
-    supp_early = (mod_idx_early < 0) & (p_values < 0.05)
 
+    mod_idx_early_permut = np.zeros([PERMUTATIONS, len(np.unique(spikes.clusters))])
+    for k in range(PERMUTATIONS):
+        this_roc_auc_permut = roc_single_event(
+            spikes.times, spikes.clusters,
+            np.random.uniform(low=start_passive, high=opto_train_times[-1],
+                              size=opto_train_times.shape[0]),
+            pre_time=PRE_TIME, post_time=POST_TIME_EARLY)[0]
+        mod_idx_early_permut[k, :] = 2 * (this_roc_auc_permut - 0.5)
+
+    mod_early = ((mod_idx_early > np.percentile(mod_idx_early_permut, 97.5, axis=0))
+                   | (mod_idx_early < np.percentile(mod_idx_early_permut, 2.5, axis=0)))
+    enh_early = mod_idx_early > np.percentile(mod_idx_early_permut, 97.5, axis=0)
+    supp_early = mod_idx_early < np.percentile(mod_idx_early_permut, 2.5, axis=0)
+
+    print('Calculating modulation index for LATE stim phase..')
     roc_auc, cluster_ids = roc_single_event(spikes.times, spikes.clusters,
                                             opto_train_times, pre_time=PRE_TIME,
                                             post_time=POST_TIME_LATE)
     mod_idx_late = 2 * (roc_auc - 0.5)
-    enh_late = (mod_idx_late > 0) & (p_values < 0.05)
-    supp_late = (mod_idx_late < 0) & (p_values < 0.05)
+
+    mod_idx_late_permut = np.zeros([PERMUTATIONS, len(np.unique(spikes.clusters))])
+    for k in range(PERMUTATIONS):
+        this_roc_auc_permut = roc_single_event(
+            spikes.times, spikes.clusters,
+            np.random.uniform(low=start_passive, high=opto_train_times[-1],
+                              size=opto_train_times.shape[0]),
+            pre_time=PRE_TIME, post_time=POST_TIME_LATE)[0]
+        mod_idx_late_permut[k, :] = 2 * (this_roc_auc_permut - 0.5)
+
+    mod_late = ((mod_idx_late > np.percentile(mod_idx_late_permut, 97.5, axis=0))
+                   | (mod_idx_late < np.percentile(mod_idx_late_permut, 2.5, axis=0)))
+    enh_late = mod_idx_late > np.percentile(mod_idx_late_permut, 97.5, axis=0)
+    supp_late = mod_idx_late < np.percentile(mod_idx_late_permut, 2.5, axis=0)
 
     cluster_regions = remap(clusters.atlas_id[cluster_ids])
     light_neurons = pd.concat((light_neurons, pd.DataFrame(data={
         'subject': subject, 'date': date, 'eid': eid, 'probe': probe, 'pid': pid,
         'region': cluster_regions, 'neuron_id': cluster_ids,
         'mod_index_early': mod_idx_early, 'mod_index_late': mod_idx_late,
-        'enhanced_early': enh_early, 'suppressed_early': supp_early,
-        'enhanced_late': enh_late, 'suppressed_late': supp_late,
-        'modulated': p_values < 0.05, 'zeta_p_values': p_values})))
+        'mod_null_early': np.mean(mod_idx_early_permut, axis=0),
+        'mod_null_late': np.mean(mod_idx_late_permut, axis=0),
+        'modulated_early': mod_early, 'enhanced_early': enh_early, 'suppressed_early': supp_early,
+        'modulated_late': mod_late, 'enhanced_late': enh_late, 'suppressed_late': supp_late,
+        'modulated': (mod_early | mod_late)})))
 
 # Remove artifact neurons
 light_neurons = remove_artifact_neurons(light_neurons)

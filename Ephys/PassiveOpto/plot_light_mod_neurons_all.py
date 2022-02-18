@@ -11,7 +11,7 @@ import seaborn as sns
 from os.path import join
 import matplotlib.pyplot as plt
 from serotonin_functions import paths, figure_style, get_full_region_name, load_trials, remap, load_opto_times
-import brainbox.io.one as bbone
+from brainbox.io.one import SpikeSortingLoader
 from brainbox.singlecell import calculate_peths
 from oneibl.one import ONE
 one = ONE()
@@ -36,15 +36,19 @@ light_neurons = light_neurons.reset_index(drop=True)
 light_neurons = light_neurons.drop(index=[i for i, j in enumerate(light_neurons['region']) if 'root' in j])
 
 peth_df = pd.DataFrame()
-for i, eid in enumerate(np.unique(light_neurons['eid'])):
+for i, pid in enumerate(np.unique(light_neurons['pid'])):
 
     # Get session details
+    eid = np.unique(light_neurons[light_neurons['pid'] == pid])
+
     ses_details = one.get_details(eid)
     subject = ses_details['subject']
     date = ses_details['start_time'][:10]
 
     # Load in spikes
-    spikes, clusters, channels = bbone.load_spike_sorting_with_channel(eid, aligned=True, one=one)
+    sl = SpikeSortingLoader(pid=pid, one=one, atlas=ba)
+    spikes, clusters, channels = sl.load_spike_sorting()
+    clusters = sl.merge_clusters(spikes, clusters, channels)
 
     # Load in laser pulses
     opto_times = load_opto_times(eid, one=one)

@@ -126,7 +126,7 @@ def query_opto_sessions(subject, one=None):
     return [sess['url'][-36:] for sess in sessions]
 
 
-def query_ephys_sessions(selection='aligned', return_subjects=False, one=None):
+def query_ephys_sessions(selection='aligned', one=None):
     if one is None:
         one = ONE()
     if selection == 'all':
@@ -155,18 +155,13 @@ def query_ephys_sessions(selection='aligned', return_subjects=False, one=None):
     ins = [i for i in ins if i['session_info']['subject'] in incl_subjects['subject'].values]
 
     # Get list of eids and probes
-    all_eids = np.array([i['session'] for i in ins])
-    all_probes = np.array([i['name'] for i in ins])
-    all_subjects = np.array([i['session_info']['subject'] for i in ins])
-    eids, ind_unique = np.unique(all_eids, return_index=True)
-    subjects = all_subjects[ind_unique]
-    probes = []
-    for i, eid in enumerate(eids):
-        probes.append(all_probes[[s == eid for s in all_eids]])
-    if return_subjects:
-        return eids, probes, subjects
-    else:
-        return eids, probes
+    rec = pd.DataFrame()
+    rec['pid'] = np.array([i['id'] for i in ins])
+    rec['eid'] = np.array([i['session'] for i in ins])
+    rec['probe'] = np.array([i['name'] for i in ins])
+    rec['subject'] = np.array([i['session_info']['subject'] for i in ins])
+    rec['date'] = np.array([i['session_info']['start_time'][:10] for i in ins])
+    return rec
 
 
 def load_trials(eid, laser_stimulation=False, invert_choice=False, invert_stimside=False,
@@ -278,7 +273,7 @@ def combine_regions(acronyms, split_thalamus=True, abbreviate=False):
         regions[np.in1d(acronyms, ['SNr', 'SNc', 'SNl'])] = 'Substantia nigra'
         regions[np.in1d(acronyms, ['VISa', 'VISam'])] = 'Posterior parietal cortex'
         regions[np.in1d(acronyms, ['MEA', 'CEA', 'BLA'])] = 'Amygdala'
-        regions[np.in1d(acronyms, ['CP', 'STR', 'STRd', 'STRv'])] = 'Striatum'
+        regions[np.in1d(acronyms, ['CP', 'STR', 'STRd', 'STRv'])] = 'Tail of the striatum'
         regions[np.in1d(acronyms, ['CA1', 'CA3', 'DG'])] = 'Hippocampus'
     return regions
 

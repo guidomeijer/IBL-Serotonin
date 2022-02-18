@@ -13,7 +13,7 @@ from os.path import join
 from serotonin_functions import paths, figure_style, combine_regions, load_subjects
 
 # Settings
-MIN_NEURONS = 10
+MIN_NEURONS = 20
 MIN_PERC = 0
 
 # Paths
