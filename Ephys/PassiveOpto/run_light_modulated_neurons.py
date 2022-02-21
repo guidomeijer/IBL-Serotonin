@@ -27,6 +27,7 @@ POST_TIME_EARLY = [0, 0.5]
 POST_TIME_LATE = [0.5, 1]
 BIN_SIZE = 0.05
 PERMUTATIONS = 500
+MIN_FR = 0.1
 _, fig_path, save_path = paths()
 fig_path = join(fig_path, 'Ephys', 'SingleNeurons', 'LightModNeurons')
 
@@ -91,34 +92,37 @@ for i in rec.index.values:
     print('Performing ZETA tests')
     p_values = np.empty(np.unique(spikes.clusters).shape)
     latencies = np.empty(np.unique(spikes.clusters).shape)
+    firing_rates = np.empty(np.unique(spikes.clusters).shape)
     for n, neuron_id in enumerate(np.unique(spikes.clusters)):
-        p_values[n], latencies[n], _, _=  getZeta(spikes.times[spikes.clusters == neuron_id],
-                                                  opto_train_times, intLatencyPeaks=1,
-                                                  vecRestrictRange=[0, 1])
+        p_values[n], arr_latency = getZeta(spikes.times[spikes.clusters == neuron_id],
+                                           opto_train_times, intLatencyPeaks=3,
+                                           tplRestrictRange=(0, 1))
+        latencies[n] = arr_latency[2]
+        firing_rates[n] = (np.sum(spikes.times[spikes.clusters == neuron_id].shape[0])
+                           / (spikes.times[-1] - start_passive))
+
+    # Exclude low firing rate units
+    p_values[firing_rates < MIN_FR] = 1
+    latencies[firing_rates < MIN_FR] = np.nan
 
     # Calculate modulation index
     roc_auc, cluster_ids = roc_single_event(spikes.times, spikes.clusters,
                                             opto_train_times, pre_time=PRE_TIME,
                                             post_time=POST_TIME_EARLY)
     mod_idx_early = 2 * (roc_auc - 0.5)
-    enh_early = (mod_idx_early > 0) & (p_values < 0.05)
-    supp_early = (mod_idx_early < 0) & (p_values < 0.05)
 
     roc_auc, cluster_ids = roc_single_event(spikes.times, spikes.clusters,
                                             opto_train_times, pre_time=PRE_TIME,
                                             post_time=POST_TIME_LATE)
     mod_idx_late = 2 * (roc_auc - 0.5)
-    enh_late = (mod_idx_late > 0) & (p_values < 0.05)
-    supp_late = (mod_idx_late < 0) & (p_values < 0.05)
 
     cluster_regions = remap(clusters.atlas_id[cluster_ids])
     light_neurons = pd.concat((light_neurons, pd.DataFrame(data={
         'subject': subject, 'date': date, 'eid': eid, 'probe': probe, 'pid': pid,
         'region': cluster_regions, 'neuron_id': cluster_ids,
         'mod_index_early': mod_idx_early, 'mod_index_late': mod_idx_late,
-        'enhanced_early': enh_early, 'suppressed_early': supp_early,
-        'enhanced_late': enh_late, 'suppressed_late': supp_late,
-        'modulated': p_values < 0.05, 'zeta_p_values': p_values})))
+        'modulated': p_values < 0.05, 'p_value': p_values,
+        'latency': latencies})))
 
 # Remove artifact neurons
 light_neurons = remove_artifact_neurons(light_neurons)

@@ -97,7 +97,8 @@ def figure_style():
               'probe': sns.color_palette('colorblind')[4],
               'block': sns.color_palette('colorblind')[6],
               'RS': sns.color_palette('Set2')[0],
-              'FS': sns.color_palette('Set2')[1]}
+              'FS': sns.color_palette('Set2')[1],
+              'early': 'grey', 'late': 'k'}
     screen_width = tk.Tk().winfo_screenwidth()
     dpi = screen_width / 12
     return colors, dpi
@@ -114,7 +115,7 @@ def remove_artifact_neurons(df):
         if df[column].dtype == bool:
             df[column] = df[column].astype('boolean')
     df = pd.merge(df, artifact_neurons, indicator=True, how='outer',
-                  on=['eid', 'neuron_id', 'probe', 'subject', 'date']).query('_merge=="left_only"').drop('_merge', axis=1)
+                  on=['pid', 'neuron_id', 'probe', 'subject', 'date']).query('_merge=="left_only"').drop('_merge', axis=1)
     return df
 
 

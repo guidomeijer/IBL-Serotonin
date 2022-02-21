@@ -10,13 +10,12 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 from os.path import join
-from serotonin_functions import paths, figure_style, load_subjects, plot_scalar_on_slice
+from serotonin_functions import (paths, figure_style, load_subjects, plot_scalar_on_slice,
+                                 combine_regions)
 from ibllib.atlas import AllenAtlas
 ba = AllenAtlas(res_um=10)
 
 # Settings
-HISTOLOGY = True
-N_BINS = 30
 MIN_NEURONS = 10
 
 # Paths
@@ -25,6 +24,7 @@ map_path = join(fig_path, 'Ephys', 'BrainMaps')
 
 # Load in results
 all_neurons = pd.read_csv(join(save_path, 'light_modulated_neurons.csv'))
+all_neurons['full_region'] = combine_regions(all_neurons['region'], split_thalamus=False)
 
 # Add genotype
 subjects = load_subjects()
@@ -36,14 +36,11 @@ for i, nickname in enumerate(np.unique(subjects['subject'])):
 sert_neurons = all_neurons[all_neurons['sert-cre'] == 1]
 
 # Get percentage modulated per region
-reg_neurons = (sert_neurons.groupby('region').sum()['modulated'] / sert_neurons.groupby('region').size() * 100).to_frame()
-reg_neurons = reg_neurons.rename({0: 'percentage'}, axis=1)
-reg_neurons['mod_early'] = sert_neurons.groupby('region').median()['mod_index_early']
-reg_neurons['mod_late'] = sert_neurons.groupby('region').median()['mod_index_late']
-reg_neurons['n_neurons'] = sert_neurons.groupby(['region']).size()
+reg_neurons = sert_neurons.groupby('full_region').median()['latency'].to_frame()
+reg_neurons['n_neurons'] = sert_neurons.groupby(['full_region']).size()
 reg_neurons = reg_neurons.loc[reg_neurons['n_neurons'] >= MIN_NEURONS]
 reg_neurons = reg_neurons.reset_index()
-reg_neurons = reg_neurons[reg_neurons['region'] != 'root']
+reg_neurons = reg_neurons[reg_neurons['full_region'] != 'root']
 
 
 # %%
