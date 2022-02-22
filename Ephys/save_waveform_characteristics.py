@@ -114,11 +114,11 @@ for i in rec.index.values:
                      / np.max(spikes['times']))
 
         # Add to dataframe
-        waveforms_df = waveforms_df.append(pd.DataFrame(index=[waveforms_df.shape[0] + 1], data={
+        waveforms_df = pd.concat((waveforms_df, pd.DataFrame(index=[waveforms_df.shape[0] + 1], data={
             'pid': pid, 'eid': eid, 'probe': probe, 'subject': subject, 'waveform': [mean_wf],
             'cluster_id': neuron_id, 'regions': clusters_regions[n], 'spike_amp': spike_amp,
             'pt_ratio': pt_ratio, 'rp_slope': rp_slope, 'pt_subtract': pt_subtract,
             'rc_slope': rc_slope, 'peak_to_trough': peak_to_trough, 'spike_width': spike_width,
-            'firing_rate': neuron_fr, 'n_waveforms': n_waveforms}))
+            'firing_rate': neuron_fr, 'n_waveforms': n_waveforms})))
 
 waveforms_df.to_pickle(join(save_path, 'waveform_metrics.p'))
