@@ -132,13 +132,13 @@ plt.savefig(join(fig_path, 'Ephys', 'light_modulation_index_per_region.png'), dp
 f, ax1 = plt.subplots(1, 1, figsize=(3, 3), dpi=dpi)
 sns.barplot(x='full_region', y='perc_mod', data=summary_df.sort_values('perc_mod', ascending=False),
             color='orange', ax=ax1)
-ax1.set(ylabel='5-HT modulated neurons (%)', xlabel='', ylim=[0, 60], yticks=np.arange(0, 61, 10))
+ax1.set(ylabel='5-HT modulated neurons (%)', xlabel='', ylim=[0, 50], yticks=np.arange(0, 51, 10))
 ax1.plot([-1, ax1.get_xlim()[1]], [5, 5], ls='--', color='grey')
 plt.xticks(rotation=90)
 ax1.margins(x=0)
 
 plt.tight_layout()
 sns.despine(trim=False)
-plt.savefig(join(fig_path, 'Ephys', 'light_modulated_neurons_per_region.pdf'))
-plt.savefig(join(fig_path, 'Ephys', 'light_modulated_neurons_per_region.png'), dpi=300)
+plt.savefig(join(fig_path, 'Ephys', 'perc_light_modulated_neurons_per_region.pdf'))
+plt.savefig(join(fig_path, 'Ephys', 'perc_light_modulated_neurons_per_region.png'), dpi=300)
 

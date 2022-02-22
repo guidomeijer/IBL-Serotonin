@@ -10,8 +10,7 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 from os.path import join
-from serotonin_functions import (paths, figure_style, get_full_region_name,
-                                 load_subjects)
+from serotonin_functions import paths, figure_style, load_subjects
 
 # Paths
 fig_path, save_path = paths()
@@ -20,7 +19,8 @@ fig_path, save_path = paths()
 light_neurons = pd.read_csv(join(save_path, 'light_modulated_neurons.csv'), index_col=0)
 neuron_type = pd.read_csv(join(save_path, 'neuron_type.csv'))
 neuron_type = neuron_type[neuron_type['type'] != 'Und.']
-merged_df = pd.merge(light_neurons, neuron_type)
+neuron_type['neuron_id'] = neuron_type['cluster_id']
+merged_df = pd.merge(light_neurons, neuron_type, on=['neuron_id', 'pid', 'eid', 'probe'])
 
 # Drop ZFM-02180 for now
 # light_neurons = light_neurons[light_neurons['subject'] != 'ZFM-02180']
@@ -38,8 +38,8 @@ for i, nickname in enumerate(np.unique(subjects['subject'])):
     merged_df.loc[merged_df['subject'] == nickname, 'sert-cre'] = subjects.loc[subjects['subject'] == nickname, 'sert-cre'].values[0]
 
 # Add enhancent and suppressed
-merged_df['enhanced_late'] = merged_df['modulated'] & merged_df['mod_index_late'] > 0
-merged_df['suppressed_late'] = merged_df['modulated'] & merged_df['mod_index_late'] < 0
+merged_df['enhanced_late'] = (merged_df['modulated'] & (merged_df['mod_index_late'] > 0))
+merged_df['suppressed_late'] = (merged_df['modulated'] & (merged_df['mod_index_late'] < 0))
 
 # Calculate summary statistics
 summary_df = merged_df[merged_df['expression'] == 1].groupby(['type']).sum()
@@ -68,9 +68,9 @@ ax1.bar(np.arange(2) - 0.15, [summary_df.loc[summary_df['type'] == 'FS', 'perc_e
 ax1.bar(np.arange(2) + 0.15, [summary_df.loc[summary_df['type'] == 'FS', 'perc_supp'].values[0],
                              summary_df.loc[summary_df['type'] == 'RS', 'perc_supp'].values[0]],
         0.3, color=[colors['suppressed'], colors['suppressed']], label='Suppressed')
-ax1.set(ylabel='Percentage modulated neurons', xticks=np.arange(2),
+ax1.set(ylabel='5-HT modulated neurons (%)', xticks=np.arange(2),
         xticklabels=['Fast\nspiking', 'Regular\nspiking'],
-        ylim=[0, 14])
+        ylim=[0, 30])
 ax1.legend(frameon=False)
 
 plt.tight_layout()
