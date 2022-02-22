@@ -17,7 +17,7 @@ import patsy
 import statsmodels.api as sm
 from sklearn.model_selection import KFold
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
-from os.path import join
+from os.path import join, realpath, dirname
 from glob import glob
 from datetime import datetime
 from brainbox.io.spikeglx import spikeglx
@@ -52,8 +52,9 @@ def paths():
     SAVE_PATH = '/path/to/save/data'
 
     """
-    from serotonin_paths import DATA_PATH, FIG_PATH, SAVE_PATH
-    return DATA_PATH, FIG_PATH, SAVE_PATH
+    from serotonin_paths import FIG_PATH
+    save_path = join(dirname(realpath(__file__)), 'Data')
+    return FIG_PATH, save_path
 
 
 def figure_style():

@@ -14,7 +14,7 @@ from serotonin_functions import (paths, figure_style, get_full_region_name,
                                  load_subjects)
 
 # Paths
-_, fig_path, save_path = paths()
+fig_path, save_path = paths()
 
 # Load in results
 light_neurons = pd.read_csv(join(save_path, 'light_modulated_neurons.csv'), index_col=0)
@@ -33,9 +33,13 @@ merged_df = merged_df.drop(index=[i for i, j in enumerate(merged_df['region']) i
 
 # Add expression
 subjects = load_subjects()
-for i, nickname in enumerate(np.unique(merged_df['subject'])):
+for i, nickname in enumerate(np.unique(subjects['subject'])):
     merged_df.loc[merged_df['subject'] == nickname, 'expression'] = subjects.loc[subjects['subject'] == nickname, 'expression'].values[0]
     merged_df.loc[merged_df['subject'] == nickname, 'sert-cre'] = subjects.loc[subjects['subject'] == nickname, 'sert-cre'].values[0]
+
+# Add enhancent and suppressed
+merged_df['enhanced_late'] = merged_df['modulated'] & merged_df['mod_index_late'] > 0
+merged_df['suppressed_late'] = merged_df['modulated'] & merged_df['mod_index_late'] < 0
 
 # Calculate summary statistics
 summary_df = merged_df[merged_df['expression'] == 1].groupby(['type']).sum()
