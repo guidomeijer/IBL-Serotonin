@@ -28,7 +28,7 @@ BIN_SIZE = 0.05
 SMOOTHING = 0.025
 PLOT_LATENCY = True
 OVERWRITE = True
-_, fig_path, save_path = paths()
+fig_path, save_path = paths()
 fig_path = join(fig_path, 'Ephys', 'SingleNeurons', 'LightModNeurons')
 
 # Load in data
