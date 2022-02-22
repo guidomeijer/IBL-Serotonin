@@ -85,7 +85,7 @@ def figure_style():
                  })
     matplotlib.rcParams['pdf.fonttype'] = 42
     matplotlib.rcParams['ps.fonttype'] = 42
-    colors = {'general': sns.color_palette('Set2')[2],
+    colors = {'general': 'orange',
               'sert': sns.color_palette('Dark2')[0],
               'wt': [0.75, 0.75, 0.75],
               'left': sns.color_palette('colorblind')[1],

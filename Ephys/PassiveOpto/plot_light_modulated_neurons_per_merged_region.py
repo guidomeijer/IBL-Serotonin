@@ -13,11 +13,11 @@ from os.path import join
 from serotonin_functions import paths, figure_style, combine_regions, load_subjects
 
 # Settings
-MIN_NEURONS = 10
+MIN_NEURONS = 20
 MIN_PERC = 0
 
 # Paths
-_, fig_path, save_path = paths()
+fig_path, save_path = paths()
 
 # Load in results
 light_neurons = pd.read_csv(join(save_path, 'light_modulated_neurons.csv'))
