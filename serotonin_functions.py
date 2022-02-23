@@ -520,7 +520,7 @@ def load_opto_pulse_times(eid, part='begin', time_slice=400, one=None):
 
 def load_lfp(eid, probe, time_start, time_end, relative_to='begin', destriped=False, one=None):
     one = one or ONE()
-    destriped_lfp_path = join(paths()[2], 'LFP')
+    destriped_lfp_path = join(paths()[1], 'LFP')
 
     # Download LFP data
     if destriped:

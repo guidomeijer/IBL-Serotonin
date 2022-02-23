@@ -12,7 +12,7 @@ import pandas as pd
 from dlc_functions import get_dlc_XYs, get_raw_and_smooth_pupil_dia
 import matplotlib.pyplot as plt
 import seaborn as sns
-from serotonin_functions import paths, figure_style, load_opto_times
+from serotonin_functions import paths, figure_style, load_passive_opto_times, load_subjects
 from one.api import ONE
 one = ONE()
 
@@ -27,7 +27,7 @@ fig_path = join(fig_path, 'Pupil')
 # Query and load data
 eids = one.search(task_protocol='_iblrig_tasks_opto_ephysChoiceWorld',
                   dataset=['_ibl_leftCamera.dlc.pqt'])
-subjects = pd.read_csv(join('..', 'subjects.csv'))
+subjects = load_subjects()
 
 results_df, pupil_size = pd.DataFrame(), pd.DataFrame()
 for i, eid in enumerate(eids):

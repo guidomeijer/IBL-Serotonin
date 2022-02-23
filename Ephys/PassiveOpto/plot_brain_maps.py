@@ -53,7 +53,7 @@ reg_neurons = reg_neurons[reg_neurons['region'] != 'root']
 colors, dpi = figure_style()
 
 # Plot brain map slices
-f, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(8, 4), dpi=dpi)
+f, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(6, 4), dpi=dpi)
 
 plot_scalar_on_slice(reg_neurons['region'].values, reg_neurons['percentage'].values, ax=ax1,
                      slice='coronal', coord=AP[0]*1000, brain_atlas=ba, cmap='YlOrRd', clevels=[0, 50])
@@ -63,27 +63,28 @@ ax1.set(title=f'+{np.abs(AP[0])} mm AP')
 plot_scalar_on_slice(reg_neurons['region'].values, reg_neurons['percentage'].values, ax=ax2,
                      slice='coronal', coord=AP[1]*1000, brain_atlas=ba, cmap='YlOrRd', clevels=[0, 50])
 ax2.axis('off')
-ax1.set(title=f'-{np.abs(AP[1])} mm AP')
+ax2.set(title=f'-{np.abs(AP[1])} mm AP')
 
 plot_scalar_on_slice(reg_neurons['region'].values, reg_neurons['percentage'].values, ax=ax3,
                      slice='coronal', coord=AP[2]*1000, brain_atlas=ba, cmap='YlOrRd', clevels=[0, 50])
 ax3.axis('off')
-ax1.set(title=f'-{np.abs(AP[2])} mm AP')
+ax3.set(title=f'-{np.abs(AP[2])} mm AP')
 
 sns.despine()
 
 f.subplots_adjust(right=0.85)
 # lower left corner in [0.88, 0.3]
 # axes width 0.02 and height 0.4
-cb_ax = f.add_axes([0.88, 0.35, 0.01, 0.3])
+cb_ax = f.add_axes([0.88, 0.42, 0.01, 0.2])
 cbar = f.colorbar(mappable=ax1.images[0], cax=cb_ax)
 cbar.ax.set_ylabel('% modulated neurons', rotation=270, labelpad=10)
+cbar.ax.set_yticks([0, 25, 50])
 plt.savefig(join(map_path, 'perc_mod_neurons.jpg'), dpi=300)
 plt.savefig(join(map_path, 'perc_mod_neurons.pdf'))
 
 # %%
 # Plot brain map slices
-f, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(8, 4), dpi=dpi)
+f, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(6, 4), dpi=dpi)
 
 plot_scalar_on_slice(reg_neurons['region'].values, reg_neurons['mod_early'].values, ax=ax1,
                      slice='coronal', coord=AP[0]*1000, brain_atlas=ba, cmap='coolwarm', clevels=[-0.2, 0.2])
@@ -94,19 +95,19 @@ ax1.set(title=f'+{np.abs(AP[0])} mm AP')
 plot_scalar_on_slice(reg_neurons['region'].values, reg_neurons['mod_early'].values, ax=ax2,
                      slice='coronal', coord=AP[1]*1000, brain_atlas=ba, cmap='coolwarm', clevels=[-0.2, 0.2])
 ax2.axis('off')
-ax1.set(title=f'-{np.abs(AP[1])} mm AP')
+ax2.set(title=f'-{np.abs(AP[1])} mm AP')
 
 plot_scalar_on_slice(reg_neurons['region'].values, reg_neurons['mod_early'].values, ax=ax3,
                      slice='coronal', coord=AP[2]*1000, brain_atlas=ba, cmap='coolwarm', clevels=[-0.2, 0.2])
 ax3.axis('off')
-ax1.set(title=f'-{np.abs(AP[2])} mm AP')
+ax3.set(title=f'-{np.abs(AP[2])} mm AP')
 
 sns.despine()
 
 f.subplots_adjust(right=0.85)
 # lower left corner in [0.88, 0.3]
 # axes width 0.02 and height 0.4
-cb_ax = f.add_axes([0.88, 0.35, 0.01, 0.3])
+cb_ax = f.add_axes([0.88, 0.42, 0.01, 0.2])
 cbar = f.colorbar(mappable=ax1.images[0], cax=cb_ax)
 cbar.ax.set_ylabel('Modulation index', rotation=270, labelpad=10)
 plt.savefig(join(map_path, 'modulation_index_early.jpg'), dpi=300)
@@ -115,7 +116,7 @@ plt.savefig(join(map_path, 'modulation_index_early.pdf'))
 # %%
 
 # Plot brain map slices
-f, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(8, 4), dpi=dpi)
+f, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(6, 4), dpi=dpi)
 
 plot_scalar_on_slice(reg_neurons['region'].values, reg_neurons['mod_late'].values, ax=ax1,
                      slice='coronal', coord=AP[0]*1000, brain_atlas=ba, cmap='coolwarm', clevels=[-0.2, 0.2])
@@ -125,19 +126,19 @@ ax1.set(title=f'+{np.abs(AP[0])} mm AP')
 plot_scalar_on_slice(reg_neurons['region'].values, reg_neurons['mod_late'].values, ax=ax2,
                      slice='coronal', coord=AP[1]*1000, brain_atlas=ba, cmap='coolwarm', clevels=[-0.2, 0.2])
 ax2.axis('off')
-ax1.set(title=f'-{np.abs(AP[1])} mm AP')
+ax2.set(title=f'-{np.abs(AP[1])} mm AP')
 
 plot_scalar_on_slice(reg_neurons['region'].values, reg_neurons['mod_late'].values, ax=ax3,
                      slice='coronal', coord=AP[2]*1000, brain_atlas=ba, cmap='coolwarm', clevels=[-0.2, 0.2])
 ax3.axis('off')
-ax1.set(title=f'-{np.abs(AP[2])} mm AP')
+ax3.set(title=f'-{np.abs(AP[2])} mm AP')
 
 sns.despine()
 
 f.subplots_adjust(right=0.85)
 # lower left corner in [0.88, 0.3]
 # axes width 0.02 and height 0.4
-cb_ax = f.add_axes([0.88, 0.35, 0.01, 0.3])
+cb_ax = f.add_axes([0.88, 0.42, 0.01, 0.2])
 cbar = f.colorbar(mappable=ax1.images[0], cax=cb_ax)
 cbar.ax.set_ylabel('Modulation index', rotation=270, labelpad=10)
 plt.savefig(join(map_path, 'modulation_index_late.jpg'), dpi=300)
@@ -146,7 +147,7 @@ plt.savefig(join(map_path, 'modulation_index_late.pdf'))
 # %%
 
 # Plot brain map slices
-f, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(8, 4), dpi=dpi)
+f, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(6, 4), dpi=dpi)
 
 plot_scalar_on_slice(reg_neurons['region'].values, reg_neurons['mod_late'].abs().values, ax=ax1,
                      slice='coronal', coord=AP[0]*1000, brain_atlas=ba, cmap='YlOrRd', clevels=[0, 0.4])
@@ -156,19 +157,19 @@ ax1.set(title=f'+{np.abs(AP[0])} mm AP')
 plot_scalar_on_slice(reg_neurons['region'].values, reg_neurons['mod_late'].abs().values, ax=ax2,
                      slice='coronal', coord=AP[1]*1000, brain_atlas=ba, cmap='YlOrRd', clevels=[0, 0.4])
 ax2.axis('off')
-ax1.set(title=f'-{np.abs(AP[1])} mm AP')
+ax2.set(title=f'-{np.abs(AP[1])} mm AP')
 
 plot_scalar_on_slice(reg_neurons['region'].values, reg_neurons['mod_late'].abs().values, ax=ax3,
                      slice='coronal', coord=AP[2]*1000, brain_atlas=ba, cmap='YlOrRd', clevels=[0, 0.4])
 ax3.axis('off')
-ax1.set(title=f'-{np.abs(AP[2])} mm AP')
+ax3.set(title=f'-{np.abs(AP[2])} mm AP')
 
 sns.despine()
 
 f.subplots_adjust(right=0.85)
 # lower left corner in [0.88, 0.3]
 # axes width 0.02 and height 0.4
-cb_ax = f.add_axes([0.88, 0.35, 0.01, 0.3])
+cb_ax = f.add_axes([0.88, 0.42, 0.01, 0.2])
 cbar = f.colorbar(mappable=ax1.images[0], cax=cb_ax)
 cbar.ax.set_ylabel('Abs. modulation index', rotation=270, labelpad=10)
 plt.savefig(join(map_path, 'modulation_index_late_abs.jpg'), dpi=300)
@@ -177,7 +178,7 @@ plt.savefig(join(map_path, 'modulation_index_late_abs.pdf'))
 # %%
 
 # Plot brain map slices
-f, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(8, 4), dpi=dpi)
+f, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(6, 4), dpi=dpi)
 
 plot_scalar_on_slice(reg_neurons['region'].values, reg_neurons['latency'].values, ax=ax1,
                      slice='coronal', coord=AP[0]*1000, brain_atlas=ba, cmap='plasma', clevels=[0, 600])
@@ -187,19 +188,19 @@ ax1.set(title=f'+{np.abs(AP[0])} mm AP')
 plot_scalar_on_slice(reg_neurons['region'].values, reg_neurons['latency'].values, ax=ax2,
                      slice='coronal', coord=AP[1]*1000, brain_atlas=ba, cmap='plasma', clevels=[0, 600])
 ax2.axis('off')
-ax1.set(title=f'-{np.abs(AP[1])} mm AP')
+ax2.set(title=f'-{np.abs(AP[1])} mm AP')
 
 plot_scalar_on_slice(reg_neurons['region'].values, reg_neurons['latency'].values, ax=ax3,
                      slice='coronal', coord=AP[2]*1000, brain_atlas=ba, cmap='plasma', clevels=[0, 600])
 ax3.axis('off')
-ax1.set(title=f'-{np.abs(AP[2])} mm AP')
+ax3.set(title=f'-{np.abs(AP[2])} mm AP')
 
 sns.despine()
 
 f.subplots_adjust(right=0.85)
 # lower left corner in [0.88, 0.3]
 # axes width 0.02 and height 0.4
-cb_ax = f.add_axes([0.88, 0.35, 0.01, 0.3])
+cb_ax = f.add_axes([0.88, 0.42, 0.01, 0.2])
 cbar = f.colorbar(mappable=ax1.images[0], cax=cb_ax)
 cbar.ax.set_ylabel('Latency (ms)', rotation=270, labelpad=10)
 plt.savefig(join(map_path, 'latency_map.jpg'), dpi=300)
