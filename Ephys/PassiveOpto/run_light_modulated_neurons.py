@@ -22,13 +22,12 @@ one = ONE()
 # Settings
 OVERWRITE = True
 NEURON_QC = True
-PRE_TIME = [0.5, 0]  # for significance testing
-POST_TIME_EARLY = [0, 0.5]
-POST_TIME_LATE = [0.5, 1]
+PRE_TIME = [0.2, 0]  # for significance testing
+POST_TIME_EARLY = [0, 0.2]
+POST_TIME_LATE = [0.8, 1]
 BIN_SIZE = 0.05
-PERMUTATIONS = 500
 MIN_FR = 0.1
-_, fig_path, save_path = paths()
+fig_path, save_path = paths()
 fig_path = join(fig_path, 'Ephys', 'SingleNeurons', 'LightModNeurons')
 
 # Query sessions
@@ -91,19 +90,25 @@ for i in rec.index.values:
     # Determine significant neurons
     print('Performing ZETA tests')
     p_values = np.empty(np.unique(spikes.clusters).shape)
-    latencies = np.empty(np.unique(spikes.clusters).shape)
+    latency_zeta = np.empty(np.unique(spikes.clusters).shape)
+    latency_peak = np.empty(np.unique(spikes.clusters).shape)
+    latency_peak_hw = np.empty(np.unique(spikes.clusters).shape)
     firing_rates = np.empty(np.unique(spikes.clusters).shape)
     for n, neuron_id in enumerate(np.unique(spikes.clusters)):
         p_values[n], arr_latency = getZeta(spikes.times[spikes.clusters == neuron_id],
-                                           opto_train_times, intLatencyPeaks=3,
+                                           opto_train_times, intLatencyPeaks=4,
                                            tplRestrictRange=(0, 1))
-        latencies[n] = arr_latency[2]
+        latency_zeta[n] = np.min(arr_latency[:2])
+        latency_peak[n] = arr_latency[2]
+        latency_peak_hw[n] = arr_latency[3]
         firing_rates[n] = (np.sum(spikes.times[spikes.clusters == neuron_id].shape[0])
                            / (spikes.times[-1] - start_passive))
 
     # Exclude low firing rate units
     p_values[firing_rates < MIN_FR] = 1
-    latencies[firing_rates < MIN_FR] = np.nan
+    latency_zeta[firing_rates < MIN_FR] = np.nan
+    latency_peak[firing_rates < MIN_FR] = np.nan
+    latency_peak_hw[firing_rates < MIN_FR] = np.nan
 
     # Calculate modulation index
     roc_auc, cluster_ids = roc_single_event(spikes.times, spikes.clusters,
@@ -122,7 +127,8 @@ for i in rec.index.values:
         'region': cluster_regions, 'neuron_id': cluster_ids,
         'mod_index_early': mod_idx_early, 'mod_index_late': mod_idx_late,
         'modulated': p_values < 0.05, 'p_value': p_values,
-        'latency': latencies})))
+        'latency_zeta': latency_zeta, 'latency_peak': latency_peak,
+        'latency_peak_hw': latency_peak_hw})))
 
 # Remove artifact neurons
 light_neurons = remove_artifact_neurons(light_neurons)

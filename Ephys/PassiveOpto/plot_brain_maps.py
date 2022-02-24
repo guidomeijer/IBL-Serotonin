@@ -37,12 +37,13 @@ for i, nickname in enumerate(np.unique(subjects['subject'])):
 sert_neurons = all_neurons[all_neurons['expression'] == 1]
 
 # Get percentage modulated per region
-reg_neurons = (sert_neurons.groupby('region').sum()['modulated'] / sert_neurons.groupby('region').size() * 100).to_frame()
+reg_neurons = ((sert_neurons.groupby('region').sum()['modulated'] / sert_neurons.groupby('region').size()) * 100).to_frame()
 reg_neurons = reg_neurons.rename({0: 'percentage'}, axis=1)
 reg_neurons['mod_early'] = sert_neurons.groupby('region').median()['mod_index_early']
 reg_neurons['mod_late'] = sert_neurons.groupby('region').median()['mod_index_late']
-reg_neurons['latency'] = sert_neurons.groupby('region').median()['latency'] * 1000
+reg_neurons['latency'] = sert_neurons[sert_neurons['modulated'] == 1].groupby('region').median()['latency_peak_hw'] * 1000
 reg_neurons['n_neurons'] = sert_neurons.groupby(['region']).size()
+reg_neurons['n_mod_neurons'] = sert_neurons[sert_neurons['modulated'] == 1].groupby(['region']).size()
 reg_neurons = reg_neurons.loc[reg_neurons['n_neurons'] >= MIN_NEURONS]
 reg_neurons = reg_neurons.reset_index()
 reg_neurons = reg_neurons[reg_neurons['region'] != 'root']
@@ -180,18 +181,21 @@ plt.savefig(join(map_path, 'modulation_index_late_abs.pdf'))
 # Plot brain map slices
 f, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(6, 4), dpi=dpi)
 
-plot_scalar_on_slice(reg_neurons['region'].values, reg_neurons['latency'].values, ax=ax1,
-                     slice='coronal', coord=AP[0]*1000, brain_atlas=ba, cmap='plasma', clevels=[0, 600])
+plot_scalar_on_slice(reg_neurons.loc[reg_neurons['n_mod_neurons'] >= MIN_NEURONS, 'region'].values,
+                     reg_neurons.loc[reg_neurons['n_mod_neurons'] >= MIN_NEURONS, 'latency'].values, ax=ax1,
+                     slice='coronal', coord=AP[0]*1000, brain_atlas=ba, cmap='plasma', clevels=[0, 300])
 ax1.axis('off')
 ax1.set(title=f'+{np.abs(AP[0])} mm AP')
 
-plot_scalar_on_slice(reg_neurons['region'].values, reg_neurons['latency'].values, ax=ax2,
-                     slice='coronal', coord=AP[1]*1000, brain_atlas=ba, cmap='plasma', clevels=[0, 600])
+plot_scalar_on_slice(reg_neurons.loc[reg_neurons['n_mod_neurons'] >= MIN_NEURONS, 'region'].values,
+                     reg_neurons.loc[reg_neurons['n_mod_neurons'] >= MIN_NEURONS, 'latency'].values, ax=ax2,
+                     slice='coronal', coord=AP[1]*1000, brain_atlas=ba, cmap='plasma', clevels=[0, 300])
 ax2.axis('off')
 ax2.set(title=f'-{np.abs(AP[1])} mm AP')
 
-plot_scalar_on_slice(reg_neurons['region'].values, reg_neurons['latency'].values, ax=ax3,
-                     slice='coronal', coord=AP[2]*1000, brain_atlas=ba, cmap='plasma', clevels=[0, 600])
+plot_scalar_on_slice(reg_neurons.loc[reg_neurons['n_mod_neurons'] >= MIN_NEURONS, 'region'].values,
+                     reg_neurons.loc[reg_neurons['n_mod_neurons'] >= MIN_NEURONS, 'latency'].values, ax=ax3,
+                     slice='coronal', coord=AP[2]*1000, brain_atlas=ba, cmap='plasma', clevels=[0, 300])
 ax3.axis('off')
 ax3.set(title=f'-{np.abs(AP[2])} mm AP')
 

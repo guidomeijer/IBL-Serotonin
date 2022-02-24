@@ -86,7 +86,7 @@ ax1.hlines(y=range(len(ordered_regions.index)), xmin=ordered_regions['perc_supp'
            color=colors['suppressed'])
 ax1.plot(ordered_regions['perc_supp'], range(len(ordered_regions.index)), 'o', color=colors['suppressed'])
 ax1.plot(ordered_regions['perc_enh'], range(len(ordered_regions.index)), 'o', color=colors['enhanced'])
-ax1.set(ylabel='', xlabel='5-HT modulated neurons (%)', xlim=[-60, 30],
+ax1.set(ylabel='', xlabel='5-HT modulated neurons (%)', xlim=[-60, 40],
         xticklabels=np.concatenate((np.arange(60, 0, -20), np.arange(0, 41, 20))))
 ax1.spines['bottom'].set_position(('data', summary_df.shape[0]))
 ax1.margins(x=0)
@@ -102,7 +102,7 @@ ax2.hlines(y=range(len(ordered_regions_no.index)), xmin=ordered_regions_no['perc
            color=colors['suppressed'])
 ax2.plot(ordered_regions_no['perc_supp'], range(len(ordered_regions_no.index)), 'o', color=colors['suppressed'])
 ax2.plot([0, 0], ax2.get_ylim(), color=[0.5, 0.5, 0.5], ls='--')
-ax2.set(ylabel='', xlabel='5-HT modulated neurons (%)', xlim=[-60, 30],
+ax2.set(ylabel='', xlabel='5-HT modulated neurons (%)', xlim=[-60, 40],
         xticklabels=np.concatenate((np.arange(60, 0, -20), np.arange(0, 41, 20))))
 
 plt.tight_layout()

@@ -62,15 +62,29 @@ summary_no_df['perc_supp'] = summary_no_df['perc_supp']
 # %% Plot
 colors, dpi = figure_style()
 f, ax1 = plt.subplots(1, 1, figsize=(2.5, 2.5), dpi=dpi)
+"""
 ax1.bar(np.arange(2) - 0.15, [summary_df.loc[summary_df['type'] == 'FS', 'perc_enh'].values[0],
                              summary_df.loc[summary_df['type'] == 'RS', 'perc_enh'].values[0]],
         0.3, color=[colors['enhanced'], colors['enhanced']], label='Enhanced')
 ax1.bar(np.arange(2) + 0.15, [summary_df.loc[summary_df['type'] == 'FS', 'perc_supp'].values[0],
                              summary_df.loc[summary_df['type'] == 'RS', 'perc_supp'].values[0]],
         0.3, color=[colors['suppressed'], colors['suppressed']], label='Suppressed')
-ax1.set(ylabel='5-HT modulated neurons (%)', xticks=np.arange(2),
+"""
+X = [0.5, 1]
+ax1.bar(X, [summary_df.loc[summary_df['type'] == 'FS', 'perc_supp'].values[0],
+            summary_df.loc[summary_df['type'] == 'RS', 'perc_supp'].values[0]],
+        0.3, label='Suppressed', color=colors['suppressed'])
+
+ax1.bar(X, [summary_df.loc[summary_df['type'] == 'FS', 'perc_enh'].values[0],
+            summary_df.loc[summary_df['type'] == 'RS', 'perc_enh'].values[0]],
+        0.3, label='Enhanced', color=colors['enhanced'],
+        bottom=[summary_df.loc[summary_df['type'] == 'FS', 'perc_supp'].values[0],
+                summary_df.loc[summary_df['type'] == 'RS', 'perc_supp'].values[0]])
+
+
+ax1.set(ylabel='5-HT modulated neurons (%)', xticks=X,
         xticklabels=['Fast\nspiking', 'Regular\nspiking'],
-        ylim=[0, 30])
+        ylim=[0, 50], xlim=[0.2, 1.25])
 ax1.legend(frameon=False)
 
 plt.tight_layout()

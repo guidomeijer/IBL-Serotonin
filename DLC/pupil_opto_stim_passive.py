@@ -21,7 +21,7 @@ BEHAVIOR_CRIT = True
 TIME_BINS = np.arange(-1, 3.2, 0.2)
 BIN_SIZE = 0.2  # seconds
 BASELINE = [1, 0]  # seconds
-_, fig_path, _ = paths()
+fig_path, _ = paths()
 fig_path = join(fig_path, 'Pupil')
 
 # Query and load data
@@ -36,12 +36,14 @@ for i, eid in enumerate(eids):
     ses_details = one.get_details(eid)
     nickname = ses_details['subject']
     date = ses_details['start_time'][:10]
+    if nickname not in subjects['subject'].values:
+        continue
     expression = subjects.loc[subjects['subject'] == nickname, 'expression'].values[0]
     print(f'Starting {nickname}, {date}')
 
     # Load in laser pulse times
     try:
-        opto_train_times = load_opto_times(eid, one=one)
+        opto_train_times, _ = load_passive_opto_times(eid, one=one)
     except:
         print('Session does not have passive laser pulses')
         continue
@@ -91,17 +93,17 @@ for i, eid in enumerate(eids):
             baseline_subtracted[b] = np.nanmedian(diameter_perc[
                 (video_times > (trial_start + time_bin) - (BIN_SIZE / 2))
                 & (video_times < (trial_start + time_bin) + (BIN_SIZE / 2))]) - baseline
-        pupil_size = pupil_size.append(pd.DataFrame(data={
+        pupil_size = pd.concat((pupil_size, pd.DataFrame(data={
             'diameter': this_diameter, 'baseline_subtracted': baseline_subtracted, 'eid': eid,
             'subject': nickname, 'trial': t, 'time': TIME_BINS, 'expression': expression,
-            'date': date}))
+            'date': date})))
 
     # Add to overal dataframe
     pupil_size = pupil_size.reset_index(drop=True)
-    results_df = results_df.append(pd.DataFrame(data={
+    results_df = pd.concat((results_df, pd.DataFrame(data={
         'diameter': pupil_size.groupby('time').median()['diameter'],
         'baseline_subtracted': pupil_size.groupby('time').median()['baseline_subtracted'],
-        'subject': nickname, 'expression': expression}))
+        'subject': nickname, 'expression': expression})))
 
 
 # Plot

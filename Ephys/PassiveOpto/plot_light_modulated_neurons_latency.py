@@ -32,10 +32,10 @@ for i, nickname in enumerate(np.unique(subjects['subject'])):
     all_neurons.loc[all_neurons['subject'] == nickname, 'sert-cre'] = subjects.loc[subjects['subject'] == nickname, 'sert-cre'].values[0]
 
 # Only sert-cre mice
-sert_neurons = all_neurons[all_neurons['sert-cre'] == 1]
+sert_neurons = all_neurons[all_neurons['expression'] == 1]
 
 # Transform to ms
-sert_neurons['latency'] = sert_neurons['latency'] * 1000
+sert_neurons['latency'] = sert_neurons['latency_peak_hw'] * 1000
 
 # Get percentage modulated per region
 reg_neurons = sert_neurons.groupby('full_region').median()['latency'].to_frame()
@@ -58,7 +58,7 @@ colors, dpi = figure_style()
 f, ax1 = plt.subplots(1, 1, figsize=(3, 3), dpi=dpi)
 sns.pointplot(x='full_region', y='latency', data=sert_neurons, order=reg_neurons['full_region'],
               join=False, ci=68, color=colors['general'], ax=ax1)
-ax1.set(ylim=[300, 600], ylabel='5-HT modulation latency (ms)', xlabel='')
+ax1.set(ylim=[0, 400], ylabel='5-HT modulation latency (ms)', xlabel='')
 plt.xticks(rotation=90)
 plt.tight_layout()
 sns.despine(trim=True)
