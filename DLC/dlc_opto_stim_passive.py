@@ -12,7 +12,8 @@ import pandas as pd
 from dlc_functions import get_dlc_XYs, get_raw_and_smooth_pupil_dia
 import matplotlib.pyplot as plt
 import seaborn as sns
-from serotonin_functions import paths, figure_style, load_passive_opto_times, load_subjects
+from serotonin_functions import (paths, figure_style, load_passive_opto_times, load_subjects,
+                                 query_ephys_sessions)
 from one.api import ONE
 one = ONE()
 
@@ -28,16 +29,18 @@ fig_path = join(fig_path, 'Pupil')
 eids = one.search(task_protocol='_iblrig_tasks_opto_ephysChoiceWorld',
                   dataset=['_ibl_leftCamera.dlc.pqt'])
 subjects = load_subjects()
+rec = query_ephys_sessions()
+
+# Select sessions
+rec = rec[rec['eid'].isin(eids) & rec['subject'].isin(subjects['subject'])]
 
 results_df, pupil_size = pd.DataFrame(), pd.DataFrame()
-for i, eid in enumerate(eids):
+for i, eid in enumerate(rec['eid']):
 
     # Get session details
     ses_details = one.get_details(eid)
     nickname = ses_details['subject']
     date = ses_details['start_time'][:10]
-    if nickname not in subjects['subject'].values:
-        continue
     expression = subjects.loc[subjects['subject'] == nickname, 'expression'].values[0]
     print(f'Starting {nickname}, {date}')
 
@@ -50,9 +53,6 @@ for i, eid in enumerate(eids):
     if len(opto_train_times) == 0:
         print('Did not find ANY laser pulses!')
         continue
-    else:
-        print(f'Found {len(opto_train_times)} passive laser pulses')
-
 
     # Load in camera timestamps and DLC output
     try:
@@ -65,20 +65,6 @@ for i, eid in enumerate(eids):
     if np.abs(video_times.shape[0] - XYs['pupil_left_r'].shape[0]) > 10000:
         print('Timestamp mismatch, skipping..')
         continue
-
-    # Get pupil diameter
-    print('Calculating smoothed pupil trace')
-    raw_diameter, diameter = get_raw_and_smooth_pupil_dia(eid, 'left', one)
-
-    # Assume frames were dropped at the end
-    if video_times.shape[0] > diameter.shape[0]:
-        video_times = video_times[:diameter.shape[0]]
-    elif diameter.shape[0] > video_times.shape[0]:
-        diameter = diameter[:video_times.shape[0]]
-
-    # Calculate percentage change
-    diameter_perc = ((diameter - np.percentile(diameter[~np.isnan(diameter)], 2))
-                     / np.percentile(diameter[~np.isnan(diameter)], 2)) * 100
 
     # Get trial triggered baseline subtracted pupil diameter
     for t, trial_start in enumerate(opto_train_times):
