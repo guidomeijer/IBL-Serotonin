@@ -12,9 +12,12 @@ import matplotlib.pyplot as plt
 from sklearn.utils import shuffle
 import pandas as pd
 import tkinter as tk
+from scipy.stats import binned_statistic
 import pathlib
 import patsy
 import statsmodels.api as sm
+from brainbox.core import TimeSeries
+from brainbox.processing import sync
 from sklearn.model_selection import KFold
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from os.path import join, realpath, dirname
@@ -667,6 +670,46 @@ def plot_scalar_on_slice(
                 volume='boundary', mapping=map, ax=ax, cmap=cmap_bound, vmin=0.01, vmax=0.8)
 
     return fig, ax
+
+
+def load_wheel_velocity(eid, starttimes, endtimes, binsize, one=None):
+    one = one or ONE()
+
+    # Load in wheel velocity
+    wheel = one.load_object(eid, 'wheel')
+    whlpos, whlt = wheel.position, wheel.timestamps
+    wh_endlast = 0
+    wheel_velocity = []
+    for (start, end) in np.vstack((starttimes, endtimes)).T:
+        wh_startind = np.searchsorted(whlt[wh_endlast:], start) + wh_endlast
+        wh_endind = np.searchsorted(whlt[wh_endlast:], end, side='right') + wh_endlast + 4
+        if wh_endind > len(whlpos):
+            raise IndexError('Wheel trace too short for requested start and end times')
+        wh_endlast = wh_endind
+        tr_whlpos = whlpos[wh_startind - 1:wh_endind + 1]
+        tr_whlt = whlt[wh_startind - 1:wh_endind + 1] - start
+        tr_whlt[0] = 0.  # Manual previous-value interpolation
+        whlseries = TimeSeries(tr_whlt, tr_whlpos, columns=['whlpos'])
+        whlsync = sync(binsize, timeseries=whlseries, interp='previous')
+        trialstartind = np.searchsorted(whlsync.times, 0)
+        trialendind = np.ceil((end - start) / binsize).astype(int)
+        trpos = whlsync.values[trialstartind:trialendind + trialstartind]
+        whlvel = trpos[1:] - trpos[:-1]
+        whlvel = np.insert(whlvel, 0, 0)
+        if np.abs((trialendind - len(whlvel))) > 0:
+            raise IndexError('Mismatch between expected length of wheel data and actual.')
+        wheel_velocity.append(whlvel)
+    return wheel_velocity
+
+
+def make_bins(signal, timestamps, start_times, stop_times, binsize):
+
+    # Loop over start times
+    binned_signal = []
+    for (start, end) in np.vstack((start_times, stop_times)).T:
+        binned_signal.append(binned_statistic(timestamps, signal, bins=int((end-start)*(1/binsize)),
+                                              range=(start, end), statistic=np.nanmean)[0])
+    return binned_signal
 
 
 def fit_psychfunc(stim_levels, n_trials, proportion):
