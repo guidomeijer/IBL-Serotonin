@@ -20,7 +20,7 @@ AP = [2, -1.5, -3.5]
 
 # Paths
 fig_path, save_path = paths()
-map_path = join(fig_path, 'Ephys')
+fig_path = join(fig_path, 'Ephys')
 
 # Load in results
 all_neurons = pd.read_csv(join(save_path, 'light_modulated_neurons.csv'))

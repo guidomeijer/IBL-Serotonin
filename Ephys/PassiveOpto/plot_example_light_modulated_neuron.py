@@ -91,12 +91,12 @@ spikes.clusters = spikes.clusters[spikes.times > start_passive]
 spikes.times = spikes.times[spikes.times > start_passive]
 
 # Calculate ZETA
-p_value, latencies, dZETA = getZeta(spikes.times[spikes.clusters == NEURON],
-                                    opto_train_times - ZETA_BEFORE,
-                                    intLatencyPeaks=4,
-                                    tplRestrictRange=(0 + ZETA_BEFORE, 1 + ZETA_BEFORE),
-                                    dblUseMaxDur=2 + ZETA_BEFORE,
-                                    boolReturnZETA=True)
+p_value, latencies, dZETA, dRate = getZeta(spikes.times[spikes.clusters == NEURON],
+                                           opto_train_times - ZETA_BEFORE,
+                                           intLatencyPeaks=4,
+                                           tplRestrictRange=(0 + ZETA_BEFORE, 1 + ZETA_BEFORE),
+                                           dblUseMaxDur=2 + ZETA_BEFORE,
+                                           boolReturnZETA=True, boolReturnRate=True)
 latency = latencies[3] - ZETA_BEFORE
 dZETA['vecSpikeT'] = dZETA['vecSpikeT'] - ZETA_BEFORE
 
@@ -147,12 +147,6 @@ ax.set(ylabel='Firing rate (spks/s)', xlabel='Time (s)',
        ylim=[ax.get_ylim()[0], np.round(ax.get_ylim()[1])])
 ax.yaxis.set_major_formatter(FormatStrFormatter('%.0f'))
 
-peths, _ = calculate_peths(spikes.times, spikes.clusters, [NEURON],
-                           opto_train_times, T_BEFORE, T_AFTER, BIN_SIZE, SMOOTHING)
-peak_ind = np.argmin(np.abs(peths['tscale'] - latency))
-peak_act = peths['means'][0][peak_ind]
-ax.plot([latency, latency], [peak_act, peak_act], 'xr', lw=2)
-
 ax_roc.plot([0, 1], [0, 1], ls='--', color='grey')
 ax_roc.plot(fpr, tpr, color='orange', lw=1.5)
 ax_roc.set(ylabel='True positive rate', xlabel='False positive rate',
@@ -176,10 +170,10 @@ ax_zeta.plot(dZETA['vecSpikeT'], dZETA['vecD'], lw=2)
 ax_zeta.set(ylabel='Mean-subtracted deviation', xlabel='Time (s)')
 sns.despine(trim=True, ax=ax_zeta)
 
-ax_mod.plot([-ZETA_BEFORE, dZETA['dblUseMaxDur']], [0, 0], ls='--', color='grey')
-ax_mod.plot(dZETA['vecSpikeT'], dZETA['vecNoNormD'], lw=2)
-ax_mod.set(xlabel='Time (s)', ylabel='Deviation',
-           xlim=[-ZETA_BEFORE, dZETA['dblUseMaxDur'] - ZETA_BEFORE])
+ax_mod.plot(dRate['vecT'], dRate['vecRate'])
+ax_mod.plot(latency, dRate['vecRate'][np.argmin(np.abs(dRate['vecT'] - latency))], 'xr', lw=2)
+ax_mod.text(0.18, 50, f'{latency*1000:.2f} ms', color='r', fontweight='bold')
+ax_mod.set(xlabel='Time (s)', ylabel='Inst. spiking rate (spks/s)', xlim=[0, 1])
 sns.despine(trim=True, ax=ax_mod)
 
 plt.tight_layout()
