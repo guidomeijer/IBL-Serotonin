@@ -168,18 +168,29 @@ ax_th.set(xlabel='Time (s)', yticks=[])
 ax_th.set_title('Thalamus', fontweight='bold', fontsize=title_font)
 ax_th.plot([0, 0], [-1, 1], ls='--', color='k')
 
+"""
 these_peths = peths_df[peths_df['region'] == 'Tail of the striatum']
 img = ax_str.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=sns.diverging_palette(220, 20, as_cmap=True),
                  vmin=VMIN, vmax=VMAX, extent=[-T_BEFORE, T_AFTER, -1, 1], interpolation='none')
 ax_str.set(xlabel='Time (s)', yticks=[])
 ax_str.set_title('Tail of the striatum', fontweight='bold', fontsize=title_font)
 ax_str.plot([0, 0], [-1, 1], ls='--', color='k')
+"""
 
-#cb_ax = f.add_axes([0.75, 0.15, 0.01, 0.3])
-#cbar = f.colorbar(mappable=ax_mpfc.images[0], cax=cb_ax)
-#cbar.ax.set_ylabel('Norm. change\nin firing rate', rotation=270, labelpad=18)
+these_peths = peths_df[peths_df['region'] == 'Barrel cortex']
+img = ax_str.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=sns.diverging_palette(220, 20, as_cmap=True),
+                 vmin=VMIN, vmax=VMAX, extent=[-T_BEFORE, T_AFTER, -1, 1], interpolation='none')
+ax_str.set(xlabel='Time (s)', yticks=[])
+ax_str.set_title('Barrel cortex', fontweight='bold', fontsize=title_font)
+ax_str.plot([0, 0], [-1, 1], ls='--', color='k')
 
 """
+
+cb_ax = f.add_axes([0.75, 0.15, 0.01, 0.3])
+cbar = f.colorbar(mappable=ax_mpfc.images[0], cax=cb_ax)
+cbar.ax.set_ylabel('Norm. change\nin firing rate', rotation=270, labelpad=18)
+
+
 these_peths = peths_df[peths_df['region'] == 'Retrosplenial']
 img = ax_rs.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=sns.diverging_palette(220, 20, as_cmap=True),
                  vmin=VMIN, vmax=VMAX, extent=[-T_BEFORE, T_AFTER, -1, 1], interpolation='none')
