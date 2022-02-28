@@ -23,8 +23,7 @@ eids = one.search(project='serotonin_inference', task_protocol='_iblrig_tasks_op
 
 for i, eid in enumerate(eids):
     print(f'\n\nProcessing session {eid} [{i + 1} of {len(eids)}]\n\n')
-    status = run_session(eid, machine='guido', cams=['left'], one=one, frames=10000, clobber=True,
-                         overwrite=False)
+    status = run_session(eid, machine='guido', cams=['left', 'right', 'body'], one=one, overwrite=False)
 
 """
 status = run_session('315349d8-eb22-4c9b-871d-833f875e6641', machine='guido', cams=['left'],

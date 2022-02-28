@@ -21,8 +21,10 @@ BEHAVIOR_CRIT = True
 TIME_BINS = np.arange(-1, 3.2, 0.2)
 BIN_SIZE = 0.2  # seconds
 BASELINE = [1, 0]  # seconds
-fig_path, _ = paths()
+fig_path, save_path = paths()
 fig_path = join(fig_path, 'Pupil')
+SERT_EXAMPLE = 'ZFM-01802'
+WT_EXAMPLE = 'ZFM-02181'
 
 # Query and load data
 eids = one.search(task_protocol='_iblrig_tasks_opto_ephysChoiceWorld',
@@ -105,26 +107,25 @@ for i, eid in enumerate(eids):
         'baseline_subtracted': pupil_size.groupby('time').median()['baseline_subtracted'],
         'subject': nickname, 'expression': expression})))
 
-
-# Plot
+# %% Plot all subjects
 colors, dpi = figure_style()
 for i, subject in enumerate(np.unique(pupil_size['subject'])):
     expression = subjects.loc[subjects['subject'] == subject, 'expression'].values[0]
     f, (ax1, ax2) = plt.subplots(1, 2, figsize=(4, 2), dpi=dpi)
 
-    lineplt = sns.lineplot(x='time', y='diameter', estimator=np.median,
-                           data=pupil_size[pupil_size['subject'] == subject],
-                           color='k', ci=68, ax=ax1, legend=None)
+    sns.lineplot(x='time', y='diameter', estimator=np.median,
+                 data=pupil_size[pupil_size['subject'] == subject],
+                 color='k', ci=68, ax=ax1, legend=None)
     ax1.plot([0, 1], [60, 60], color='royalblue', lw=2)
     ax1.set(title='%s, expression: %d' % (subject, expression),
-            ylabel='Pupil size (%)', xlabel='Time relative to trial start(s)',
+            ylabel='Pupil size (%)', xlabel='Time (s)',
             xticks=np.arange(-1, 3.1), ylim=[20, 61])
 
-    lineplt = sns.lineplot(x='time', y='baseline_subtracted', estimator=np.median,
-                           data=pupil_size[pupil_size['subject'] == subject],
-                           color='k', ci=68, ax=ax2, legend=None)
+    sns.lineplot(x='time', y='baseline_subtracted', estimator=np.median,
+                 data=pupil_size[pupil_size['subject'] == subject],
+                 color='k', ci=68, ax=ax2, legend=None)
     ax2.set(title='%s, expression: %d' % (subject, expression),
-            ylabel='Baseline subtracted\npupil size (%)', xlabel='Time relative to trial start(s)',
+            ylabel='Baseline subtracted\npupil size (%)', xlabel='Time (s)',
             xticks=np.arange(-1, 3.1))
 
     plt.tight_layout()
@@ -132,3 +133,23 @@ for i, subject in enumerate(np.unique(pupil_size['subject'])):
 
     plt.savefig(join(fig_path, f'{subject}_pupil_opto_passive.png'))
     plt.savefig(join(fig_path, f'{subject}_pupil_opto_passive.pdf'))
+
+# %% Plot two examples
+f, ax1 = plt.subplots(1, 1, figsize=(2, 2), dpi=dpi)
+lnplot = sns.lineplot(x='time', y='baseline_subtracted', estimator=np.median,
+                      data=pupil_size[(pupil_size['subject'] == SERT_EXAMPLE)
+                                      | (pupil_size['subject'] == WT_EXAMPLE)],
+                      hue='expression', palette=[colors['wt'], colors['sert']], ci=68, ax=ax1)
+ax1.plot([0, 1], [30, 30], color='royalblue', lw=2)
+ax1.set(ylabel='Pupil size change (%)', xlabel='Time (s)',
+        xticks=np.arange(-1, 3.1), ylim=[-10, 31])
+ax1.legend(frameon=False, title='', bbox_to_anchor=(0.45, 0.9), prop={'size': 6})
+
+new_labels = ['WT', 'Sert']
+for t, l in zip(lnplot.legend_.texts, new_labels):
+    t.set_text(l)
+
+plt.tight_layout()
+sns.despine(trim=True)
+plt.savefig(join(fig_path, 'pupil_opto_passive_examples.jpg'), dpi=300)
+plt.savefig(join(fig_path, 'pupil_opto_passive_examples.pdf'))

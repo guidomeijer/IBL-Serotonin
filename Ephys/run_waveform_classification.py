@@ -67,10 +67,12 @@ time_ax = np.linspace(0, (waveforms_df.loc[1, 'waveform'].shape[0]/30000)*1000,
                       waveforms_df.loc[1, 'waveform'].shape[0])
 
 f, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(2, 3, figsize=(6, 3.5), dpi=dpi)
+
 ax1.plot(time_ax, waveforms_df.loc[waveforms_df['type'] == 'RS', 'waveform'].to_numpy().mean(),
          color=colors['RS'], label='RS')
 ax1.plot(time_ax, waveforms_df.loc[waveforms_df['type'] == 'FS', 'waveform'].to_numpy().mean(),
          color=colors['FS'], label='FS')
+
 ax1.legend(frameon=False)
 ax1.set(ylabel='mV', xlabel='Time (ms)', xlim=[0, 3])
 
