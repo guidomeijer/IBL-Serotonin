@@ -26,7 +26,7 @@ T_BEFORE = 1  # for plotting
 T_AFTER = 2
 BIN_SIZE = 0.05
 SMOOTHING = 0.025
-PLOT_LATENCY = True
+PLOT_LATENCY = False
 OVERWRITE = True
 fig_path, save_path = paths()
 fig_path = join(fig_path, 'Ephys', 'SingleNeurons', 'LightModNeurons')
@@ -64,7 +64,7 @@ for i, pid in enumerate(np.unique(all_neurons['pid'])):
         date = modulated.loc[ind, 'date']
         neuron_id = modulated.loc[ind, 'neuron_id']
         if ~OVERWRITE & exists(join(fig_path, 'Recordings', f'{subject}_{date}',
-                                    f'{subject}_{date}_{probe}_neuron{neuron_id}_{region}.png')):
+                                    f'{subject}_{date}_{probe}_neuron{neuron_id}_{region}.jpg')):
             continue
 
         # Plot PSTH
@@ -96,9 +96,11 @@ for i, pid in enumerate(np.unique(all_neurons['pid'])):
         if not isdir(join(fig_path, 'Regions', f'{region}')):
             mkdir(join(fig_path, 'Regions', f'{region}'))
         plt.savefig(join(fig_path, 'Regions', region,
-                         f'{region}_{subject}_{date}_{probe}_neuron{neuron_id}'), dpi=600)
+                         f'{region}_{subject}_{date}_{probe}_neuron{neuron_id}.jpg'), dpi=600)
         if not isdir(join(fig_path, 'Recordings', f'{subject}_{date}')):
             mkdir(join(fig_path, 'Recordings', f'{subject}_{date}'))
         plt.savefig(join(fig_path, 'Recordings', f'{subject}_{date}',
-                         f'{subject}_{date}_{probe}_neuron{neuron_id}_{region}'), dpi=600)
+                         f'{subject}_{date}_{probe}_neuron{neuron_id}_{region}.jpg'), dpi=600)
+        plt.savefig(join(fig_path, 'PDFs',
+                         f'{region}_{subject}_{date}_{probe}_neuron{neuron_id}.pdf'))
         plt.close(p)

@@ -48,19 +48,20 @@ SUBJECT = 'ZFM-01802'
 DATE = '2021-03-11'
 PROBE = 'probe00'
 NEURON = 181
-"""
-# good example
+
+# good example complex modulation
 SUBJECT = 'ZFM-01802'
 DATE = '2021-03-11'
 PROBE = 'probe00'
 NEURON = 207
 
 """
+# Good example thalamus
 SUBJECT = 'ZFM-01802'
 DATE = '2021-03-09'
 PROBE = 'probe00'
 NEURON = 47
-"""
+
 
 T_BEFORE = 1  # for plotting
 T_AFTER = 2
@@ -140,8 +141,7 @@ peri_event_time_histogram(spikes.times, spikes.clusters, opto_train_times,
                           raster_kwargs={'color': 'black', 'lw': 0.3},
                           eventline_kwargs={'lw': 0})
 ax.set(ylim=[ax.get_ylim()[0], ax.get_ylim()[1] + ax.get_ylim()[1] * 0.2])
-ax.plot([0, 1], [ax.get_ylim()[1] - ax.get_ylim()[1] * 0.05,
-                 ax.get_ylim()[1] - ax.get_ylim()[1] * 0.05], lw=2, color='royalblue')
+ax.plot([0, 1], [0, 0], lw=2, color='royalblue')
 ax.set(ylabel='Firing rate (spks/s)', xlabel='Time (s)',
        yticks=np.linspace(0, np.round(ax.get_ylim()[1]), 3),
        ylim=[ax.get_ylim()[0], np.round(ax.get_ylim()[1])])
@@ -171,9 +171,11 @@ ax_zeta.set(ylabel='Mean-subtracted deviation', xlabel='Time (s)')
 sns.despine(trim=True, ax=ax_zeta)
 
 ax_mod.plot(dRate['vecT'], dRate['vecRate'])
-ax_mod.plot(latency, dRate['vecRate'][np.argmin(np.abs(dRate['vecT'] - latency))], 'xr', lw=2)
-ax_mod.text(0.18, 50, f'{latency*1000:.2f} ms', color='r', fontweight='bold')
-ax_mod.set(xlabel='Time (s)', ylabel='Inst. spiking rate (spks/s)', xlim=[0, 1])
+ax_mod.plot(latency, dRate['vecRate'][np.argmin(np.abs(dRate['vecT'] - latency))],
+            'x', color='red', lw=3, markersize=5)
+#ax_mod.text(0.05, 30, f'{latency*1000:.2f} ms', color='r', fontweight='bold')
+ax_mod.set(xlabel='Time (s)', ylabel='Inst. spiking rate (spks/s)',
+           xlim=[0, .4], ylim=[0, 80])
 sns.despine(trim=True, ax=ax_mod)
 
 plt.tight_layout()
