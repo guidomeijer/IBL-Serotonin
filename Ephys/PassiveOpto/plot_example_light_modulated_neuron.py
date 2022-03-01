@@ -48,7 +48,7 @@ SUBJECT = 'ZFM-01802'
 DATE = '2021-03-11'
 PROBE = 'probe00'
 NEURON = 181
-
+"""
 # good example complex modulation
 SUBJECT = 'ZFM-01802'
 DATE = '2021-03-11'
@@ -61,7 +61,7 @@ SUBJECT = 'ZFM-01802'
 DATE = '2021-03-09'
 PROBE = 'probe00'
 NEURON = 47
-
+"""
 
 T_BEFORE = 1  # for plotting
 T_AFTER = 2

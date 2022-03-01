@@ -73,7 +73,27 @@ ordered_regions_no = summary_no_df.sort_values('perc_mod', ascending=False).rese
 
 # %% Plot
 
+
 colors, dpi = figure_style()
+n_neurons = light_neurons[light_neurons['expression'] == 1].groupby(['full_region']).size()
+n_neurons = n_neurons.sort_values(ascending=False).to_frame()
+n_neurons = n_neurons.rename({0: 'n_neurons'}, axis=1)
+n_neurons = n_neurons.reset_index()
+f, ax1 = plt.subplots(1, 1, figsize=(3, 3), dpi=dpi)
+sns.barplot(x='full_region', y='n_neurons', data=n_neurons, ax=ax1, color='orange')
+ax1.plot([-1, ax1.get_xlim()[1]], [MIN_NEURONS, MIN_NEURONS], ls='--', color='grey')
+ax1.set(ylabel='5-HT modulated neurons', xlabel='')
+plt.xticks(rotation=90)
+ax1.margins(x=0)
+plt.tight_layout()
+sns.despine(trim=False)
+plt.savefig(join(fig_path, 'Ephys', 'amount_light_modulated_neurons_per_region.pdf'))
+plt.savefig(join(fig_path, 'Ephys', 'amount_light_modulated_neurons_per_region.png'), dpi=300)
+
+
+
+# %%
+
 f, (ax1, ax2) = plt.subplots(1, 2, figsize=(6, 3), dpi=dpi)
 ax1.plot([0, 0], [0, summary_df.shape[0]], color=[0.5, 0.5, 0.5], ls='--')
 sns.stripplot(x='perc_enh', y='full_region', data=summary_df, order=ordered_regions['full_region'],
