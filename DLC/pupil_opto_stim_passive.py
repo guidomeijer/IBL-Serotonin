@@ -11,6 +11,7 @@ from os.path import join
 import pandas as pd
 from dlc_functions import get_dlc_XYs, get_raw_and_smooth_pupil_dia
 import matplotlib.pyplot as plt
+from matplotlib.patches import Rectangle
 import seaborn as sns
 from serotonin_functions import paths, figure_style, load_passive_opto_times, load_subjects
 from one.api import ONE
@@ -135,15 +136,19 @@ for i, subject in enumerate(np.unique(pupil_size['subject'])):
     plt.savefig(join(fig_path, f'{subject}_pupil_opto_passive.pdf'))
 
 # %% Plot two examples
-f, ax1 = plt.subplots(1, 1, figsize=(2, 2), dpi=dpi)
+f, ax1 = plt.subplots(1, 1, figsize=(2.2, 2), dpi=dpi)
+
 lnplot = sns.lineplot(x='time', y='baseline_subtracted', estimator=np.median,
                       data=pupil_size[(pupil_size['subject'] == SERT_EXAMPLE)
                                       | (pupil_size['subject'] == WT_EXAMPLE)],
-                      hue='expression', palette=[colors['wt'], colors['sert']], ci=68, ax=ax1)
-ax1.plot([0, 1], [30, 30], color='royalblue', lw=2)
+                      hue='expression', palette=[colors['wt'], colors['sert']], ci=68, zorder=1,
+                      ax=ax1)
+ax1.add_patch(Rectangle((0, -20), 1, 80,
+                        color='royalblue', alpha=0.25, lw=0))
+#ax1.plot([0, 1], [30, 30], color='royalblue', lw=2)
 ax1.set(ylabel='Pupil size change (%)', xlabel='Time (s)',
         xticks=np.arange(-1, 3.1), ylim=[-10, 31])
-ax1.legend(frameon=False, title='', bbox_to_anchor=(0.45, 0.9), prop={'size': 6})
+ax1.legend(frameon=False, title='', bbox_to_anchor=(0.8, 0.8), prop={'size': 6})
 
 new_labels = ['WT', 'Sert']
 for t, l in zip(lnplot.legend_.texts, new_labels):

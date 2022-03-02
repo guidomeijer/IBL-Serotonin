@@ -9,6 +9,7 @@ import numpy as np
 from os.path import join, isdir, exists
 import matplotlib.pyplot as plt
 from matplotlib.ticker import FormatStrFormatter
+from matplotlib.patches import Rectangle
 import pandas as pd
 from os import mkdir
 from serotonin_functions import figure_style
@@ -70,6 +71,8 @@ for i, pid in enumerate(np.unique(all_neurons['pid'])):
         # Plot PSTH
         colors, dpi = figure_style()
         p, ax = plt.subplots(1, 1, figsize=(2, 2), dpi=dpi)
+        ax.add_patch(Rectangle((0, 0), 1, 100, color='royalblue', alpha=0.25, lw=0))
+        ax.add_patch(Rectangle((0, 0), 1, -100, color='royalblue', alpha=0.25, lw=0))
         peri_event_time_histogram(spikes.times, spikes.clusters, opto_train_times,
                                   neuron_id, t_before=T_BEFORE, t_after=T_AFTER, smoothing=SMOOTHING,
                                   bin_size=BIN_SIZE, include_raster=True, error_bars='sem', ax=ax,
@@ -77,10 +80,11 @@ for i, pid in enumerate(np.unique(all_neurons['pid'])):
                                   errbar_kwargs={'color': 'black', 'alpha': 0.3},
                                   raster_kwargs={'color': 'black', 'lw': 0.3},
                                   eventline_kwargs={'lw': 0})
-        ax.plot([0, 1], [0, 0], lw=2.5, color='royalblue')
+
         ax.set(ylabel='Firing rate (spks/s)', xlabel='Time (s)',
                yticks=[np.round(ax.get_ylim()[1])],
                ylim=[ax.get_ylim()[0], np.round(ax.get_ylim()[1])])
+        # ax.plot([0, 1], [0, 0], lw=2.5, color='royalblue')
         ax.yaxis.set_major_formatter(FormatStrFormatter('%.0f'))
 
         if PLOT_LATENCY:

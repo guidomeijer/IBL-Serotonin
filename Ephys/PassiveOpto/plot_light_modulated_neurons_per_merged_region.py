@@ -14,7 +14,6 @@ from serotonin_functions import paths, figure_style, combine_regions, load_subje
 
 # Settings
 MIN_NEURONS = 20
-MIN_PERC = 0
 
 # Paths
 fig_path, save_path = paths()
@@ -34,6 +33,8 @@ light_neurons = light_neurons.drop(index=[i for i, j in enumerate(light_neurons[
 # Add enhanced and suppressed
 light_neurons['enhanced_late'] = light_neurons['modulated'] & (light_neurons['mod_index_late'] > 0)
 light_neurons['suppressed_late'] = light_neurons['modulated'] & (light_neurons['mod_index_late'] < 0)
+light_neurons['enhanced_early'] = light_neurons['modulated'] & (light_neurons['mod_index_early'] > 0)
+light_neurons['suppressed_early'] = light_neurons['modulated'] & (light_neurons['mod_index_early'] < 0)
 
 # Add expression
 subjects = load_subjects()
@@ -47,27 +48,28 @@ summary_df['n_neurons'] = light_neurons[light_neurons['expression'] == 1].groupb
 summary_df['modulation_index'] = light_neurons[light_neurons['expression'] == 1].groupby(['full_region']).mean()['mod_index_late']
 summary_df = summary_df.reset_index()
 summary_df['perc_mod'] =  (summary_df['modulated'] / summary_df['n_neurons']) * 100
-summary_df['perc_enh'] =  (summary_df['enhanced_late'] / summary_df['n_neurons']) * 100
-summary_df['perc_supp'] =  (summary_df['suppressed_late'] / summary_df['n_neurons']) * 100
-summary_df['perc_both'] =  summary_df['perc_supp'] + summary_df['perc_enh']
+summary_df['perc_enh_late'] =  (summary_df['enhanced_late'] / summary_df['n_neurons']) * 100
+summary_df['perc_supp_late'] =  (summary_df['suppressed_late'] / summary_df['n_neurons']) * 100
+summary_df['perc_enh_early'] =  (summary_df['enhanced_early'] / summary_df['n_neurons']) * 100
+summary_df['perc_supp_early'] =  (summary_df['suppressed_early'] / summary_df['n_neurons']) * 100
 summary_df = summary_df[summary_df['n_neurons'] >= MIN_NEURONS]
-summary_df['ratio'] = summary_df['perc_enh'] - summary_df['perc_supp']
-summary_df['perc_supp'] = -summary_df['perc_supp']
-# Exclude regions without modulation
-summary_df = summary_df[(summary_df['perc_enh'] >= MIN_PERC) | (summary_df['perc_supp'] <= -MIN_PERC)]
+summary_df['perc_supp_early'] = -summary_df['perc_supp_early']
+summary_df['perc_supp_late'] = -summary_df['perc_supp_late']
 # Get ordered regions
-ordered_regions = summary_df.sort_values('perc_both', ascending=False).reset_index()
+ordered_regions = summary_df.sort_values('perc_mod', ascending=False).reset_index()
 
 summary_no_df = light_neurons[light_neurons['expression'] == 0].groupby(['full_region']).sum()
 summary_no_df['n_neurons'] = light_neurons[light_neurons['expression'] == 0].groupby(['full_region']).size()
 summary_no_df['modulation_index'] = light_neurons[light_neurons['expression'] == 0].groupby(['full_region']).mean()['mod_index_late']
 summary_no_df = summary_no_df.reset_index()
 summary_no_df['perc_mod'] =  (summary_no_df['modulated'] / summary_no_df['n_neurons']) * 100
-summary_no_df['perc_enh'] =  (summary_no_df['enhanced_late'] / summary_no_df['n_neurons']) * 100
-summary_no_df['perc_supp'] =  (summary_no_df['suppressed_late'] / summary_no_df['n_neurons']) * 100
+summary_no_df['perc_enh_late'] =  (summary_no_df['enhanced_late'] / summary_no_df['n_neurons']) * 100
+summary_no_df['perc_supp_late'] =  (summary_no_df['suppressed_late'] / summary_no_df['n_neurons']) * 100
+summary_no_df['perc_enh_early'] =  (summary_no_df['enhanced_early'] / summary_no_df['n_neurons']) * 100
+summary_no_df['perc_supp_early'] =  (summary_no_df['suppressed_early'] / summary_no_df['n_neurons']) * 100
 summary_no_df = summary_no_df[summary_no_df['n_neurons'] >= MIN_NEURONS]
-summary_no_df['ratio'] = summary_no_df['perc_enh'] - summary_no_df['perc_supp']
-summary_no_df['perc_supp'] = -summary_no_df['perc_supp']
+summary_no_df['perc_supp_early'] = -summary_no_df['perc_supp_early']
+summary_no_df['perc_supp_late'] = -summary_no_df['perc_supp_late']
 ordered_regions_no = summary_no_df.sort_values('perc_mod', ascending=False).reset_index()
 
 
@@ -94,33 +96,42 @@ plt.savefig(join(fig_path, 'Ephys', 'amount_light_modulated_neurons_per_region.p
 
 # %%
 
-f, (ax1, ax2) = plt.subplots(1, 2, figsize=(6, 3), dpi=dpi)
-ax1.plot([0, 0], [0, summary_df.shape[0]], color=[0.5, 0.5, 0.5], ls='--')
-sns.stripplot(x='perc_enh', y='full_region', data=summary_df, order=ordered_regions['full_region'],
-              color='k', alpha=0, ax=ax1)
-ax1.hlines(y=range(len(ordered_regions.index)), xmin=0, xmax=ordered_regions['perc_enh'],
+f, (ax1, ax2) = plt.subplots(1, 2, figsize=(6, 3.5), dpi=dpi)
+DIST = 0.12
+ax1.plot([0, 0], [0, summary_df.shape[0]], color=[0.5, 0.5, 0.5])
+sns.stripplot(x='perc_enh_early', y='full_region', data=summary_df, order=ordered_regions['full_region'],
+              color='k', alpha=0, ax=ax1)  # this actually doesn't plot anything
+ax1.hlines(y=np.arange(ordered_regions.shape[0])-DIST, xmin=0, xmax=ordered_regions['perc_enh_early'],
+           color=colors['enhanced'], ls='--')
+ax1.hlines(y=np.arange(ordered_regions.shape[0])-DIST, xmin=ordered_regions['perc_supp_early'], xmax=0,
+           color=colors['suppressed'], ls='--')
+ax1.plot(ordered_regions['perc_supp_early'], np.arange(ordered_regions.shape[0])-DIST, 'o',
+         color=colors['suppressed'])
+ax1.plot(ordered_regions['perc_enh_early'], np.arange(ordered_regions.shape[0])-DIST, 'o',
+         color=colors['enhanced'])
+ax1.hlines(y=np.arange(ordered_regions.shape[0])+DIST, xmin=0, xmax=ordered_regions['perc_enh_late'],
            color=colors['enhanced'])
-sns.stripplot(x='perc_supp', y='full_region', data=summary_df, order=ordered_regions['full_region'],
-              color='k', alpha=0, ax=ax1)
-ax1.hlines(y=range(len(ordered_regions.index)), xmin=ordered_regions['perc_supp'], xmax=0,
+ax1.hlines(y=np.arange(ordered_regions.shape[0])+DIST, xmin=ordered_regions['perc_supp_late'], xmax=0,
            color=colors['suppressed'])
-ax1.plot(ordered_regions['perc_supp'], range(len(ordered_regions.index)), 'o', color=colors['suppressed'])
-ax1.plot(ordered_regions['perc_enh'], range(len(ordered_regions.index)), 'o', color=colors['enhanced'])
+ax1.plot(ordered_regions['perc_supp_late'], np.arange(ordered_regions.shape[0])+DIST, 'o',
+         color=colors['suppressed'])
+ax1.plot(ordered_regions['perc_enh_late'], np.arange(ordered_regions.shape[0])+DIST, 'o',
+         color=colors['enhanced'])
 ax1.set(ylabel='', xlabel='5-HT modulated neurons (%)', xlim=[-60, 40],
         xticklabels=np.concatenate((np.arange(60, 0, -20), np.arange(0, 41, 20))))
 ax1.spines['bottom'].set_position(('data', summary_df.shape[0]))
 ax1.margins(x=0)
 
-sns.stripplot(x='perc_enh', y='full_region', data=summary_no_df, order=ordered_regions_no['full_region'],
+sns.stripplot(x='perc_enh_early', y='full_region', data=summary_no_df, order=ordered_regions_no['full_region'],
               color='k', alpha=0, ax=ax2)
-ax2.hlines(y=range(len(ordered_regions_no.index)), xmin=0, xmax=ordered_regions_no['perc_enh'],
+ax2.hlines(y=range(len(ordered_regions_no.index)), xmin=0, xmax=ordered_regions_no['perc_enh_early'],
            color=colors['enhanced'])
-ax2.plot(ordered_regions_no['perc_enh'], range(len(ordered_regions_no.index)), 'o', color=colors['enhanced'])
-sns.stripplot(x='perc_supp', y='full_region', data=summary_no_df, order=ordered_regions_no['full_region'],
+ax2.plot(ordered_regions_no['perc_enh_early'], range(len(ordered_regions_no.index)), 'o', color=colors['enhanced'])
+sns.stripplot(x='perc_supp_early', y='full_region', data=summary_no_df, order=ordered_regions_no['full_region'],
               color='k', alpha=0, ax=ax2)
-ax2.hlines(y=range(len(ordered_regions_no.index)), xmin=ordered_regions_no['perc_supp'], xmax=0,
+ax2.hlines(y=range(len(ordered_regions_no.index)), xmin=ordered_regions_no['perc_supp_early'], xmax=0,
            color=colors['suppressed'])
-ax2.plot(ordered_regions_no['perc_supp'], range(len(ordered_regions_no.index)), 'o', color=colors['suppressed'])
+ax2.plot(ordered_regions_no['perc_supp_early'], range(len(ordered_regions_no.index)), 'o', color=colors['suppressed'])
 ax2.plot([0, 0], ax2.get_ylim(), color=[0.5, 0.5, 0.5], ls='--')
 ax2.set(ylabel='', xlabel='5-HT modulated neurons (%)', xlim=[-60, 40],
         xticklabels=np.concatenate((np.arange(60, 0, -20), np.arange(0, 41, 20))))

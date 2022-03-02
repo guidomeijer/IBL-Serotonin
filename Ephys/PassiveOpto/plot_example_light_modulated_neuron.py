@@ -16,6 +16,7 @@ from os import mkdir
 from sklearn.metrics import roc_curve
 from brainbox.population.decode import get_spike_counts_in_bins
 from brainbox.metrics.single_units import spike_sorting_metrics
+from matplotlib.patches import Rectangle
 from serotonin_functions import figure_style
 from brainbox.io.one import SpikeSortingLoader
 from brainbox.singlecell import calculate_peths
@@ -133,6 +134,8 @@ print(f'ZETA p-value: {p_value}')
 # %% Plot PSTH
 colors, dpi = figure_style()
 p, ((ax, ax_means, ax_roc), (ax_lin, ax_zeta, ax_mod)) = plt.subplots(2, 3, figsize=(6, 4), dpi=dpi)
+ax.add_patch(Rectangle((0, 0), 1, 100, color='royalblue', alpha=0.25, lw=0))
+ax.add_patch(Rectangle((0, 0), 1, -100, color='royalblue', alpha=0.25, lw=0))
 peri_event_time_histogram(spikes.times, spikes.clusters, opto_train_times,
                           NEURON, t_before=T_BEFORE, t_after=T_AFTER, bin_size=BIN_SIZE,
                           smoothing=SMOOTHING,  include_raster=True, error_bars='sem', ax=ax,
@@ -141,7 +144,7 @@ peri_event_time_histogram(spikes.times, spikes.clusters, opto_train_times,
                           raster_kwargs={'color': 'black', 'lw': 0.3},
                           eventline_kwargs={'lw': 0})
 ax.set(ylim=[ax.get_ylim()[0], ax.get_ylim()[1] + ax.get_ylim()[1] * 0.2])
-ax.plot([0, 1], [0, 0], lw=2, color='royalblue')
+#ax.plot([0, 1], [0, 0], lw=2, color='royalblue')
 ax.set(ylabel='Firing rate (spks/s)', xlabel='Time (s)',
        yticks=np.linspace(0, np.round(ax.get_ylim()[1]), 3),
        ylim=[ax.get_ylim()[0], np.round(ax.get_ylim()[1])])
