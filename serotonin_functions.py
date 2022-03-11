@@ -19,7 +19,6 @@ import statsmodels.api as sm
 from brainbox.core import TimeSeries
 from brainbox.processing import sync
 from sklearn.model_selection import KFold
-from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from os.path import join, realpath, dirname
 from glob import glob
 from datetime import datetime

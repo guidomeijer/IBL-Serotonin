@@ -8,8 +8,9 @@ By: Guido Meijer
 import numpy as np
 from os.path import join, isfile
 import brainbox.io.one as bbone
-from serotonin_functions import (paths, remap, query_ephys_sessions, load_passive_opto_times,
-                                 load_lfp, remap)
+import matplotlib.pyplot as plt
+from serotonin_functions import (paths, query_ephys_sessions, load_passive_opto_times, load_lfp,
+                                 figure_style)
 from one.api import ONE
 from ibllib.atlas import AllenAtlas
 ba = AllenAtlas()
@@ -18,20 +19,19 @@ one = ONE()
 # Settings
 PLOT = True
 OVERWRITE = True
-_, fig_path, save_path = paths()
-fig_path = join(fig_path, 'Ephys', 'LFP')
+FS = 2500  # sampling freq
+fig_path, save_path = paths()
+fig_path = join(fig_path, 'Ephys', 'LFP', 'ArtifactRemoval')
 save_path = join(save_path, 'LFP')
 
 # Query sessions
-eids, _, subjects = query_ephys_sessions(return_subjects=True, one=one)
+rec = query_ephys_sessions(one=one)
 
-for i, eid in enumerate(eids):
+for i in rec.index.values:
 
     # Get session details
-    ses_details = one.get_details(eid)
-    subject = ses_details['subject']
-    date = ses_details['start_time'][:10]
-
+    pid, eid, probe = rec.loc[i, 'pid'], rec.loc[i, 'eid'], rec.loc[i, 'probe']
+    subject, date = rec.loc[i, 'subject'], rec.loc[i, 'date']
     print(f'Starting {subject}, {date}')
 
     # Load in laser pulse times
@@ -62,28 +62,40 @@ for i, eid in enumerate(eids):
 
         # Remove light artifacts
         print('Remove light artifacts from LFP trace')
-        for of, p_time in enumerate(np.sort(np.concatenate((opto_on_times, opto_off_times)))):
+        # Get average shape of light artifact
+        for of, p_time in enumerate(opto_on_times):
             pulse_ind = np.argmin(np.abs(time - p_time))
-            lfp = np.delete(lfp, np.arange(pulse_ind-5, pulse_ind+5), axis=1)
-            time = np.delete(time, np.arange(pulse_ind-5, pulse_ind+5))
+            if of == 0:
+                lfp_pulse = lfp[:, pulse_ind : pulse_ind + 30].copy()
+            else:
+                #lfp_pulse = np.dstack((lfp_pulse, lfp[:, pulse_ind : pulse_ind + 30]))
+                lfp_pulse += lfp[:, pulse_ind : pulse_ind + 30]
+        lfp_pulse = lfp_pulse / of
 
+        # Remove average light artifact shape from each pulse
+        lfp_cleaned = lfp.copy()
+        for of, p_time in enumerate(opto_on_times):
+            pulse_ind = np.argmin(np.abs(time - p_time))
+            lfp_cleaned[:, pulse_ind : pulse_ind + 30] = (lfp_cleaned[:, pulse_ind : pulse_ind + 30]
+                                                          - lfp_pulse)
 
+        # Plot cleaning output
+        colors, dpi = figure_style()
+        f, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(8, 4), dpi=dpi)
+        ax1.plot(lfp_pulse[10,:])
+        ax1.set(title='Mean artifact')
+        ax1.axis('off')
+        ax2.plot(time[FS*10:int(FS*10.5)], lfp[10, FS*10:int(FS*10.5)])
+        ax2.set(title='Original')
+        ax2.axis('off')
+        ax3.plot(time[FS*9:FS*11], lfp_cleaned[10, FS*9:FS*11])
+        ax3.set(title='Artifacts removed')
+        plt.axis('off')
+        plt.savefig(join(fig_path, f'{subject}_{date}_{probe}.jpg'), dpi=300)
+        plt.close(f)
 
-
-
-
-        for ch in range(lfp.shape[0]):
-            if np.mod(ch, 24) == 0:
-                print(f'Channel {ch+1} of {lfp.shape[0]}..')
-            for of, p_time in enumerate(np.sort(np.concatenate((opto_on_times, opto_off_times)))):
-                pulse_ind = np.argmin(np.abs(time - p_time))
-                asd
-
-                lfp_copy[ch, pulse_ind+5:] = lfp[ch, pulse_ind+5:] + (lfp[ch, pulse_ind-5] - lfp[ch, pulse_ind+5])
-                lfp_copy[ch, :] = np.delete(lfp_copy[ch, :], np.arange(pulse_ind-5, pulse_ind+5))
-                time = np.delete(time, np.arange(pulse_ind-5, pulse_ind+5))
-
-        np.save(join(save_path, f'{subject}_{date}_{probe}_cleaned_lfp'), lfp)
+        # Save results
+        np.save(join(save_path, f'{subject}_{date}_{probe}_cleaned_lfp'), lfp_cleaned)
         np.save(join(save_path, f'{subject}_{date}_{probe}_timestamps'), time)
 
 

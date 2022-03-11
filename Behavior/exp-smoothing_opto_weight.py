@@ -14,8 +14,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import torch
 from matplotlib.patches import Rectangle
-from models.expSmoothing_stimside_SE import expSmoothing_stimside_SE as exp_stimside
-from models.expSmoothing_prevAction_SE import expSmoothing_prevAction_SE as exp_prev_action
+from models.expSmoothing_prevAction_2lr_2weights import expSmoothing_prevAction_2lr_2weights as exp_prev_action
 from serotonin_functions import (paths, behavioral_criterion, load_exp_smoothing_trials, figure_style,
                                  query_opto_sessions, load_subjects)
 from one.api import ONE
@@ -26,7 +25,7 @@ PRE_TRIALS = 5
 POST_TRIALS = 20
 PLOT_EXAMPLES = True
 REMOVE_OLD_FIT = False
-POSTERIOR = 'all'
+POSTERIOR = 'posterior_mean'
 STIM = 'block'
 fig_path, save_path = paths()
 fig_path = join(fig_path, 'Behavior', 'Models')
@@ -58,6 +57,7 @@ for i, nickname in enumerate(subjects['subject']):
                             actions, stimuli, stim_side, torch.tensor(stim_trials))
     model.load_or_train(nb_steps=2000, remove_old=REMOVE_OLD_FIT)
     param_prevaction = model.get_parameters(parameter_type=POSTERIOR)
+    asd
     priors_prevaction = model.compute_signal(signal='prior', act=actions, stim=stimuli, side=stim_side)['prior']
 
     # Add to df
