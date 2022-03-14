@@ -8,7 +8,7 @@ By: Guido Meijer
 import numpy as np
 from os.path import join
 import pandas as pd
-from brainbox.task.closed_loop import roc_single_event
+from scipy.stats import pearsonr
 from sklearn.cross_decomposition import CCA
 from brainbox.metrics.single_units import spike_sorting_metrics
 from brainbox.population.decode import get_spike_counts_in_bins
@@ -23,8 +23,11 @@ cca = CCA(n_components=1)
 
 # Settings
 NEURON_QC = True
-MIN_NEURONS = 10  # per region
-PULSE_TIME = 1
+MIN_NEURONS = 5  # per region
+N_SPONT_WIN = 500  # number of time windows in spontaneous activity
+WIN_SIZE = 0.2  # window size in seconds
+EARLY_WIN_START = 0
+LATE_WIN_START = 0.8
 fig_path, save_path = paths()
 fig_path = join(fig_path, 'Ephys', 'CCA')
 
@@ -72,32 +75,66 @@ for i, eid in enumerate(np.unique(rec['eid'])):
             clusters_pass = np.unique(spikes.clusters)
         clusters_pass = clusters_pass[~np.isin(clusters_pass, artifact_neurons.loc[
             artifact_neurons['pid'] == pid, 'neuron_id'].values)]
-        spikes[probe].times = spikes[probe].times[np.isin(spikes[probe].clusters, clusters_pass)]
-        spikes[probe].clusters = spikes[probe].clusters[np.isin(spikes[probe].clusters, clusters_pass)]
         clusters[probe]['region'] = remap(clusters[probe]['atlas_id'], combine=True)
 
 
     # Get time intervals for opto and spontaneous activity
     np.random.seed(42)
     spont_on_times = np.sort(np.random.uniform(opto_train_times[0] - (6 * 60), opto_train_times[0],
-                                               size=opto_train_times.size))
-    spont_times = np.column_stack((spont_on_times, spont_on_times + PULSE_TIME))
-    opto_times = np.column_stack((opto_train_times, opto_train_times + PULSE_TIME))
+                                               size=N_SPONT_WIN))
+    spont_times = np.column_stack((spont_on_times, spont_on_times + WIN_SIZE))
+    early_times = np.column_stack((opto_train_times + EARLY_WIN_START,
+                                   opto_train_times + EARLY_WIN_START + WIN_SIZE))
+    late_times = np.column_stack((opto_train_times + LATE_WIN_START,
+                                  opto_train_times + LATE_WIN_START + WIN_SIZE))
 
     # Create population activity arrays for all regions
-    pop_act = dict()
+    pop_spont, pop_early, pop_late = dict(), dict(), dict()
     for probe in spikes.keys():
         for region in np.unique(clusters[probe]['region']):
 
              # Select spikes and clusters in this brain region
-             clusters_in_region = clusters[probe]['region'] == region
-             spks_region = spikes[probe].times[np.isin(spikes[probe].clusters, clusters_in_region)]
-             clus_region = spikes[probe].clusters[np.isin(spikes[probe].clusters, clusters_in_region)]
-             #if len(clusters_in_region) < MIN_NEURONS:
-             #    continue
+             clusters_in_region = np.where(clusters[probe]['region'] == region)[0]
+             spks_region = spikes[probe].times[np.isin(spikes[probe].clusters, clusters_in_region)
+                                               & np.isin(spikes[probe].clusters, clusters_pass)]
+             clus_region = spikes[probe].clusters[np.isin(spikes[probe].clusters, clusters_in_region)
+                                                  & np.isin(spikes[probe].clusters, clusters_pass)]
+             if (len(np.unique(clus_region)) < MIN_NEURONS) | (region == 'root'):
+                 pass
+             else:
+                 pop_spont[region], _ = get_spike_counts_in_bins(spks_region, clus_region, spont_times)
+                 pop_spont[region] = pop_spont[region].T
+                 pop_early[region], _ = get_spike_counts_in_bins(spks_region, clus_region, early_times)
+                 pop_early[region] = pop_early[region].T
+                 pop_late[region], _ = get_spike_counts_in_bins(spks_region, clus_region, late_times)
+                 pop_late[region] = pop_late[region].T
 
-             pop_act[region], _ = get_spike_counts_in_bins(spks_region, clus_region, spont_times)
-             pop_act[region] = pop_act.T
+    # Perform CCA per region pair
+    for region_1 in pop_spont.keys():
+        for region_2 in pop_spont.keys():
+            if region_1 == region_2:
+                pass
+
+            # Calculate population correlation during spontaneous activity
+            cca.fit(pop_spont[region_1], pop_spont[region_2])
+            spont_x, spont_y = cca.transform(pop_spont[region_1], pop_spont[region_2])
+            r_spont, _ = pearsonr(np.squeeze(spont_x), np.squeeze(spont_y))
+
+            # Use fitted CCA axis to get population correlation during stimulus windows
+            early_x, early_y = cca.transform(pop_early[region_1], pop_early[region_2])
+            r_early, _ = pearsonr(np.squeeze(early_x), np.squeeze(early_y))
+            late_x, late_y = cca.transform(pop_late[region_1], pop_late[region_2])
+            r_late, _ = pearsonr(np.squeeze(late_x), np.squeeze(late_y))
+
+            # Calculate population correlation by fitting to stimulus windows
+            cca.fit(pop_early[region_1], pop_early[region_2])
+            early_x, early_y = cca.transform(pop_early[region_1], pop_early[region_2])
+            r_early_fit, _ = pearsonr(np.squeeze(early_x), np.squeeze(early_y))
+            cca.fit(pop_late[region_1], pop_late[region_2])
+            late_x, late_y = cca.transform(pop_late[region_1], pop_late[region_2])
+            r_late_fit, _ = pearsonr(np.squeeze(late_x), np.squeeze(late_y))
+
+
 
 
 
