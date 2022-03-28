@@ -10,6 +10,7 @@ from os.path import join
 import pandas as pd
 from scipy.stats import pearsonr
 from sklearn.cross_decomposition import CCA
+from sklearn.model_selection import train_test_split
 from brainbox.metrics.single_units import spike_sorting_metrics
 from brainbox.population.decode import get_spike_counts_in_bins
 from brainbox.io.one import SpikeSortingLoader
@@ -25,9 +26,9 @@ cca = CCA(n_components=1)
 NEURON_QC = True
 MIN_NEURONS = 5  # per region
 N_SPONT_WIN = 500  # number of time windows in spontaneous activity
-WIN_SIZE = 0.2  # window size in seconds
+WIN_SIZE = 0.1  # window size in seconds
 EARLY_WIN_START = 0
-LATE_WIN_START = 0.8
+LATE_WIN_START = 0.9
 fig_path, save_path = paths()
 fig_path = join(fig_path, 'Ephys', 'CCA')
 
@@ -37,6 +38,7 @@ rec = query_ephys_sessions(one=one)
 # Load in artifact neurons
 artifact_neurons = get_artifact_neurons()
 
+cca_df = pd.DataFrame()
 for i, eid in enumerate(np.unique(rec['eid'])):
 
     # Get session details
@@ -77,7 +79,6 @@ for i, eid in enumerate(np.unique(rec['eid'])):
             artifact_neurons['pid'] == pid, 'neuron_id'].values)]
         clusters[probe]['region'] = remap(clusters[probe]['atlas_id'], combine=True)
 
-
     # Get time intervals for opto and spontaneous activity
     np.random.seed(42)
     spont_on_times = np.sort(np.random.uniform(opto_train_times[0] - (6 * 60), opto_train_times[0],
@@ -99,9 +100,7 @@ for i, eid in enumerate(np.unique(rec['eid'])):
                                                & np.isin(spikes[probe].clusters, clusters_pass)]
              clus_region = spikes[probe].clusters[np.isin(spikes[probe].clusters, clusters_in_region)
                                                   & np.isin(spikes[probe].clusters, clusters_pass)]
-             if (len(np.unique(clus_region)) < MIN_NEURONS) | (region == 'root'):
-                 pass
-             else:
+             if (len(np.unique(clus_region)) >= MIN_NEURONS) & (region != 'root'):
                  pop_spont[region], _ = get_spike_counts_in_bins(spks_region, clus_region, spont_times)
                  pop_spont[region] = pop_spont[region].T
                  pop_early[region], _ = get_spike_counts_in_bins(spks_region, clus_region, early_times)
@@ -113,11 +112,13 @@ for i, eid in enumerate(np.unique(rec['eid'])):
     for region_1 in pop_spont.keys():
         for region_2 in pop_spont.keys():
             if region_1 == region_2:
-                pass
+                continue
 
             # Calculate population correlation during spontaneous activity
-            cca.fit(pop_spont[region_1], pop_spont[region_2])
-            spont_x, spont_y = cca.transform(pop_spont[region_1], pop_spont[region_2])
+            x_train, x_test, y_train, y_test = train_test_split(
+                pop_spont[region_1], pop_spont[region_2], test_size=0.5, random_state=42, shuffle=True)
+            cca.fit(x_train, y_train)
+            spont_x, spont_y = cca.transform(x_test, y_test)
             r_spont, _ = pearsonr(np.squeeze(spont_x), np.squeeze(spont_y))
 
             # Use fitted CCA axis to get population correlation during stimulus windows
@@ -126,15 +127,12 @@ for i, eid in enumerate(np.unique(rec['eid'])):
             late_x, late_y = cca.transform(pop_late[region_1], pop_late[region_2])
             r_late, _ = pearsonr(np.squeeze(late_x), np.squeeze(late_y))
 
-            # Calculate population correlation by fitting to stimulus windows
-            cca.fit(pop_early[region_1], pop_early[region_2])
-            early_x, early_y = cca.transform(pop_early[region_1], pop_early[region_2])
-            r_early_fit, _ = pearsonr(np.squeeze(early_x), np.squeeze(early_y))
-            cca.fit(pop_late[region_1], pop_late[region_2])
-            late_x, late_y = cca.transform(pop_late[region_1], pop_late[region_2])
-            r_late_fit, _ = pearsonr(np.squeeze(late_x), np.squeeze(late_y))
+            cca_df = pd.concat((cca_df, pd.DataFrame(index=[cca_df.shape[0]+1], data={
+                'subject': subject, 'date': date, 'eid': eid, 'region_1': region_1, 'region_2': region_2,
+                'r_spont': r_spont, 'r_early': r_early, 'r_late': r_late})))
 
-
+# Save results
+cca_df.to_csv(join(save_path, 'cca_results.csv'))
 
 
 

@@ -54,14 +54,14 @@ for i, nickname in enumerate(subjects['subject']):
 
     # Fit model
     model = exp_prev_action('./model_fit_results/', session_uuids, '%s_%s' % (nickname, STIM),
-                            actions, stimuli, stim_side, torch.tensor(stim_trials))
+                            actions, stimuli, stim_side, torch.from_numpy(stim_trials).to(torch.long))
     model.load_or_train(nb_steps=2000, remove_old=REMOVE_OLD_FIT)
     param_prevaction = model.get_parameters(parameter_type=POSTERIOR)
-    asd
     priors_prevaction = model.compute_signal(signal='prior', act=actions, stim=stimuli, side=stim_side)['prior']
 
     # Add to df
     results_df = results_df.append(pd.DataFrame(data={'tau_pa': [1/param_prevaction[0], 1/param_prevaction[1]],
+                                                      'weight_pa': [param_prevaction[2], param_prevaction[3]],
                                                       'opto_stim': ['no stim', 'stim'],
                                                       'sert-cre': subjects.loc[i, 'sert-cre'],
                                                       'subject': nickname}))
@@ -98,7 +98,7 @@ for i, nickname in enumerate(subjects['subject']):
                 title='Tau stim: %.2f, Tau no stim: %.2f' % (1/param_prevaction[1], 1/param_prevaction[0]))
         sns.despine(trim=True)
         plt.tight_layout()
-        plt.savefig(join(fig_path, '%s_model_prevaction' % nickname), dpi=300)
+        plt.savefig(join(fig_path, '%s_model_prevaction_weight' % nickname), dpi=300)
 
         # Plot priors of example session
         these_priors = priors_prevaction[0][:np.where(stim_side[0] == 0)[0][0] - 1]
@@ -120,7 +120,7 @@ for i, nickname in enumerate(subjects['subject']):
         ax1.set(ylabel='Prior', xlabel='Trials', title=f'{nickname}')
         sns.despine(trim=True)
         plt.tight_layout()
-        plt.savefig(join(fig_path, '%s_prevaction_example_session' % nickname), dpi=300)
+        plt.savefig(join(fig_path, '%s_prevaction_weight_example_session' % nickname), dpi=300)
 
 
 # %% Plot
@@ -138,8 +138,20 @@ handles, labels = ax1.get_legend_handles_labels()
 labels = ['', 'WT', 'SERT']
 ax1.legend(handles[:3], labels[:3], frameon=False, prop={'size': 7}, loc='center left', bbox_to_anchor=(1, .5))
 ax1.set(xlabel='', ylabel='Length of integration window (tau)', title='Previous actions',
-        xticks=[1, 2], xticklabels=['No stim', 'Stim'], ylim=[0, 15])
+        xticks=[1, 2], xticklabels=['No stim', 'Stim'], ylim=[0, 5])
+
+
+for i, subject in enumerate(results_df['subject']):
+    ax2.plot([1, 2], results_df.loc[(results_df['subject'] == subject), 'weight_pa'],
+             color = colors[results_df.loc[results_df['subject'] == subject, 'sert-cre'].unique()[0]],
+             marker='o', ms=2)
+
+handles, labels = ax1.get_legend_handles_labels()
+labels = ['', 'WT', 'SERT']
+ax2.legend(handles[:3], labels[:3], frameon=False, prop={'size': 7}, loc='center left', bbox_to_anchor=(1, .5))
+ax2.set(xlabel='', ylabel='Weight of the prior', xticks=[1, 2], xticklabels=['No stim', 'Stim'], ylim=[0.2, 0.8])
+
 
 sns.despine(trim=True)
 plt.tight_layout()
-plt.savefig(join(fig_path, f'exp-smoothing_opto_{STIM}'), dpi=300)
+plt.savefig(join(fig_path, f'exp-smoothing_opto_weight_{STIM}'), dpi=300)

@@ -18,10 +18,10 @@ from one.api import ONE
 one = ONE()
 
 # Settings
-PLOT_SINGLE_ANIMALS = False
-_, fig_path, _ = paths()
+PLOT_SINGLE_ANIMALS = True
+fig_path, _ = paths()
 fig_path = join(fig_path, 'Behavior', 'Psychometrics')
-subjects = load_subjects()
+subjects = load_subjects(behavior=True)
 
 bias_df, lapse_df, psy_df = pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
 for i, nickname in enumerate(subjects['subject']):
@@ -30,7 +30,7 @@ for i, nickname in enumerate(subjects['subject']):
     eids = query_opto_sessions(nickname, one=one)
 
     # Exclude the first opto sessions
-    eids = eids[:-1]
+    #eids = eids[:-1]
 
     # Apply behavioral criterion
     eids = behavioral_criterion(eids, one=one)
@@ -42,19 +42,16 @@ for i, nickname in enumerate(subjects['subject']):
     ses_count = 0
     for j, eid in enumerate(eids):
         try:
-
             if subjects.loc[i, 'sert-cre'] == 1:
                 these_trials = load_trials(eid, laser_stimulation=True, one=one)
             else:
-                these_trials = load_trials(eid, laser_stimulation=True, patch_old_opto=False, one=one)
-            """
-            these_trials = load_trials(eid, laser_stimulation=True, one=one)
-            """
-            these_trials['session'] = ses_count
-            trials = trials.append(these_trials, ignore_index=True)
-            ses_count = ses_count + 1
+                these_trials = load_trials(eid, laser_stimulation=True, patch_old_opto=True, one=one)
         except:
-            pass
+            continue
+        these_trials['session'] = ses_count
+        trials = pd.concat((trials, these_trials), ignore_index=True)
+        ses_count = ses_count + 1
+
     if len(trials) == 0:
         continue
 
