@@ -68,24 +68,34 @@ for i, nickname in enumerate(subjects['subject']):
     """
     trials_slice = all_trials.loc[~all_trials['past_choices_opto'].isnull()]
     log_reg.fit(trials_slice['past_choices_opto'].values.reshape(-1, 1), trials_slice['choice'].values)
+    score_opto = log_reg.score(trials_slice['past_choices'].values.reshape(-1, 1), trials_slice['choice'].values)
     coef_opto = log_reg.coef_[0][0]
 
     trials_slice = all_trials.loc[~all_trials['past_choices_no_opto'].isnull()]
     log_reg.fit(trials_slice['past_choices_no_opto'].values.reshape(-1, 1), trials_slice['choice'].values)
+    score_no_opto = log_reg.score(trials_slice['past_choices'].values.reshape(-1, 1), trials_slice['choice'].values)
     coef_no_opto = log_reg.coef_[0][0]
     """
+
+    trials_slice = all_trials.loc[~all_trials['past_choices'].isnull()]
+    log_reg.fit(trials_slice['past_choices'].values.reshape(-1, 1), trials_slice['choice'].values)
+    coef_all = log_reg.coef_[0][0]
+    score_all = log_reg.score(trials_slice['past_choices'].values.reshape(-1, 1), trials_slice['choice'].values)
 
     trials_slice = all_trials.loc[(all_trials['laser_stimulation'] == 1) & (~all_trials['past_choices'].isnull())]
     log_reg.fit(trials_slice['past_choices'].values.reshape(-1, 1), trials_slice['choice'].values)
     coef_opto = log_reg.coef_[0][0]
+    score_opto = log_reg.score(trials_slice['past_choices'].values.reshape(-1, 1), trials_slice['choice'].values)
 
     trials_slice = all_trials.loc[(all_trials['laser_stimulation'] == 0) & (~all_trials['past_choices'].isnull())]
     log_reg.fit(trials_slice['past_choices'].values.reshape(-1, 1), trials_slice['choice'].values)
     coef_no_opto = log_reg.coef_[0][0]
+    score_no_opto = log_reg.score(trials_slice['past_choices'].values.reshape(-1, 1), trials_slice['choice'].values)
 
     results_df = pd.concat((results_df, pd.DataFrame(data={
         'subject': nickname, 'sert-cre': subjects.loc[i, 'sert-cre'],
-        'coef': [coef_opto, coef_no_opto], 'opto': [1, 0]})), ignore_index=True)
+        'coef': [coef_opto, coef_no_opto], 'score': [score_opto, score_no_opto],
+        'opto': [1, 0]})), ignore_index=True)
 
 # %% Plot
 
@@ -103,7 +113,13 @@ sns.lineplot(x='opto', y='coef', data=plot_df, hue='sert-cre', estimator=None, u
 ax1.legend(frameon=False)
 ax1.set(xlabel='', xticks=[0, 1], xticklabels=['No stim', 'Stim'], ylabel='Coefficient')
 
+sns.lineplot(x='opto', y='score', data=plot_df, hue='sert-cre', estimator=None, units='subject',
+             palette=[colors['sert'], colors['wt']], legend='brief', dashes=False,
+             markers=['o']*int(plot_df.shape[0]/2), ax=ax2)
+ax2.legend(frameon=False)
+ax2.set(xlabel='', xticks=[0, 1], xticklabels=['No stim', 'Stim'], ylabel='Coefficient')
+
 plt.tight_layout()
 sns.despine(trim=True)
-plt.savefig(join(fig_path, 'log_reg_coef_opto'), dpi=300)
+plt.savefig(join(fig_path, 'log_reg_opto'), dpi=300)
 
