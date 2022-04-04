@@ -9,18 +9,18 @@ import numpy as np
 from os.path import join
 import pandas as pd
 from scipy.stats import pearsonr
+from scipy.signal import convolve, gaussian
 from sklearn.cross_decomposition import CCA
 from sklearn.decomposition import PCA
 from sklearn.model_selection import train_test_split
 from brainbox.metrics.single_units import spike_sorting_metrics
 from brainbox.population.decode import get_spike_counts_in_bins
-from brainbox.singlecell import calculate_peths
 from brainbox.io.one import SpikeSortingLoader
 from scipy.stats import mannwhitneyu, sem
 import matplotlib.pyplot as plt
 import seaborn as sns
 from serotonin_functions import (paths, remap, query_ephys_sessions, load_passive_opto_times,
-                                 get_artifact_neurons, figure_style)
+                                 get_artifact_neurons, figure_style, calculate_peths)
 from one.api import ONE
 from ibllib.atlas import AllenAtlas
 ba = AllenAtlas()
@@ -36,17 +36,24 @@ N_PERMUT = 500  # number of times to get spontaneous population correlation for 
 WIN_SIZE = 0.2  # window size in seconds
 PRE_TIME = 1  # time before stim onset in s
 POST_TIME = 2  # time after stim onset in s
-SMOOTHING = 0  # smoothing of psth
+SMOOTHING = 0.1  # smoothing of psth
 MIN_FR = 0.5  # minimum firing rate over the whole recording
 N_PC = 10  # number of PCs to use
 TEST_FRAC = 0.5  # fraction to use for testing in cross-validation
 N_BOOTSTRAP = 50  # amount of times to bootstrap cross-validation
 PLOT_IND = True  # plot individual region pairs
 
+# Paths
 fig_path, save_path = paths()
 fig_path = join(fig_path, 'Ephys', 'CCA')
+
+# Initialize some things
 np.random.seed(42)  # fix random seed for reproducibility
 n_time_bins = int((PRE_TIME + POST_TIME) / WIN_SIZE)
+if SMOOTHING > 0:
+    w = n_time_bins - 1 if n_time_bins % 2 == 0 else n_time_bins
+    window = gaussian(w, std=SMOOTHING / WIN_SIZE)
+    window /= np.sum(window)
 
 # Query sessions
 rec = query_ephys_sessions(one=one)
@@ -117,12 +124,12 @@ for i, eid in enumerate(np.unique(rec['eid'])):
                  print(f'Loading population activity for {region}')
 
                  # Get binned spikes for SPONTANEOUS activity and subtract mean
-                 pop_spont_pca = np.empty([N_PERMUT, N_SPONT, N_PC, n_time_bins])
+                 pop_spont_pca = np.empty([N_PERMUT, opto_train_times.shape[0], N_PC, n_time_bins])
                  for jj in range(N_PERMUT):
 
                      # Get random times for spontaneous activity
                      spont_on_times = np.sort(np.random.uniform(
-                         opto_train_times[0] - (6 * 60), opto_train_times[0], size=N_SPONT))
+                         opto_train_times[0] - (6 * 60), opto_train_times[0], size=opto_train_times.shape[0]))
 
                      # Get PSTH and binned spikes for SPONTANEOUS activity
                      psth_spont, binned_spks_spont = calculate_peths(
@@ -134,9 +141,9 @@ for i, eid in enumerate(np.unique(rec['eid'])):
                          binned_spks_spont[tt, :, :] = binned_spks_spont[tt, :, :] - psth_spont['means']
 
                      # Perform PCA
-                     pca_spont[region] = np.empty([binned_spks_spont.shape[0], N_PC, binned_spks_spont.shape[2]])
                      for tb in range(binned_spks_spont.shape[2]):
                          pop_spont_pca[jj, :, :, tb] = pca.fit_transform(binned_spks_spont[:, :, tb])
+                 pca_spont[region] = pop_spont_pca
 
                  # Get PSTH and binned spikes for OPTO activity
                  psth_opto, binned_spks_opto = calculate_peths(
@@ -148,7 +155,6 @@ for i, eid in enumerate(np.unique(rec['eid'])):
                      binned_spks_opto[tt, :, :] = binned_spks_opto[tt, :, :] - psth_opto['means']
 
                  # Perform PCA
-                 pca_spont[region] = pop_spont_pca
                  pca_opto[region] = np.empty([binned_spks_opto.shape[0], N_PC, binned_spks_opto.shape[2]])
                  for tb in range(binned_spks_opto.shape[2]):
                      pca_opto[region][:, :, tb] = pca.fit_transform(binned_spks_opto[:, :, tb])
@@ -156,8 +162,8 @@ for i, eid in enumerate(np.unique(rec['eid'])):
     # Perform CCA per region pair
     print('Starting CCA per region pair')
     all_cca_df = pd.DataFrame()
-    for region_1 in pca_spont.keys():
-        for region_2 in pca_spont.keys():
+    for r1, region_1 in enumerate(pca_spont.keys()):
+        for r2, region_2 in enumerate(list(pca_spont.keys())[r1:]):
             if region_1 == region_2:
                 continue
             print(f'Calculating {region_1}-{region_2}')
@@ -196,24 +202,36 @@ for i, eid in enumerate(np.unique(rec['eid'])):
             # for SPONTANEOUS activity
             r_spont = np.empty([N_PERMUT, n_time_bins])
             r_opto = np.empty(n_time_bins)
-            for jj in range(N_PERMUT):
+            for ij in range(N_PERMUT):
                 for tb in range(n_time_bins):
-                    spont_x, spont_y = cca.fit_transform(pca_spont[region_1][jj, :, :, tb],
-                                                         pca_spont[region_2][jj, :, :, tb])
-                    r_spont[jj, tb], _ = pearsonr(np.squeeze(spont_x), np.squeeze(spont_y))
+                    cca = CCA(n_components=1)
+                    spont_x, spont_y = cca.fit_transform(pca_spont[region_1][ij, :, :, tb],
+                                                         pca_spont[region_2][ij, :, :, tb])
+                    r_spont[ij, tb], _ = pearsonr(np.squeeze(spont_x), np.squeeze(spont_y))
 
             # For OPTO activity
             for tb in range(n_time_bins):
+                cca = CCA(n_components=1)
                 opto_x, opto_y = cca.fit_transform(pca_opto[region_1][:, :, tb],
                                                    pca_opto[region_2][:, :, tb])
                 r_opto[tb], _ = pearsonr(np.squeeze(opto_x), np.squeeze(opto_y))
+
+            # Add to dataframe
+            cca_df = pd.concat((cca_df, pd.DataFrame(data={
+                'subject': subject, 'date': date, 'eid': eid, 'region_1': region_1, 'region_2': region_2,
+                'region_pair': f'{region_1}-{region_2}', 'r_opto': r_opto,
+                'r_spont_05': np.quantile(r_spont, 0.05, axis=0),
+                'r_spont_95': np.quantile(r_spont, 0.95, axis=0),
+                'time': psth_opto['tscale']})), ignore_index=True)
 
             # Plot this region pair
             if PLOT_IND:
                 colors, dpi = figure_style()
                 f, ax1 = plt.subplots(1, 1, figsize=(3, 3), dpi=dpi)
-                ax1.fill_between(psth_opto['tscale'], np.mean(r_spont, axis=0)-np.std(r_spont)/2,
-                                 np.mean(r_spont, axis=0)+np.std(r_spont)/2, color='grey', alpha=0.2)
+                #ax1.fill_between(psth_opto['tscale'], np.mean(r_spont, axis=0)-np.std(r_spont)/2,
+                #                 np.mean(r_spont, axis=0)+np.std(r_spont)/2, color='grey', alpha=0.2)
+                ax1.fill_between(psth_opto['tscale'], np.quantile(r_spont, 0.05, axis=0),
+                                 np.quantile(r_spont, 0.95, axis=0), color='grey', alpha=0.2)
                 #ax1.plot(psth_opto['tscale'], np.mean(r_spont, axis=0), color='grey', lw=1)
                 ax1.plot(psth_opto['tscale'], r_opto, lw=2)
                 ax1.plot([0, 0], ax1.get_ylim(), color='k', ls='--')
@@ -224,15 +242,7 @@ for i, eid in enumerate(np.unique(rec['eid'])):
                 plt.savefig(join(fig_path, 'RegionPairsOpto', f'{region_1}-{region_2}_{subject}_{date}'), dpi=300)
                 plt.close(f)
 
-"""
-cca_df['r_subtract'] = cca_df['r_opto'] - cca_df['r_spont']
-sns.lineplot(x='time', y='r_opto', data=cca_df, hue='region_pair', ci=68)
 
-# Save results
-cca_df.to_csv(join(save_path, 'cca_results.csv'))
-"""
-
-
-
-
+    # Save results
+    cca_df.to_csv(join(save_path, 'cca_results.csv'))
 
