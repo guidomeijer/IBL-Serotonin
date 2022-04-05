@@ -684,7 +684,7 @@ def load_wheel_velocity(eid, starttimes, endtimes, binsize, one=None):
     wheel_velocity = []
     for (start, end) in np.vstack((starttimes, endtimes)).T:
         wh_startind = np.searchsorted(whlt[wh_endlast:], start) + wh_endlast
-        wh_endind = np.searchsorted(whlt[wh_endlast:], end, side='right') + wh_endlast + 4
+        wh_endind = np.searchsorted(whlt[wh_endlast:], end, side='right') + wh_endlast
         if wh_endind > len(whlpos):
             raise IndexError('Wheel trace too short for requested start and end times')
         wh_endlast = wh_endind

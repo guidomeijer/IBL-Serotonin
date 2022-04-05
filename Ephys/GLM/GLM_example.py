@@ -58,6 +58,7 @@ shortbases = mut.full_rcos(SHORT_KL, NBASES, design.binf)
 design.add_covariate_timing('stimL', 'stimOn_times', longbases,
                             cond=lambda tr: np.isfinite(tr.contrastLeft),
                             desc='Stimulus onset left side kernel')
+asd
 """
 design.add_covariate('wheel', trialsdf['wheel_velocity'], shortbases, offset=-SHORT_KL,
                      desc='Anti-causal regressor for wheel velocity')

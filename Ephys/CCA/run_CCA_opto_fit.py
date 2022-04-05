@@ -12,11 +12,9 @@ from scipy.stats import pearsonr
 from scipy.signal import convolve, gaussian
 from sklearn.cross_decomposition import CCA
 from sklearn.decomposition import PCA
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import KFold
 from brainbox.metrics.single_units import spike_sorting_metrics
-from brainbox.population.decode import get_spike_counts_in_bins
 from brainbox.io.one import SpikeSortingLoader
-from scipy.stats import mannwhitneyu, sem
 import matplotlib.pyplot as plt
 import seaborn as sns
 from serotonin_functions import (paths, remap, query_ephys_sessions, load_passive_opto_times,
@@ -31,12 +29,12 @@ pca = PCA(n_components=10)
 # Settings
 NEURON_QC = True  # whether to use neuron qc to exclude bad units
 MIN_NEURONS = 10  # minimum neurons per region
-N_SPONT = 50  # number of trials in the spontaneous activity
 N_PERMUT = 500  # number of times to get spontaneous population correlation for permutation testing
 WIN_SIZE = 0.2  # window size in seconds
 PRE_TIME = 1  # time before stim onset in s
 POST_TIME = 2  # time after stim onset in s
 SMOOTHING = 0.1  # smoothing of psth
+N_FOLDS = 3  # number of folds for k-fold cross-validaiton
 MIN_FR = 0.5  # minimum firing rate over the whole recording
 N_PC = 10  # number of PCs to use
 TEST_FRAC = 0.5  # fraction to use for testing in cross-validation
@@ -50,6 +48,7 @@ fig_path = join(fig_path, 'Ephys', 'CCA')
 # Initialize some things
 np.random.seed(42)  # fix random seed for reproducibility
 n_time_bins = int((PRE_TIME + POST_TIME) / WIN_SIZE)
+kf = KFold(n_splits=N_FOLDS, shuffle=False)
 if SMOOTHING > 0:
     w = n_time_bins - 1 if n_time_bins % 2 == 0 else n_time_bins
     window = gaussian(w, std=SMOOTHING / WIN_SIZE)
@@ -204,17 +203,29 @@ for i, eid in enumerate(np.unique(rec['eid'])):
             r_opto = np.empty(n_time_bins)
             for ij in range(N_PERMUT):
                 for tb in range(n_time_bins):
-                    cca = CCA(n_components=1)
-                    spont_x, spont_y = cca.fit_transform(pca_spont[region_1][ij, :, :, tb],
-                                                         pca_spont[region_2][ij, :, :, tb])
-                    r_spont[ij, tb], _ = pearsonr(np.squeeze(spont_x), np.squeeze(spont_y))
+                    spont_x = np.empty(pca_spont[region_1][ij, :, :, tb].shape[0])
+                    spont_y = np.empty(pca_spont[region_1][ij, :, :, tb].shape[0])
+                    for train_index, test_index in kf.split(pca_spont[region_1][ij, :, :, tb]):
+                        cca.fit(pca_spont[region_1][ij, train_index, :, tb],
+                                pca_spont[region_2][ij, train_index, :, tb])
+                        x, y = cca.transform(pca_spont[region_1][ij, test_index, :, tb],
+                                             pca_spont[region_2][ij, test_index, :, tb])
+                        spont_x[test_index] = x.T
+                        spont_y[test_index] = y.T
+                    r_spont[ij, tb], _ = pearsonr(spont_x, spont_y)
 
             # For OPTO activity
             for tb in range(n_time_bins):
-                cca = CCA(n_components=1)
-                opto_x, opto_y = cca.fit_transform(pca_opto[region_1][:, :, tb],
-                                                   pca_opto[region_2][:, :, tb])
-                r_opto[tb], _ = pearsonr(np.squeeze(opto_x), np.squeeze(opto_y))
+                opto_x = np.empty(pca_opto[region_1][:, :, tb].shape[0])
+                opto_y = np.empty(pca_opto[region_1][:, :, tb].shape[0])
+                for train_index, test_index in kf.split(pca_opto[region_1][:, :, tb]):
+                    cca.fit(pca_opto[region_1][train_index, :, tb],
+                            pca_opto[region_2][train_index, :, tb])
+                    x, y = cca.transform(pca_opto[region_1][test_index, :, tb],
+                                         pca_opto[region_2][test_index, :, tb])
+                    opto_x[test_index] = x.T
+                    opto_y[test_index] = y.T
+                r_opto[tb], _ = pearsonr(opto_x, opto_y)
 
             # Add to dataframe
             cca_df = pd.concat((cca_df, pd.DataFrame(data={
@@ -239,7 +250,7 @@ for i, eid in enumerate(np.unique(rec['eid'])):
                         title=f'{region_1}-{region_2}')
                 sns.despine(trim=True)
                 plt.tight_layout()
-                plt.savefig(join(fig_path, 'RegionPairsOpto', f'{region_1}-{region_2}_{subject}_{date}'), dpi=300)
+                plt.savefig(join(fig_path, 'RegionPairsCrossVal', f'{region_1}-{region_2}_{subject}_{date}'), dpi=300)
                 plt.close(f)
 
 

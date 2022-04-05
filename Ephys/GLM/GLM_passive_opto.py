@@ -7,7 +7,7 @@ By: Guido Meijer
 
 import pandas as pd
 import numpy as np
-from os.path import join
+from os.path import join, isfile
 import brainbox.modeling.utils as mut
 import brainbox.io.one as bbone
 from brainbox.io.one import SpikeSortingLoader
@@ -20,9 +20,8 @@ from ibllib.atlas import AllenAtlas
 one = ONE()
 ba = AllenAtlas()
 
-BINSIZE = 0.02
-KERNLEN = 0.6
-SHORT_KL = 0.4
+BINSIZE = 0.04
+KERNLEN = 0.4
 NBASES = 10
 fig_path, save_path = paths()
 
@@ -33,41 +32,61 @@ for i in rec.index.values:
     # Get session details
     pid, eid, probe = rec.loc[i, 'pid'], rec.loc[i, 'eid'], rec.loc[i, 'probe']
     subject, date = rec.loc[i, 'subject'], rec.loc[i, 'date']
-
-    # Load in a dataframe of trial-by-trial data
-    opto_df = pd.read_pickle(join(save_path, 'GLM', f'dm_{subject}_{date}.pickle'))
+    if isfile(join(save_path, 'GLM', f'dm_{subject}_{date}.pickle')):
+        opto_df = pd.read_pickle(join(save_path, 'GLM', f'dm_{subject}_{date}.pickle'))
+        opto_df.index = range(1, opto_df.shape[0]+1)
+        print(f'Loaded in design matrix for {subject} {date}')
+    else:
+        print(f'Could not find design matrix for {subject} {date}')
+        continue
 
     # Define what kind of data type each column is
     vartypes = {
-        'opto_stim': 'boxcar',
-        'probabilityLeft': 'value',
-        'feedbackType': 'value',
-        'feedback_times': 'timing',
-        'contrastLeft': 'value',
-        'contrastRight': 'value',
-        'goCue_times': 'timing',
-        'stimOn_times': 'timing',
-        'trial_start': 'timing', 'trial_end': 'timing',
-        'wheel_velocity': 'continuous'
+        'trial_start': 'timing',
+        'trial_end': 'timing',
+        'opto_start': 'timing',
+        'opto_end': 'timing',
+        'wheel_velocity': 'continuous',
+        'pupil_diameter': 'continuous',
+        'nose_tip': 'continuous',
+        'paw_l': 'continuous',
+        'paw_r': 'continuous',
+        'tongue_end_l': 'continuous',
+        'tongue_end_r': 'continuous',
+        'motion_energy_body': 'continuous',
+        'motion_energy_left': 'continuous',
+        'motion_energy_right': 'continuous'
     }
 
-    # The following is not a sensible model per se of the IBL task, but illustrates each regressor type
-
     # Initialize design matrix
-    design = dm.DesignMatrix(trialsdf, vartypes=vartypes, binwidth=BINSIZE)
+    design = dm.DesignMatrix(opto_df, vartypes=vartypes, binwidth=BINSIZE)
 
-    # Build some basis functions
-    longbases = mut.full_rcos(KERNLEN, NBASES, design.binf)
-    shortbases = mut.full_rcos(SHORT_KL, NBASES, design.binf)
+    # Build basis functions
+    bases_func = mut.full_rcos(KERNLEN, NBASES, design.binf)
 
-    design.add_covariate_timing('stimL', 'stimOn_times', longbases,
-                                cond=lambda tr: np.isfinite(tr.contrastLeft),
-                                desc='Stimulus onset left side kernel')
-    """
-    design.add_covariate('wheel', trialsdf['wheel_velocity'], shortbases, offset=-SHORT_KL,
-                         desc='Anti-causal regressor for wheel velocity')
-    design.add_covariate_raw('wheelraw', trialsdf['wheel_velocity'], desc='Wheel velocity, no bases')
-    """
+    # Add regressors
+    design.add_covariate_boxcar('opto_stim', 'opto_start', 'opto_end',
+                                desc='Optogenetic stimulation')
+    design.add_covariate('wheel_velocity', opto_df['wheel_velocity'], bases_func, offset=-KERNLEN,
+                         desc='Wheel velocity')
+    design.add_covariate('pupil_diameter', opto_df['pupil_diameter'], bases_func, offset=-KERNLEN,
+                         desc='Pupil diameter')
+    design.add_covariate('nose', opto_df['nose_tip'], bases_func, offset=-KERNLEN,
+                         desc='Nose tip')
+    design.add_covariate('paw_l', opto_df['paw_l'], bases_func, offset=-KERNLEN,
+                         desc='Left paw')
+    design.add_covariate('paw_r', opto_df['paw_r'], bases_func, offset=-KERNLEN,
+                         desc='Right paw')
+    design.add_covariate('tongue_end_l', opto_df['tongue_end_l'], bases_func, offset=-KERNLEN,
+                         desc='Left tongue')
+    design.add_covariate('tongue_end_r', opto_df['tongue_end_r'], bases_func, offset=-KERNLEN,
+                         desc='Right tongue')
+    design.add_covariate('motion_energy_body', opto_df['motion_energy_body'], bases_func, offset=-KERNLEN,
+                         desc='Motion energy body camera')
+    design.add_covariate('motion_energy_left', opto_df['motion_energy_left'], bases_func, offset=-KERNLEN,
+                         desc='Motion energy left camera')
+    design.add_covariate('motion_energy_right', opto_df['motion_energy_right'], bases_func, offset=-KERNLEN,
+                         desc='Motion energy right camera')
     design.compile_design_matrix()
 
     # Now let's load in some spikes and fit them
