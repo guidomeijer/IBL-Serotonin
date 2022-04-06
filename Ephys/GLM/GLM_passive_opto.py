@@ -8,37 +8,49 @@ By: Guido Meijer
 import pandas as pd
 import numpy as np
 from os.path import join, isfile
-import brainbox.modeling.utils as mut
-import brainbox.io.one as bbone
+import neurencoding.utils as mut
 from brainbox.io.one import SpikeSortingLoader
 import neurencoding.design_matrix as dm
-from brainbox.modeling.linear import LinearGLM
-from brainbox.modeling.poisson import PoissonGLM
-from serotonin_functions import query_ephys_sessions, paths
+from neurencoding.linear import LinearGLM
+from brainbox.metrics.single_units import spike_sorting_metrics
+from serotonin_functions import query_ephys_sessions, paths, get_artifact_neurons, remap
 from one.api import ONE
 from ibllib.atlas import AllenAtlas
 one = ONE()
 ba = AllenAtlas()
 
+# Settings
+OVERWRITE = True
 BINSIZE = 0.04
-KERNLEN = 0.4
+MOT_KERNLEN = 0.4
+OPTO_KERNLEN = 1
 NBASES = 10
 fig_path, save_path = paths()
 
 # Query sessions
 rec = query_ephys_sessions()
 
+# Load in artifact neurons
+artifact_neurons = get_artifact_neurons()
+
+all_glm_df = pd.DataFrame()
 for i in rec.index.values:
     # Get session details
     pid, eid, probe = rec.loc[i, 'pid'], rec.loc[i, 'eid'], rec.loc[i, 'probe']
     subject, date = rec.loc[i, 'subject'], rec.loc[i, 'date']
+    if isfile(join(save_path, 'GLM', f'lm_scores_{subject}_{date}.csv')) & ~OVERWRITE:
+        print(f'\nFound GLM results for {subject} {date}')
+        continue
     if isfile(join(save_path, 'GLM', f'dm_{subject}_{date}.pickle')):
         opto_df = pd.read_pickle(join(save_path, 'GLM', f'dm_{subject}_{date}.pickle'))
-        opto_df.index = range(1, opto_df.shape[0]+1)
-        print(f'Loaded in design matrix for {subject} {date}')
+        print(f'\nLoaded in design matrix for {subject} {date}')
     else:
-        print(f'Could not find design matrix for {subject} {date}')
+        print(f'\nCould not find design matrix for {subject} {date}')
         continue
+
+    # Drop motion energy for now
+    #opto_df = opto_df.drop(['motion_energy_body', 'motion_energy_left', 'motion_energy_right',
+    #                        'pupil_diameter'], axis=1)
 
     # Define what kind of data type each column is
     vartypes = {
@@ -47,7 +59,6 @@ for i in rec.index.values:
         'opto_start': 'timing',
         'opto_end': 'timing',
         'wheel_velocity': 'continuous',
-        'pupil_diameter': 'continuous',
         'nose_tip': 'continuous',
         'paw_l': 'continuous',
         'paw_r': 'continuous',
@@ -55,53 +66,91 @@ for i in rec.index.values:
         'tongue_end_r': 'continuous',
         'motion_energy_body': 'continuous',
         'motion_energy_left': 'continuous',
-        'motion_energy_right': 'continuous'
+        'motion_energy_right': 'continuous',
+        'pupil_diameter': 'continuous'
     }
 
     # Initialize design matrix
     design = dm.DesignMatrix(opto_df, vartypes=vartypes, binwidth=BINSIZE)
 
     # Build basis functions
-    bases_func = mut.full_rcos(KERNLEN, NBASES, design.binf)
+    motion_bases_func = mut.full_rcos(MOT_KERNLEN, NBASES, design.binf)
+    opto_bases_func = mut.full_rcos(OPTO_KERNLEN, NBASES, design.binf)
 
     # Add regressors
-    design.add_covariate_boxcar('opto_stim', 'opto_start', 'opto_end',
-                                desc='Optogenetic stimulation')
-    design.add_covariate('wheel_velocity', opto_df['wheel_velocity'], bases_func, offset=-KERNLEN,
+    design.add_covariate_timing('opto_stim', 'opto_start', opto_bases_func, desc='Optogenetic stimulation')
+    design.add_covariate('wheel_velocity', opto_df['wheel_velocity'], motion_bases_func, offset=-MOT_KERNLEN,
                          desc='Wheel velocity')
-    design.add_covariate('pupil_diameter', opto_df['pupil_diameter'], bases_func, offset=-KERNLEN,
-                         desc='Pupil diameter')
-    design.add_covariate('nose', opto_df['nose_tip'], bases_func, offset=-KERNLEN,
+    design.add_covariate('nose', opto_df['nose_tip'], motion_bases_func, offset=-MOT_KERNLEN,
                          desc='Nose tip')
-    design.add_covariate('paw_l', opto_df['paw_l'], bases_func, offset=-KERNLEN,
+    design.add_covariate('paw_l', opto_df['paw_l'], motion_bases_func, offset=-MOT_KERNLEN,
                          desc='Left paw')
-    design.add_covariate('paw_r', opto_df['paw_r'], bases_func, offset=-KERNLEN,
+    design.add_covariate('paw_r', opto_df['paw_r'], motion_bases_func, offset=-MOT_KERNLEN,
                          desc='Right paw')
-    design.add_covariate('tongue_end_l', opto_df['tongue_end_l'], bases_func, offset=-KERNLEN,
+    design.add_covariate('tongue_end_l', opto_df['tongue_end_l'], motion_bases_func, offset=-MOT_KERNLEN,
                          desc='Left tongue')
-    design.add_covariate('tongue_end_r', opto_df['tongue_end_r'], bases_func, offset=-KERNLEN,
+    design.add_covariate('tongue_end_r', opto_df['tongue_end_r'], motion_bases_func, offset=-MOT_KERNLEN,
                          desc='Right tongue')
-    design.add_covariate('motion_energy_body', opto_df['motion_energy_body'], bases_func, offset=-KERNLEN,
-                         desc='Motion energy body camera')
-    design.add_covariate('motion_energy_left', opto_df['motion_energy_left'], bases_func, offset=-KERNLEN,
-                         desc='Motion energy left camera')
-    design.add_covariate('motion_energy_right', opto_df['motion_energy_right'], bases_func, offset=-KERNLEN,
-                         desc='Motion energy right camera')
+    design.add_covariate('motion_energy_body', opto_df['motion_energy_body'], motion_bases_func, offset=-MOT_KERNLEN,
+                         desc='Motion energy body')
+    design.add_covariate('motion_energy_left', opto_df['motion_energy_left'], motion_bases_func, offset=-MOT_KERNLEN,
+                         desc='Motion energy left')
+    design.add_covariate('motion_energy_right', opto_df['motion_energy_right'], motion_bases_func, offset=-MOT_KERNLEN,
+                         desc='Motion energy right')
+    design.add_covariate('pupil_diameter', opto_df['pupil_diameter'], motion_bases_func, offset=-MOT_KERNLEN,
+                         desc='Pupil diameter')
     design.compile_design_matrix()
+    print('Compiled design matrix')
 
-    # Now let's load in some spikes and fit them
+    # Load in the neural data
     sl = SpikeSortingLoader(pid=pid, one=one, atlas=ba)
     spikes, clusters, channels = sl.load_spike_sorting()
     clusters = sl.merge_clusters(spikes, clusters, channels)
 
-    # We will build a linear model and a poisson model:
-    lm = LinearGLM(design, spikes.times, spikes.clusters, binwidth=BINSIZE, mintrials=1)
-    pm = PoissonGLM(design, spikes.times, spikes.clusters, binwidth=BINSIZE, mintrials=1)
+    # Apply neuron QC and exclude artifact units
+    print('Calculating neuron QC metrics..')
+    qc_metrics, _ = spike_sorting_metrics(spikes.times, spikes.clusters, spikes.amps, spikes.depths,
+                                          cluster_ids=np.arange(clusters.channels.size))
+    clusters_pass = np.where(qc_metrics['label'] == 1)[0]
+    clusters_pass = clusters_pass[~np.isin(clusters_pass, artifact_neurons.loc[
+        artifact_neurons['pid'] == pid, 'neuron_id'].values)]
+    spikes.times = spikes.times[np.isin(spikes.clusters, clusters_pass)]
+    spikes.clusters = spikes.clusters[np.isin(spikes.clusters, clusters_pass)]
+    clusters['region'] = remap(clusters['atlas_id'], combine=True)
 
-    # Running the .fit() method is enough to start the fitting procedure:
-    lm.fit()
-    pm.fit()
+    # Build a linear model
+    print('Fitting linear model')
+    try:
+        lm = LinearGLM(design, spikes.times, spikes.clusters, binwidth=BINSIZE, mintrials=1)
+        lm.fit()
+        lm_scores = lm.score()
+        sfs = mut.SequentialSelector(lm)
+        sfs.fit(progress=False)
+        all_lm_scores = sfs.scores_
+        all_lm_sequences = sfs.sequences_
+        all_lm_deltas = sfs.deltas_
 
-    # After which we can assess the score of each model on our data:
-    lm.score()
-    pm.score()
+
+
+
+        sfs.deltas_
+        asd
+
+        sfs.sequences_
+
+        all_lm_scores.to_csv(join(save_path, 'GLM', f'{subject}_{date}_{probe}_scores.csv'))
+        all_lm_sequences.to_csv(join(save_path, 'GLM', f'{subject}_{date}_{probe}_seq.csv'))
+        all_lm_scores['score'] = lm_scores
+        all_lm_scores['acronym'] = clusters['acronym'][all_lm_scores.index]
+        all_lm_scores['subject'] = subject
+        all_lm_scores['date'] = date
+        all_lm_scores['pid'] = pid
+        all_lm_scores = all_lm_scores.reset_index()
+        all_lm_scores = all_lm_scores.rename({'index': 'neuron_id'}, axis=1)
+        all_glm_df = pd.concat((all_glm_df, all_lm_scores), ignore_index=True)
+        all_glm_df.to_csv(join(save_path, 'GLM', 'GLM_passive_opto.csv'))
+    except:
+        print('\nFailed to fit GLM model\n')
+        continue
+
+

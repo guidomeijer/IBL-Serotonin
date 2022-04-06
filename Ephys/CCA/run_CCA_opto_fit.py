@@ -12,7 +12,7 @@ from scipy.stats import pearsonr
 from scipy.signal import convolve, gaussian
 from sklearn.cross_decomposition import CCA
 from sklearn.decomposition import PCA
-from sklearn.model_selection import KFold
+from sklearn.model_selection import LeaveOneOut
 from brainbox.metrics.single_units import spike_sorting_metrics
 from brainbox.io.one import SpikeSortingLoader
 import matplotlib.pyplot as plt
@@ -34,7 +34,6 @@ WIN_SIZE = 0.2  # window size in seconds
 PRE_TIME = 1  # time before stim onset in s
 POST_TIME = 2  # time after stim onset in s
 SMOOTHING = 0.1  # smoothing of psth
-N_FOLDS = 3  # number of folds for k-fold cross-validaiton
 MIN_FR = 0.5  # minimum firing rate over the whole recording
 N_PC = 10  # number of PCs to use
 TEST_FRAC = 0.5  # fraction to use for testing in cross-validation
@@ -48,7 +47,7 @@ fig_path = join(fig_path, 'Ephys', 'CCA')
 # Initialize some things
 np.random.seed(42)  # fix random seed for reproducibility
 n_time_bins = int((PRE_TIME + POST_TIME) / WIN_SIZE)
-kf = KFold(n_splits=N_FOLDS, shuffle=False)
+lio = LeaveOneOut()
 if SMOOTHING > 0:
     w = n_time_bins - 1 if n_time_bins % 2 == 0 else n_time_bins
     window = gaussian(w, std=SMOOTHING / WIN_SIZE)
@@ -205,7 +204,7 @@ for i, eid in enumerate(np.unique(rec['eid'])):
                 for tb in range(n_time_bins):
                     spont_x = np.empty(pca_spont[region_1][ij, :, :, tb].shape[0])
                     spont_y = np.empty(pca_spont[region_1][ij, :, :, tb].shape[0])
-                    for train_index, test_index in kf.split(pca_spont[region_1][ij, :, :, tb]):
+                    for train_index, test_index in lio.split(pca_spont[region_1][ij, :, :, tb]):
                         cca.fit(pca_spont[region_1][ij, train_index, :, tb],
                                 pca_spont[region_2][ij, train_index, :, tb])
                         x, y = cca.transform(pca_spont[region_1][ij, test_index, :, tb],
@@ -218,7 +217,7 @@ for i, eid in enumerate(np.unique(rec['eid'])):
             for tb in range(n_time_bins):
                 opto_x = np.empty(pca_opto[region_1][:, :, tb].shape[0])
                 opto_y = np.empty(pca_opto[region_1][:, :, tb].shape[0])
-                for train_index, test_index in kf.split(pca_opto[region_1][:, :, tb]):
+                for train_index, test_index in lio.split(pca_opto[region_1][:, :, tb]):
                     cca.fit(pca_opto[region_1][train_index, :, tb],
                             pca_opto[region_2][train_index, :, tb])
                     x, y = cca.transform(pca_opto[region_1][test_index, :, tb],

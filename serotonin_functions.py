@@ -287,16 +287,15 @@ def combine_regions(acronyms, split_thalamus=True, abbreviate=False):
     return regions
 
 
-def remap(ids, source='Allen', dest='Beryl', combine=False, split_thalamus=False, abbreviate=True,
+def remap(acronyms, source='Allen', dest='Beryl', combine=False, split_thalamus=False, abbreviate=True,
           brainregions=None):
     br = brainregions or BrainRegions()
-    _, inds = ismember(ids, br.id[br.mappings[source]])
-    ids = br.id[br.mappings[dest][inds]]
-    acronyms = br.get(br.id[br.mappings[dest][inds]])['acronym']
+    _, inds = ismember(br.acronym2id(acronyms), br.id[br.mappings[source]])
+    remapped_acronyms = br.get(br.id[br.mappings[dest][inds]])['acronym']
     if combine:
-        return combine_regions(acronyms, split_thalamus=split_thalamus, abbreviate=abbreviate)
+        return combine_regions(remapped_acronyms, split_thalamus=split_thalamus, abbreviate=abbreviate)
     else:
-        return acronyms
+        return remapped_acronyms
 
 
 def get_full_region_name(acronyms):

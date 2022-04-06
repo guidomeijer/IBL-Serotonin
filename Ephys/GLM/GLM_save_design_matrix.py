@@ -17,7 +17,7 @@ one = ONE()
 ba = AllenAtlas()
 
 # Settings
-OVERWRITE = False
+OVERWRITE = True
 BINSIZE = 0.04
 T_BEFORE = 1
 T_AFTER = 2
@@ -39,6 +39,8 @@ for i in rec.index.values:
 
     # Load in data
     opto_train_start, _ = load_passive_opto_times(eid, one=one)  # opto pulses
+    if len(opto_train_start) == 0:
+        continue
     video_times, XYs = get_dlc_XYs(one, eid)  # DLC
     cam_times = one.load_datasets(eid, datasets=['_ibl_bodyCamera.times.npy',
                                                  '_ibl_leftCamera.times.npy',
@@ -57,9 +59,9 @@ for i in rec.index.values:
         mot_right = smooth_interpolate_signal_sg(mot_right)
     except:
         print('Failed to get motion energy')
-        mot_body = np.nan
-        mot_left = np.nan
-        mot_right = np.nan
+        mot_body = np.zeros(times_body.shape)
+        mot_left = np.zeros(times_left.shape)
+        mot_right = np.zeros(times_right.shape)
 
     # Get stim start and stop times
     opto_df = pd.DataFrame()
@@ -68,7 +70,6 @@ for i in rec.index.values:
     opto_df['opto_start'] = opto_train_start
     opto_df['opto_end'] = opto_train_start + STIM_DUR
 
-
     # Load in wheel velocity
     opto_df['wheel_velocity'] = load_wheel_velocity(eid, opto_df['trial_start'].values,
                                                     opto_df['trial_end'].values, BINSIZE, one=one)
@@ -76,6 +77,7 @@ for i in rec.index.values:
     # Get pupil diameter
     print('Loading in pupil size')
     _, pupil_diameter = get_raw_and_smooth_pupil_dia(eid, 'left', one)
+    pupil_diameter[np.isnan(pupil_diameter)] = 0
     opto_df['pupil_diameter'] = make_bins(pupil_diameter, times_left, opto_df['trial_start'],
                                           opto_df['trial_end'], BINSIZE)
 
@@ -88,7 +90,7 @@ for i in rec.index.values:
         opto_df[dlc_key] = make_bins(this_dlc, diff_video_times, opto_df['trial_start'],
                                      opto_df['trial_end'], BINSIZE)
 
-    # Construct dataframe
+    # Add motion energy
     opto_df['motion_energy_body'] = make_bins(mot_body, times_body, opto_df['trial_start'],
                                               opto_df['trial_end'], BINSIZE)
     opto_df['motion_energy_left'] = make_bins(mot_left, times_left, opto_df['trial_start'],
