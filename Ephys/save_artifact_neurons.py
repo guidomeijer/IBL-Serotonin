@@ -43,5 +43,18 @@ artifact_neurons = artifact_neurons.append(pd.DataFrame(data={
     'subject': 'ZFM-02601', 'date': '2021-11-19', 'pid': 'dd5af9d9-16b1-477a-885d-713dc5066b8c', 'probe': 'probe00',
     'neuron_id': [23, 51, 109, 120, 201, 202, 203, 205, 206, 207, 208, 209, 210, 220, 232, 234, 242, 244, 248, 253, 263]}))
 
+# ZFM-03330, 2022-02-16
+artifact_neurons = artifact_neurons.append(pd.DataFrame(data={
+    'subject': 'ZFM-03330', 'date': '2022-02-16', 'pid': '0e236047-e8ca-49b8-a18e-d0f6ff3ee592', 'probe': 'probe01',
+    'neuron_id': [185]}))
+
+# ZFM-03330, 2022-02-17
+artifact_neurons = artifact_neurons.append(pd.DataFrame(data={
+    'subject': 'ZFM-03330', 'date': '2022-02-17', 'pid': '7a82c06b-0e33-454b-a98f-786a4024c1d0', 'probe': 'probe00',
+    'neuron_id': [170, 236, 241, 242]}))
+artifact_neurons = artifact_neurons.append(pd.DataFrame(data={
+    'subject': 'ZFM-03330', 'date': '2022-02-17', 'pid': 'f07d1d05-72a9-4599-8970-bce441c9d21c', 'probe': 'probe01',
+    'neuron_id': [1, 106, 131, 132]}))
+
 artifact_neurons.to_csv(join(REPO_PATH, 'artifact_neurons.csv'), index=False)
 

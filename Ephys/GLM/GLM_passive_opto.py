@@ -12,6 +12,7 @@ import neurencoding.utils as mut
 from brainbox.io.one import SpikeSortingLoader
 import neurencoding.design_matrix as dm
 from neurencoding.linear import LinearGLM
+from neurencoding.poisson import PoissonGLM
 from brainbox.metrics.single_units import spike_sorting_metrics
 from serotonin_functions import query_ephys_sessions, paths, get_artifact_neurons, remap
 from one.api import ONE
@@ -23,8 +24,9 @@ ba = AllenAtlas()
 OVERWRITE = True
 BINSIZE = 0.04
 MOT_KERNLEN = 0.4
+MOT_NBASES = 10
 OPTO_KERNLEN = 1
-NBASES = 10
+OPTO_NBASES = 6
 fig_path, save_path = paths()
 
 # Query sessions
@@ -74,8 +76,8 @@ for i in rec.index.values:
     design = dm.DesignMatrix(opto_df, vartypes=vartypes, binwidth=BINSIZE)
 
     # Build basis functions
-    motion_bases_func = mut.full_rcos(MOT_KERNLEN, NBASES, design.binf)
-    opto_bases_func = mut.full_rcos(OPTO_KERNLEN, NBASES, design.binf)
+    motion_bases_func = mut.full_rcos(MOT_KERNLEN, MOT_NBASES, design.binf)
+    opto_bases_func = mut.full_rcos(OPTO_KERNLEN, OPTO_NBASES, design.binf)
 
     # Add regressors
     design.add_covariate_timing('opto_stim', 'opto_start', opto_bases_func, desc='Optogenetic stimulation')
@@ -126,28 +128,15 @@ for i in rec.index.values:
         lm_scores = lm.score()
         sfs = mut.SequentialSelector(lm)
         sfs.fit(progress=False)
-        all_lm_scores = sfs.scores_
-        all_lm_sequences = sfs.sequences_
-        all_lm_deltas = sfs.deltas_
-
-
-
-
-        sfs.deltas_
-        asd
-
-        sfs.sequences_
-
-        all_lm_scores.to_csv(join(save_path, 'GLM', f'{subject}_{date}_{probe}_scores.csv'))
-        all_lm_sequences.to_csv(join(save_path, 'GLM', f'{subject}_{date}_{probe}_seq.csv'))
-        all_lm_scores['score'] = lm_scores
-        all_lm_scores['acronym'] = clusters['acronym'][all_lm_scores.index]
-        all_lm_scores['subject'] = subject
-        all_lm_scores['date'] = date
-        all_lm_scores['pid'] = pid
-        all_lm_scores = all_lm_scores.reset_index()
-        all_lm_scores = all_lm_scores.rename({'index': 'neuron_id'}, axis=1)
-        all_glm_df = pd.concat((all_glm_df, all_lm_scores), ignore_index=True)
+        glm_results = sfs.deltas_
+        glm_results['score'] = lm_scores
+        glm_results['acronym'] = clusters['acronym'][glm_results.index]
+        glm_results['subject'] = subject
+        glm_results['date'] = date
+        glm_results['pid'] = pid
+        glm_results = glm_results.reset_index()
+        glm_results = glm_results.rename({'index': 'neuron_id'}, axis=1)
+        all_glm_df = pd.concat((all_glm_df, glm_results), ignore_index=True)
         all_glm_df.to_csv(join(save_path, 'GLM', 'GLM_passive_opto.csv'))
     except:
         print('\nFailed to fit GLM model\n')

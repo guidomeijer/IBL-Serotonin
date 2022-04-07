@@ -14,6 +14,8 @@ from serotonin_functions import paths, figure_style, get_full_region_name, load_
 from brainbox.io.one import SpikeSortingLoader
 from brainbox.singlecell import calculate_peths
 from oneibl.one import ONE
+from ibllib.atlas import AllenAtlas
+ba = AllenAtlas()
 one = ONE()
 
 # Settings

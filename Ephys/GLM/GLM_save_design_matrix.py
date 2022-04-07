@@ -17,7 +17,7 @@ one = ONE()
 ba = AllenAtlas()
 
 # Settings
-OVERWRITE = True
+OVERWRITE = False
 BINSIZE = 0.04
 T_BEFORE = 1
 T_AFTER = 2
@@ -41,7 +41,11 @@ for i in rec.index.values:
     opto_train_start, _ = load_passive_opto_times(eid, one=one)  # opto pulses
     if len(opto_train_start) == 0:
         continue
-    video_times, XYs = get_dlc_XYs(one, eid)  # DLC
+    try:
+        video_times, XYs = get_dlc_XYs(one, eid)  # DLC
+    except:
+        print('Failed to load DLC')
+        continue
     cam_times = one.load_datasets(eid, datasets=['_ibl_bodyCamera.times.npy',
                                                  '_ibl_leftCamera.times.npy',
                                                  '_ibl_rightCamera.times.npy'])[0]

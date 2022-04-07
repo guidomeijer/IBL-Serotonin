@@ -20,7 +20,7 @@ ba = AllenAtlas()
 one = ONE()
 
 # Settings
-OVERWRITE = True
+OVERWRITE = False
 NEURON_QC = True
 PRE_TIME = [0.2, 0]  # for significance testing
 POST_TIME_EARLY = [0, 0.2]
@@ -121,7 +121,7 @@ for i in rec.index.values:
                                             post_time=POST_TIME_LATE)
     mod_idx_late = 2 * (roc_auc - 0.5)
 
-    cluster_regions = remap(clusters.atlas_id[cluster_ids])
+    cluster_regions = remap(clusters.acronym[cluster_ids])
     light_neurons = pd.concat((light_neurons, pd.DataFrame(data={
         'subject': subject, 'date': date, 'eid': eid, 'probe': probe, 'pid': pid,
         'region': cluster_regions, 'neuron_id': cluster_ids,
