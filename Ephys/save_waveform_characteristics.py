@@ -17,18 +17,25 @@ ba = AllenAtlas()
 one = ONE()
 
 # Settings
+OVERWRITE = False
 NEURON_QC = True
 _, save_path = paths()
 
 # Query sessions
 rec = query_ephys_sessions(one=one)
 
-waveforms_df = pd.DataFrame()
+if OVERWRITE:
+    waveforms_df = pd.DataFrame()
+else:
+    waveforms_df = pd.read_pickle(join(save_path, 'waveform_metrics.p'))
+
 for i in rec.index.values:
 
     # Get session details
     pid, eid, probe = rec.loc[i, 'pid'], rec.loc[i, 'eid'], rec.loc[i, 'probe']
     subject, date = rec.loc[i, 'subject'], rec.loc[i, 'date']
+    if pid in waveforms_df['pid'].values:
+        continue
 
     print(f'Starting {subject}, {date}')
 

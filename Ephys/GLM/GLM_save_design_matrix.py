@@ -90,7 +90,8 @@ for i in rec.index.values:
     diff_video_times = (video_times[1:] + video_times[:-1]) / 2
     for i, dlc_key in enumerate(DLC_MARKERS):
         this_dist = np.linalg.norm(XYs[dlc_key][1:] - XYs[dlc_key][:-1], axis=1)
-        this_dlc = smooth_interpolate_signal_sg(this_dist)
+        if np.sum(np.isnan(this_dist)) < this_dist.shape[0] / 2:
+            this_dlc = smooth_interpolate_signal_sg(this_dist)
         opto_df[dlc_key] = make_bins(this_dlc, diff_video_times, opto_df['trial_start'],
                                      opto_df['trial_end'], BINSIZE)
 
