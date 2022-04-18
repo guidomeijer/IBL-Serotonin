@@ -32,24 +32,19 @@ BIN_SIZE = 0.25
 THETA = [5, 15]
 BETA = [15, 35]
 GAMMA = [50, 120]
-_, fig_path, save_path = paths()
+fig_path, save_path = paths()
 fig_path = join(fig_path, 'Ephys', 'LFP')
 save_path = join(save_path, 'LFP')
 
 # Query sessions
-eids, _, subjects = query_ephys_sessions(return_subjects=True, one=one)
+rec = query_ephys_sessions(one=one)
 
 all_lfp_df = pd.DataFrame()
-for i, eid in enumerate(eids):
+for i in rec.index.values:
 
     # Get session details
-    try:
-        ses_details = one.get_details(eid)
-        subject = ses_details['subject']
-        date = ses_details['start_time'][:10]
-    except:
-        print('Weird error getting session data')
-        continue
+    pid, eid, probe = rec.loc[i, 'pid'], rec.loc[i, 'eid'], rec.loc[i, 'probe']
+    subject, date = rec.loc[i, 'subject'], rec.loc[i, 'date']
     print(f'Starting {subject}, {date}')
 
     # Load in laser pulse times

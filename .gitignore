@@ -12,3 +12,9 @@ serotonin_paths.py
 Histology/.ipynb_checkpoints/
 
 .idea/
+
+*.nrrd
+
+Histology/annotation_50_lut_v01.npz
+
+Data/LFP/

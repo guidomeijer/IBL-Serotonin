@@ -11,7 +11,8 @@ one = ONE()
 
 all_ins = one.alyx.rest('insertions', 'list',
                         django='session__project__name__icontains,serotonin_inference,'
-                        'session__qc__lt,50')
+                               'session__qc__lt,50,'
+                               'json__extended_qc__alignment_resolved,False')
 for i, ins in enumerate(all_ins):
     ins_id = ins['id']
     print(f'Resolving insertion {ins_id} [{i+1} of {len(all_ins)}]')

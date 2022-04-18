@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 from serotonin_functions import figure_style
-import brainbox.io.one as bbone
+from brainbox.io.one import SpikeSortingLoader
 from brainbox.singlecell import calculate_peths
 from serotonin_functions import paths, load_passive_opto_times, combine_regions, load_subjects
 from one.api import ONE
@@ -26,7 +26,7 @@ BIN_SIZE = 0.01
 SMOOTHING = 0.05
 BASELINE = [-1, 0]
 MIN_FR = 0.1
-_, fig_path, save_path = paths()
+fig_path, save_path = paths()
 fig_path = join(fig_path, 'Ephys', 'SingleNeurons')
 
 # Load in light modulated neurons
@@ -37,16 +37,17 @@ light_neurons = light_neurons[light_neurons['full_region'] != 'root']
 # Only select neurons from sert-cre mice
 subjects = load_subjects()
 light_neurons = light_neurons[light_neurons['subject'].isin(
-    subjects.loc[subjects['sert-cre'] == 1, 'subject'].values)]
+    subjects.loc[subjects['expression'] == 1, 'subject'].values)]
 
 # %% Loop over sessions
 peths_df = pd.DataFrame()
-for i, eid in enumerate(np.unique(light_neurons['eid'])):
+for i, pid in enumerate(np.unique(light_neurons['pid'])):
 
     # Get session details
-    ses_details = one.get_details(eid)
-    subject = ses_details['subject']
-    date = ses_details['start_time'][:10]
+    eid = np.unique(light_neurons.loc[light_neurons['pid'] == pid, 'eid'])[0]
+    probe = np.unique(light_neurons.loc[light_neurons['pid'] == pid, 'probe'])[0]
+    subject = np.unique(light_neurons.loc[light_neurons['pid'] == pid, 'subject'])[0]
+    date = np.unique(light_neurons.loc[light_neurons['pid'] == pid, 'date'])[0]
     print(f'Starting {subject}, {date}')
 
     # Load in laser pulse times
@@ -55,43 +56,41 @@ for i, eid in enumerate(np.unique(light_neurons['eid'])):
         continue
 
     # Load in spikes
-    spikes, clusters, channels = bbone.load_spike_sorting_with_channel(
-        eid, aligned=True, one=one, dataset_types=['spikes.amps', 'spikes.depths'], brain_atlas=ba)
+    sl = SpikeSortingLoader(pid=pid, one=one, atlas=ba)
+    spikes, clusters, channels = sl.load_spike_sorting()
+    clusters = sl.merge_clusters(spikes, clusters, channels)
 
-    # Loop over probes
-    for p, probe in enumerate(spikes.keys()):
+    # Take slice of dataframe
+    these_neurons = light_neurons[(light_neurons['modulated'] == 1)
+                                  & (light_neurons['eid'] == eid)
+                                  & (light_neurons['probe'] == probe)]
 
-        # Take slice of dataframe
-        these_neurons = light_neurons[(light_neurons['modulated'] == 1)
-                                      & (light_neurons['eid'] == eid)
-                                      & (light_neurons['probe'] == probe)]
+    # Get peri-event time histogram
+    peths, _ = calculate_peths(spikes.times, spikes.clusters,
+                               these_neurons['neuron_id'].values,
+                               opto_train_times, T_BEFORE, T_AFTER, BIN_SIZE, SMOOTHING)
+    tscale = peths['tscale']
 
-        # Get peri-event time histogram
-        peths, _ = calculate_peths(spikes[probe].times, spikes[probe].clusters,
-                                   these_neurons['neuron_id'].values,
-                                   opto_train_times, T_BEFORE, T_AFTER, BIN_SIZE, SMOOTHING)
-        tscale = peths['tscale']
+    # Loop over neurons
+    for n, index in enumerate(these_neurons.index.values):
+        if np.mean(peths['means'][n, :]) > MIN_FR:
+            # Calculate percentage change in firing rate
+            peth_perc = ((peths['means'][n, :]
+                          - np.mean(peths['means'][n, ((tscale > BASELINE[0]) & (tscale < BASELINE[1]))]))
+                         / np.mean(peths['means'][n, ((tscale > BASELINE[0]) & (tscale < BASELINE[1]))])) * 100
 
-        # Loop over neurons
-        for n, index in enumerate(these_neurons.index.values):
-            if np.mean(peths['means'][n, :]) > MIN_FR:
-                # Calculate percentage change in firing rate
-                peth_perc = ((peths['means'][n, :]
-                              - np.mean(peths['means'][n, ((tscale > BASELINE[0]) & (tscale < BASELINE[1]))]))
-                             / np.mean(peths['means'][n, ((tscale > BASELINE[0]) & (tscale < BASELINE[1]))])) * 100
+            # Calculate percentage change in firing rate
+            peth_ratio = ((peths['means'][n, :]
+                           - np.mean(peths['means'][n, ((tscale > BASELINE[0]) & (tscale < BASELINE[1]))]))
+                          / (peths['means'][n, :]
+                             + np.mean(peths['means'][n, ((tscale > BASELINE[0]) & (tscale < BASELINE[1]))])))
 
-                # Calculate percentage change in firing rate
-                peth_ratio = ((peths['means'][n, :]
-                               - np.mean(peths['means'][n, ((tscale > BASELINE[0]) & (tscale < BASELINE[1]))]))
-                              / (peths['means'][n, :]
-                                 + np.mean(peths['means'][n, ((tscale > BASELINE[0]) & (tscale < BASELINE[1]))])))
-
-                # Add to dataframe
-                peths_df = pd.concat((peths_df, pd.DataFrame(index=[peths_df.shape[0]], data={
-                    'peth': [peths['means'][n, :]], 'peth_perc': [peth_perc], 'peth_ratio': [peth_ratio],
-                    'region': these_neurons.loc[index, 'full_region'], 'modulation': these_neurons.loc[index, 'mod_index_late'],
-                    'neuron_id': these_neurons.loc[index, 'neuron_id'], 'subject': these_neurons.loc[index, 'subject'],
-                    'eid': these_neurons.loc[index, 'eid'], 'acronym': these_neurons.loc[index, 'region']})))
+            # Add to dataframe
+            peths_df = pd.concat((peths_df, pd.DataFrame(index=[peths_df.shape[0]], data={
+                'peth': [peths['means'][n, :]], 'peth_perc': [peth_perc], 'peth_ratio': [peth_ratio],
+                'region': these_neurons.loc[index, 'full_region'], 'modulation': these_neurons.loc[index, 'mod_index_late'],
+                'neuron_id': these_neurons.loc[index, 'neuron_id'], 'subject': these_neurons.loc[index, 'subject'],
+                'eid': these_neurons.loc[index, 'eid'], 'acronym': these_neurons.loc[index, 'region']})))
 
 # %% Plot
 
@@ -101,21 +100,23 @@ VMAX = 1
 # Plot all neurons
 peths_df = peths_df.sort_values('modulation', ascending=False)
 colors, dpi = figure_style()
-f, ax1 = plt.subplots(1, 1, figsize=(6, 4), dpi=dpi)
+f, ax1 = plt.subplots(1, 1, figsize=(4, 3), dpi=dpi)
 img = ax1.imshow(np.array(peths_df['peth_ratio'].tolist()), cmap=sns.diverging_palette(220, 20, as_cmap=True),
                  vmin=VMIN, vmax=VMAX, extent=[-T_BEFORE, T_AFTER, -1, 1])
 cbar = f.colorbar(img, ax=ax1, shrink=0.7)
-cbar.ax.set_ylabel('Ratio change in firing rate', rotation=270, labelpad=10)
-ax1.set(xlabel='Time (s)', yticks=[], title=f'All significantly modulated neurons (n={peths_df.shape[0]})')
+cbar.ax.set_ylabel('Normalized change in firing rate', rotation=270, labelpad=10)
+cbar.ax.set_yticks([-1, -0.5, 0, 0.5, 1])
+ax1.set(xlabel='Time (s)', yticks=[], ylabel=f'Sig. modulated neurons (n={peths_df.shape[0]})')
 ax1.plot([0, 0], [-1, 1], ls='--', color='k')
 
 plt.tight_layout()
 plt.savefig(join(fig_path, 'all_neurons'), dpi=600)
+plt.savefig(join(fig_path, 'all_neurons.pdf'))
 
 # %%
 # Plot per region
 peths_df = peths_df.sort_values(['region', 'modulation'], ascending=[True, False])
-f, ((ax_am, ax_orb, ax_mpfc, ax_pir), (ax_th, ax_hc, ax_ppc, ax_no)) = plt.subplots(2, 4, figsize=(6, 3), dpi=dpi)
+f, ((ax_hc, ax_am, ax_th, ax_ppc), (ax_pir, ax_orb, ax_mpfc, ax_str)) = plt.subplots(2, 4, figsize=(6, 3), dpi=dpi)
 title_font = 8
 
 these_peths = peths_df[peths_df['region'] == 'Medial prefrontal cortex']
@@ -167,13 +168,29 @@ ax_th.set(xlabel='Time (s)', yticks=[])
 ax_th.set_title('Thalamus', fontweight='bold', fontsize=title_font)
 ax_th.plot([0, 0], [-1, 1], ls='--', color='k')
 
-ax_no.axis('off')
+"""
+these_peths = peths_df[peths_df['region'] == 'Tail of the striatum']
+img = ax_str.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=sns.diverging_palette(220, 20, as_cmap=True),
+                 vmin=VMIN, vmax=VMAX, extent=[-T_BEFORE, T_AFTER, -1, 1], interpolation='none')
+ax_str.set(xlabel='Time (s)', yticks=[])
+ax_str.set_title('Tail of the striatum', fontweight='bold', fontsize=title_font)
+ax_str.plot([0, 0], [-1, 1], ls='--', color='k')
+"""
+
+these_peths = peths_df[peths_df['region'] == 'Barrel cortex']
+img = ax_str.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=sns.diverging_palette(220, 20, as_cmap=True),
+                 vmin=VMIN, vmax=VMAX, extent=[-T_BEFORE, T_AFTER, -1, 1], interpolation='none')
+ax_str.set(xlabel='Time (s)', yticks=[])
+ax_str.set_title('Barrel cortex', fontweight='bold', fontsize=title_font)
+ax_str.plot([0, 0], [-1, 1], ls='--', color='k')
+
+"""
 
 cb_ax = f.add_axes([0.75, 0.15, 0.01, 0.3])
 cbar = f.colorbar(mappable=ax_mpfc.images[0], cax=cb_ax)
 cbar.ax.set_ylabel('Norm. change\nin firing rate', rotation=270, labelpad=18)
 
-"""
+
 these_peths = peths_df[peths_df['region'] == 'Retrosplenial']
 img = ax_rs.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=sns.diverging_palette(220, 20, as_cmap=True),
                  vmin=VMIN, vmax=VMAX, extent=[-T_BEFORE, T_AFTER, -1, 1], interpolation='none')
@@ -203,7 +220,7 @@ ax_zi.set_title(f'Zona incerta\n(n={these_peths.shape[0]})', fontweight='bold', 
 ax_zi.plot([0, 0], [-1, 1], ls='--', color='k')
 """
 
-plt.tight_layout(pad=3)
+#plt.tight_layout(pad=3)
 plt.savefig(join(fig_path, 'per_merged_region'), dpi=300)
 plt.savefig(join(fig_path, 'per_merged_region.pdf'))
 

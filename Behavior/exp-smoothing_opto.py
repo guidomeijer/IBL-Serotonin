@@ -25,10 +25,10 @@ one = ONE()
 PRE_TRIALS = 5
 POST_TRIALS = 20
 PLOT_EXAMPLES = True
-REMOVE_OLD_FIT = True
-POSTERIOR = 'posterior_mean'
+REMOVE_OLD_FIT = False
+POSTERIOR = 'all'
 STIM = 'block'
-_, fig_path, save_path = paths()
+fig_path, save_path = paths()
 fig_path = join(fig_path, 'Behavior', 'Models')
 
 subjects = load_subjects(behavior=True)

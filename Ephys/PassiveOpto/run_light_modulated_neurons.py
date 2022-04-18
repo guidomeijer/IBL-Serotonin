@@ -6,50 +6,44 @@ By: Guido Meijer
 """
 
 import numpy as np
-from os.path import join, isdir
-import matplotlib.pyplot as plt
-from matplotlib.ticker import FormatStrFormatter
+from os.path import join
 import pandas as pd
-from os import mkdir
 from brainbox.task.closed_loop import roc_single_event
+from zetapy import getZeta
 from brainbox.metrics.single_units import spike_sorting_metrics
-from serotonin_functions import figure_style
-import brainbox.io.one as bbone
-from brainbox.plot import peri_event_time_histogram
+from brainbox.io.one import SpikeSortingLoader
 from serotonin_functions import (paths, remap, query_ephys_sessions, load_passive_opto_times,
-                                 get_artifact_neurons, remove_artifact_neurons)
+                                 remove_artifact_neurons)
 from one.api import ONE
 from ibllib.atlas import AllenAtlas
 ba = AllenAtlas()
 one = ONE()
 
 # Settings
-OVERWRITE = True
+OVERWRITE = False
 NEURON_QC = True
-T_BEFORE = 1  # for plotting
-T_AFTER = 2
-PRE_TIME = [0.5, 0]  # for significance testing
-POST_TIME_EARLY = [0, 0.5]
-POST_TIME_LATE = [0.5, 1]
+PRE_TIME = [0.2, 0]  # for significance testing
+POST_TIME_EARLY = [0, 0.2]
+POST_TIME_LATE = [0.8, 1]
 BIN_SIZE = 0.05
-PERMUTATIONS = 500
-_, fig_path, save_path = paths()
+MIN_FR = 0.1
+fig_path, save_path = paths()
 fig_path = join(fig_path, 'Ephys', 'SingleNeurons', 'LightModNeurons')
 
 # Query sessions
-eids, _, subjects = query_ephys_sessions(return_subjects=True, one=one)
+rec = query_ephys_sessions(one=one)
 
 if OVERWRITE:
     light_neurons = pd.DataFrame()
 else:
     light_neurons = pd.read_csv(join(save_path, 'light_modulated_neurons.csv'))
-    eids = eids[~np.isin(eids, light_neurons['eid'])]
-for i, eid in enumerate(eids):
+    rec = rec[~rec['eid'].isin(light_neurons['eid'])]
+
+for i in rec.index.values:
 
     # Get session details
-    ses_details = one.get_details(eid)
-    subject = ses_details['subject']
-    date = ses_details['start_time'][:10]
+    pid, eid, probe = rec.loc[i, 'pid'], rec.loc[i, 'eid'], rec.loc[i, 'probe']
+    subject, date = rec.loc[i, 'subject'], rec.loc[i, 'date']
 
     print(f'Starting {subject}, {date}')
 
@@ -66,84 +60,75 @@ for i, eid in enumerate(eids):
         print(f'Found {len(opto_train_times)} passive laser pulses')
 
     # Load in spikes
-    spikes, clusters, channels = bbone.load_spike_sorting_with_channel(
-        eid, aligned=True, one=one, dataset_types=['spikes.amps', 'spikes.depths'], brain_atlas=ba)
+    sl = SpikeSortingLoader(pid=pid, one=one, atlas=ba)
+    spikes, clusters, channels = sl.load_spike_sorting()
+    clusters = sl.merge_clusters(spikes, clusters, channels)
 
-    for p, probe in enumerate(spikes.keys()):
-        if 'acronym' not in clusters[probe].keys():
-            print(f'No brain regions found for {eid}')
-            continue
+    if 'acronym' not in clusters.keys():
+        print(f'No brain regions found for {eid}')
+        continue
 
-        # Filter neurons that pass QC
-        if NEURON_QC:
-            print('Calculating neuron QC metrics..')
-            qc_metrics, _ = spike_sorting_metrics(spikes[probe].times, spikes[probe].clusters,
-                                                  spikes[probe].amps, spikes[probe].depths,
-                                                  cluster_ids=np.arange(clusters[probe].channels.size))
-            clusters_pass = np.where(qc_metrics['label'] == 1)[0]
-        else:
-            clusters_pass = np.unique(spikes[probe].clusters)
-        spikes[probe].times = spikes[probe].times[np.isin(spikes[probe].clusters, clusters_pass)]
-        spikes[probe].clusters = spikes[probe].clusters[np.isin(spikes[probe].clusters, clusters_pass)]
-        if len(spikes[probe].clusters) == 0:
-            continue
+    # Filter neurons that pass QC
+    if NEURON_QC:
+        print('Calculating neuron QC metrics..')
+        qc_metrics, _ = spike_sorting_metrics(spikes.times, spikes.clusters,
+                                              spikes.amps, spikes.depths,
+                                              cluster_ids=np.arange(clusters.channels.size))
+        clusters_pass = np.where(qc_metrics['label'] == 1)[0]
+    else:
+        clusters_pass = np.unique(spikes.clusters)
+    spikes.times = spikes.times[np.isin(spikes.clusters, clusters_pass)]
+    spikes.clusters = spikes.clusters[np.isin(spikes.clusters, clusters_pass)]
+    if len(spikes.clusters) == 0:
+        continue
 
-        # Select spikes of passive period
-        start_passive = opto_train_times[0] - 360
-        spikes[probe].clusters = spikes[probe].clusters[spikes[probe].times > start_passive]
-        spikes[probe].times = spikes[probe].times[spikes[probe].times > start_passive]
+    # Select spikes of passive period
+    start_passive = opto_train_times[0] - 360
+    spikes.clusters = spikes.clusters[spikes.times > start_passive]
+    spikes.times = spikes.times[spikes.times > start_passive]
 
-        # Determine significant neurons
-        print('Calculating modulation index for EARLY stim phase..')
-        roc_auc, cluster_ids = roc_single_event(spikes[probe].times, spikes[probe].clusters,
-                                                opto_train_times, pre_time=PRE_TIME,
-                                                post_time=POST_TIME_EARLY)
-        mod_idx_early = 2 * (roc_auc - 0.5)
+    # Determine significant neurons
+    print('Performing ZETA tests')
+    p_values = np.empty(np.unique(spikes.clusters).shape)
+    latency_zeta = np.empty(np.unique(spikes.clusters).shape)
+    latency_peak = np.empty(np.unique(spikes.clusters).shape)
+    latency_peak_hw = np.empty(np.unique(spikes.clusters).shape)
+    firing_rates = np.empty(np.unique(spikes.clusters).shape)
+    for n, neuron_id in enumerate(np.unique(spikes.clusters)):
+        p_values[n], arr_latency = getZeta(spikes.times[spikes.clusters == neuron_id],
+                                           opto_train_times, intLatencyPeaks=4,
+                                           tplRestrictRange=(0, 1))
+        latency_zeta[n] = np.min(arr_latency[:2])
+        latency_peak[n] = arr_latency[2]
+        latency_peak_hw[n] = arr_latency[3]
+        firing_rates[n] = (np.sum(spikes.times[spikes.clusters == neuron_id].shape[0])
+                           / (spikes.times[-1] - start_passive))
 
-        mod_idx_early_permut = np.zeros([PERMUTATIONS, len(np.unique(spikes[probe].clusters))])
-        for k in range(PERMUTATIONS):
-            this_roc_auc_permut = roc_single_event(
-                spikes[probe].times, spikes[probe].clusters,
-                np.random.uniform(low=start_passive, high=opto_train_times[-1],
-                                  size=opto_train_times.shape[0]),
-                pre_time=PRE_TIME, post_time=POST_TIME_EARLY)[0]
-            mod_idx_early_permut[k, :] = 2 * (this_roc_auc_permut - 0.5)
+    # Exclude low firing rate units
+    p_values[firing_rates < MIN_FR] = 1
+    latency_zeta[firing_rates < MIN_FR] = np.nan
+    latency_peak[firing_rates < MIN_FR] = np.nan
+    latency_peak_hw[firing_rates < MIN_FR] = np.nan
 
-        mod_early = ((mod_idx_early > np.percentile(mod_idx_early_permut, 97.5, axis=0))
-                       | (mod_idx_early < np.percentile(mod_idx_early_permut, 2.5, axis=0)))
-        enh_early = mod_idx_early > np.percentile(mod_idx_early_permut, 97.5, axis=0)
-        supp_early = mod_idx_early < np.percentile(mod_idx_early_permut, 2.5, axis=0)
+    # Calculate modulation index
+    roc_auc, cluster_ids = roc_single_event(spikes.times, spikes.clusters,
+                                            opto_train_times, pre_time=PRE_TIME,
+                                            post_time=POST_TIME_EARLY)
+    mod_idx_early = 2 * (roc_auc - 0.5)
 
-        print('Calculating modulation index for LATE stim phase..')
-        roc_auc, cluster_ids = roc_single_event(spikes[probe].times, spikes[probe].clusters,
-                                                opto_train_times, pre_time=PRE_TIME,
-                                                post_time=POST_TIME_LATE)
-        mod_idx_late = 2 * (roc_auc - 0.5)
+    roc_auc, cluster_ids = roc_single_event(spikes.times, spikes.clusters,
+                                            opto_train_times, pre_time=PRE_TIME,
+                                            post_time=POST_TIME_LATE)
+    mod_idx_late = 2 * (roc_auc - 0.5)
 
-        mod_idx_late_permut = np.zeros([PERMUTATIONS, len(np.unique(spikes[probe].clusters))])
-        for k in range(PERMUTATIONS):
-            this_roc_auc_permut = roc_single_event(
-                spikes[probe].times, spikes[probe].clusters,
-                np.random.uniform(low=start_passive, high=opto_train_times[-1],
-                                  size=opto_train_times.shape[0]),
-                pre_time=PRE_TIME, post_time=POST_TIME_LATE)[0]
-            mod_idx_late_permut[k, :] = 2 * (this_roc_auc_permut - 0.5)
-
-        mod_late = ((mod_idx_late > np.percentile(mod_idx_late_permut, 97.5, axis=0))
-                       | (mod_idx_late < np.percentile(mod_idx_late_permut, 2.5, axis=0)))
-        enh_late = mod_idx_late > np.percentile(mod_idx_late_permut, 97.5, axis=0)
-        supp_late = mod_idx_late < np.percentile(mod_idx_late_permut, 2.5, axis=0)
-
-        cluster_regions = remap(clusters[probe].atlas_id[cluster_ids])
-        light_neurons = light_neurons.append(pd.DataFrame(data={
-            'subject': subject, 'date': date, 'eid': eid, 'probe': probe,
-            'region': cluster_regions, 'neuron_id': cluster_ids,
-            'mod_index_early': mod_idx_early, 'mod_index_late': mod_idx_late,
-            'mod_null_early': np.mean(mod_idx_early_permut, axis=0),
-            'mod_null_late': np.mean(mod_idx_late_permut, axis=0),
-            'modulated_early': mod_early, 'enhanced_early': enh_early, 'suppressed_early': supp_early,
-            'modulated_late': mod_late, 'enhanced_late': enh_late, 'suppressed_late': supp_late,
-            'modulated': (mod_early | mod_late)}))
+    cluster_regions = remap(clusters.acronym[cluster_ids])
+    light_neurons = pd.concat((light_neurons, pd.DataFrame(data={
+        'subject': subject, 'date': date, 'eid': eid, 'probe': probe, 'pid': pid,
+        'region': cluster_regions, 'neuron_id': cluster_ids,
+        'mod_index_early': mod_idx_early, 'mod_index_late': mod_idx_late,
+        'modulated': p_values < 0.05, 'p_value': p_values,
+        'latency_zeta': latency_zeta, 'latency_peak': latency_peak,
+        'latency_peak_hw': latency_peak_hw})))
 
 # Remove artifact neurons
 light_neurons = remove_artifact_neurons(light_neurons)

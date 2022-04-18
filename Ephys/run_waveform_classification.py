@@ -16,9 +16,9 @@ from sklearn.manifold import TSNE
 import pandas as pd
 
 # Settings
-_, fig_dir, data_dir = paths()
+fig_dir, data_dir = paths()
 CLUSTERING = 'gaussian'  # gaussian or k-means
-FEATURES = ['spike_width', 'pt_ratio']
+FEATURES = ['spike_width', 'rp_slope', 'pt_ratio', 'rc_slope', 'spike_amp']
 #FEATURES = ['spike_width', 'spike_amp']
 #FEATURES = ['spike_width', 'rp_slope', 'rc_slope', 'pt_ratio']
 #FEATURES = ['spike_width', 'rp_slope', 'rc_slope', 'pt_ratio', 'peak_to_trough', 'firing_rate']
@@ -67,10 +67,12 @@ time_ax = np.linspace(0, (waveforms_df.loc[1, 'waveform'].shape[0]/30000)*1000,
                       waveforms_df.loc[1, 'waveform'].shape[0])
 
 f, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(2, 3, figsize=(6, 3.5), dpi=dpi)
+
 ax1.plot(time_ax, waveforms_df.loc[waveforms_df['type'] == 'RS', 'waveform'].to_numpy().mean(),
          color=colors['RS'], label='RS')
 ax1.plot(time_ax, waveforms_df.loc[waveforms_df['type'] == 'FS', 'waveform'].to_numpy().mean(),
          color=colors['FS'], label='FS')
+
 ax1.legend(frameon=False)
 ax1.set(ylabel='mV', xlabel='Time (ms)', xlim=[0, 3])
 
@@ -110,7 +112,7 @@ plt.savefig(join(fig_dir, 'Ephys', 'NeuronType', 'neuron_type_classification'), 
 plt.savefig(join(fig_dir, 'Ephys', 'NeuronType', 'neuron_type_classification.pdf'))
 
 # %%
-
+"""
 f, axs = plt.subplots(int(np.floor(np.sqrt(len(waveforms_df['eid'].unique())))),
                       int(np.ceil(np.sqrt(len(waveforms_df['eid'].unique())))), figsize=(8, 4), dpi=dpi)
 axs = axs.flatten()
@@ -133,3 +135,4 @@ for k in plot_wfs:
     ax1.axis('off')
 plt.savefig(join(fig_dir, 'Ephys', 'NeuronType', 'neuron_type_classification_example_waveforms'), dpi=300)
 plt.savefig(join(fig_dir, 'Ephys', 'NeuronType', 'neuron_type_classification_example_waveforms.pdf'))
+"""

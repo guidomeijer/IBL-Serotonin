@@ -12,12 +12,15 @@ import matplotlib.pyplot as plt
 from sklearn.utils import shuffle
 import pandas as pd
 import tkinter as tk
+from scipy.stats import binned_statistic
+from scipy.signal import gaussian, convolve
 import pathlib
 import patsy
 import statsmodels.api as sm
+from brainbox.core import TimeSeries
+from brainbox.processing import sync
 from sklearn.model_selection import KFold
-from mpl_toolkits.axes_grid1.inset_locator import inset_axes
-from os.path import join
+from os.path import join, realpath, dirname
 from glob import glob
 from datetime import datetime
 from brainbox.io.spikeglx import spikeglx
@@ -46,17 +49,21 @@ def load_subjects(behavior=None):
     return subjects
 
 
-def paths():
+def paths(dropbox=False):
     """
     Make a file in the root of the repository called 'serotonin_paths.py' with in it:
 
-    DATA_PATH = '/path/to/Flatiron/data'
     FIG_PATH = '/path/to/save/figures'
-    SAVE_PATH = '/path/to/save/data'
+    DROPBOX_PATH = '/path/to/Dropbox'
 
     """
-    from serotonin_paths import DATA_PATH, FIG_PATH, SAVE_PATH
-    return DATA_PATH, FIG_PATH, SAVE_PATH
+    from serotonin_paths import FIG_PATH, DROPBOX_PATH
+    if dropbox:
+        fig_path = DROPBOX_PATH
+    else:
+        fig_path = FIG_PATH
+    save_path = join(dirname(realpath(__file__)), 'Data')
+    return fig_path, save_path
 
 
 def figure_style():
@@ -87,7 +94,7 @@ def figure_style():
                  })
     matplotlib.rcParams['pdf.fonttype'] = 42
     matplotlib.rcParams['ps.fonttype'] = 42
-    colors = {'general': sns.color_palette('Set2')[2],
+    colors = {'general': 'orange',
               'sert': sns.color_palette('Dark2')[0],
               'wt': [0.75, 0.75, 0.75],
               'left': sns.color_palette('colorblind')[1],
@@ -100,7 +107,8 @@ def figure_style():
               'probe': sns.color_palette('colorblind')[4],
               'block': sns.color_palette('colorblind')[6],
               'RS': sns.color_palette('Set2')[0],
-              'FS': sns.color_palette('Set2')[1]}
+              'FS': sns.color_palette('Set2')[1],
+              'early': [0.6, 0.6, 0.6], 'late': 'k'}
     screen_width = tk.Tk().winfo_screenwidth()
     dpi = screen_width / 12
     return colors, dpi
@@ -117,7 +125,7 @@ def remove_artifact_neurons(df):
         if df[column].dtype == bool:
             df[column] = df[column].astype('boolean')
     df = pd.merge(df, artifact_neurons, indicator=True, how='outer',
-                  on=['eid', 'neuron_id', 'probe', 'subject', 'date']).query('_merge=="left_only"').drop('_merge', axis=1)
+                  on=['pid', 'neuron_id', 'probe', 'subject', 'date']).query('_merge=="left_only"').drop('_merge', axis=1)
     return df
 
 
@@ -129,7 +137,7 @@ def query_opto_sessions(subject, one=None):
     return [sess['url'][-36:] for sess in sessions]
 
 
-def query_ephys_sessions(selection='aligned', return_subjects=False, one=None):
+def query_ephys_sessions(selection='aligned', one=None):
     if one is None:
         one = ONE()
     if selection == 'all':
@@ -158,18 +166,13 @@ def query_ephys_sessions(selection='aligned', return_subjects=False, one=None):
     ins = [i for i in ins if i['session_info']['subject'] in incl_subjects['subject'].values]
 
     # Get list of eids and probes
-    all_eids = np.array([i['session'] for i in ins])
-    all_probes = np.array([i['name'] for i in ins])
-    all_subjects = np.array([i['session_info']['subject'] for i in ins])
-    eids, ind_unique = np.unique(all_eids, return_index=True)
-    subjects = all_subjects[ind_unique]
-    probes = []
-    for i, eid in enumerate(eids):
-        probes.append(all_probes[[s == eid for s in all_eids]])
-    if return_subjects:
-        return eids, probes, subjects
-    else:
-        return eids, probes
+    rec = pd.DataFrame()
+    rec['pid'] = np.array([i['id'] for i in ins])
+    rec['eid'] = np.array([i['session'] for i in ins])
+    rec['probe'] = np.array([i['name'] for i in ins])
+    rec['subject'] = np.array([i['session_info']['subject'] for i in ins])
+    rec['date'] = np.array([i['session_info']['start_time'][:10] for i in ins])
+    return rec
 
 
 def load_trials(eid, laser_stimulation=False, invert_choice=False, invert_stimside=False,
@@ -251,11 +254,13 @@ def combine_regions(acronyms, split_thalamus=True, abbreviate=False):
         regions[np.in1d(acronyms, ['GPi', 'GPe'])] = 'GP'
         regions[np.in1d(acronyms, ['MRN'])] = 'MRN'
         regions[np.in1d(acronyms, ['ZI'])] = 'ZI'
+        regions[np.in1d(acronyms, ['PAG'])] = 'PAG'
+        regions[np.in1d(acronyms, ['SSp-bfd'])] = 'S1'
         regions[np.in1d(acronyms, ['LGv', 'LGd'])] = 'LG'
         regions[np.in1d(acronyms, ['PIR'])] = 'Pir'
         regions[np.in1d(acronyms, ['SNr', 'SNc', 'SNl'])] = 'SN'
         regions[np.in1d(acronyms, ['VISa', 'VISam'])] = 'PPC'
-        regions[np.in1d(acronyms, ['MEA', 'CEA', 'BLA'])] = 'Amyg'
+        regions[np.in1d(acronyms, ['MEA', 'CEA', 'BLA', 'COAa'])] = 'Amyg'
         regions[np.in1d(acronyms, ['AON'])] = 'AON'
         regions[np.in1d(acronyms, ['CP', 'STR', 'STRd', 'STRv'])] = 'Str'
         regions[np.in1d(acronyms, ['CA1', 'CA3', 'DG'])] = 'Hipp'
@@ -276,26 +281,27 @@ def combine_regions(acronyms, split_thalamus=True, abbreviate=False):
         regions[np.in1d(acronyms, ['MRN'])] = 'Midbrain reticular nucleus'
         regions[np.in1d(acronyms, ['AON'])] = 'Anterior olfactory nucleus'
         regions[np.in1d(acronyms, ['ZI'])] = 'Zona incerta'
+        regions[np.in1d(acronyms, ['PAG'])] = 'Periaqueductal gray'
+        regions[np.in1d(acronyms, ['SSp-bfd'])] = 'Barrel cortex'
         regions[np.in1d(acronyms, ['LGv', 'LGd'])] = 'Lateral geniculate'
         regions[np.in1d(acronyms, ['PIR'])] = 'Piriform'
         regions[np.in1d(acronyms, ['SNr', 'SNc', 'SNl'])] = 'Substantia nigra'
         regions[np.in1d(acronyms, ['VISa', 'VISam'])] = 'Posterior parietal cortex'
-        regions[np.in1d(acronyms, ['MEA', 'CEA', 'BLA'])] = 'Amygdala'
-        regions[np.in1d(acronyms, ['CP', 'STR', 'STRd', 'STRv'])] = 'Striatum'
+        regions[np.in1d(acronyms, ['MEA', 'CEA', 'BLA', 'COAa'])] = 'Amygdala'
+        regions[np.in1d(acronyms, ['CP', 'STR', 'STRd', 'STRv'])] = 'Tail of the striatum'
         regions[np.in1d(acronyms, ['CA1', 'CA3', 'DG'])] = 'Hippocampus'
     return regions
 
 
-def remap(ids, source='Allen', dest='Beryl', combine=False, split_thalamus=False, abbreviate=True,
+def remap(acronyms, source='Allen', dest='Beryl', combine=False, split_thalamus=False, abbreviate=True,
           brainregions=None):
     br = brainregions or BrainRegions()
-    _, inds = ismember(ids, br.id[br.mappings[source]])
-    ids = br.id[br.mappings[dest][inds]]
-    acronyms = br.get(br.id[br.mappings[dest][inds]])['acronym']
+    _, inds = ismember(br.acronym2id(acronyms), br.id[br.mappings[source]])
+    remapped_acronyms = br.get(br.id[br.mappings[dest][inds]])['acronym']
     if combine:
-        return combine_regions(acronyms, split_thalamus=split_thalamus, abbreviate=abbreviate)
+        return combine_regions(remapped_acronyms, split_thalamus=split_thalamus, abbreviate=abbreviate)
     else:
-        return acronyms
+        return remapped_acronyms
 
 
 def get_full_region_name(acronyms):
@@ -526,7 +532,7 @@ def load_opto_pulse_times(eid, part='begin', time_slice=400, one=None):
 
 def load_lfp(eid, probe, time_start, time_end, relative_to='begin', destriped=False, one=None):
     one = one or ONE()
-    destriped_lfp_path = join(paths()[2], 'LFP')
+    destriped_lfp_path = join(paths()[1], 'LFP')
 
     # Download LFP data
     if destriped:
@@ -671,6 +677,46 @@ def plot_scalar_on_slice(
                 volume='boundary', mapping=map, ax=ax, cmap=cmap_bound, vmin=0.01, vmax=0.8)
 
     return fig, ax
+
+
+def load_wheel_velocity(eid, starttimes, endtimes, binsize, one=None):
+    one = one or ONE()
+
+    # Load in wheel velocity
+    wheel = one.load_object(eid, 'wheel')
+    whlpos, whlt = wheel.position, wheel.timestamps
+    wh_endlast = 0
+    wheel_velocity = []
+    for (start, end) in np.vstack((starttimes, endtimes)).T:
+        wh_startind = np.searchsorted(whlt[wh_endlast:], start) + wh_endlast
+        wh_endind = np.searchsorted(whlt[wh_endlast:], end, side='right') + wh_endlast
+        if wh_endind > len(whlpos):
+            raise IndexError('Wheel trace too short for requested start and end times')
+        wh_endlast = wh_endind
+        tr_whlpos = whlpos[wh_startind - 1:wh_endind + 1]
+        tr_whlt = whlt[wh_startind - 1:wh_endind + 1] - start
+        tr_whlt[0] = 0.  # Manual previous-value interpolation
+        whlseries = TimeSeries(tr_whlt, tr_whlpos, columns=['whlpos'])
+        whlsync = sync(binsize, timeseries=whlseries, interp='previous')
+        trialstartind = np.searchsorted(whlsync.times, 0)
+        trialendind = np.ceil((end - start) / binsize).astype(int)
+        trpos = whlsync.values[trialstartind:trialendind + trialstartind]
+        whlvel = trpos[1:] - trpos[:-1]
+        whlvel = np.insert(whlvel, 0, 0)
+        if np.abs((trialendind - len(whlvel))) > 0:
+            raise IndexError('Mismatch between expected length of wheel data and actual.')
+        wheel_velocity.append(whlvel)
+    return wheel_velocity
+
+
+def make_bins(signal, timestamps, start_times, stop_times, binsize):
+
+    # Loop over start times
+    binned_signal = []
+    for (start, end) in np.vstack((start_times, stop_times)).T:
+        binned_signal.append(binned_statistic(timestamps, signal, bins=int((end-start)*(1/binsize)),
+                                              range=(start, end), statistic=np.nanmean)[0])
+    return binned_signal
 
 
 def fit_psychfunc(stim_levels, n_trials, proportion):
@@ -881,3 +927,112 @@ def fit_glm(behav, prior_blocks=True, opto_stim=False, rt_cutoff=None, folds=3):
     params['accuracy_rt_long'] = np.mean(acc_rt_long)
 
     return params  # wide df
+
+
+def calculate_peths(
+        spike_times, spike_clusters, cluster_ids, align_times, pre_time=0.2,
+        post_time=0.5, bin_size=0.025, smoothing=0.025, return_fr=True):
+    """
+    Calcluate peri-event time histograms; return means and standard deviations
+    for each time point across specified clusters
+
+    :param spike_times: spike times (in seconds)
+    :type spike_times: array-like
+    :param spike_clusters: cluster ids corresponding to each event in `spikes`
+    :type spike_clusters: array-like
+    :param cluster_ids: subset of cluster ids for calculating peths
+    :type cluster_ids: array-like
+    :param align_times: times (in seconds) to align peths to
+    :type align_times: array-like
+    :param pre_time: time (in seconds) to precede align times in peth
+    :type pre_time: float
+    :param post_time: time (in seconds) to follow align times in peth
+    :type post_time: float
+    :param bin_size: width of time windows (in seconds) to bin spikes
+    :type bin_size: float
+    :param smoothing: standard deviation (in seconds) of Gaussian kernel for
+        smoothing peths; use `smoothing=0` to skip smoothing
+    :type smoothing: float
+    :param return_fr: `True` to return (estimated) firing rate, `False` to return spike counts
+    :type return_fr: bool
+    :return: peths, binned_spikes
+    :rtype: peths: Bunch({'mean': peth_means, 'std': peth_stds, 'tscale': ts, 'cscale': ids})
+    :rtype: binned_spikes: np.array (n_align_times, n_clusters, n_bins)
+    """
+
+    # initialize containers
+    n_offset = 5 * int(np.ceil(smoothing / bin_size))  # get rid of boundary effects for smoothing
+    n_bins_pre = int(np.ceil(pre_time / bin_size)) + n_offset
+    n_bins_post = int(np.ceil(post_time / bin_size)) + n_offset
+    n_bins = n_bins_pre + n_bins_post
+    binned_spikes = np.zeros(shape=(len(align_times), len(cluster_ids), n_bins))
+
+    # build gaussian kernel if requested
+    if smoothing > 0:
+        w = n_bins - 1 if n_bins % 2 == 0 else n_bins
+        window = gaussian(w, std=smoothing / bin_size)
+        # half (causal) gaussian filter
+        # window[int(np.ceil(w/2)):] = 0
+        window /= np.sum(window)
+        binned_spikes_conv = np.copy(binned_spikes)
+
+    ids = np.unique(cluster_ids)
+
+    # filter spikes outside of the loop
+    idxs = np.bitwise_and(spike_times >= np.min(align_times) - (n_bins_pre + 1) * bin_size,
+                          spike_times <= np.max(align_times) + (n_bins_post + 1) * bin_size)
+    idxs = np.bitwise_and(idxs, np.isin(spike_clusters, cluster_ids))
+    spike_times = spike_times[idxs]
+    spike_clusters = spike_clusters[idxs]
+
+    # compute floating tscale
+    tscale = np.arange(-n_bins_pre, n_bins_post + 1) * bin_size
+    # bin spikes
+    for i, t_0 in enumerate(align_times):
+        # define bin edges
+        ts = tscale + t_0
+        # filter spikes
+        idxs = np.bitwise_and(spike_times >= ts[0], spike_times <= ts[-1])
+        i_spikes = spike_times[idxs]
+        i_clusters = spike_clusters[idxs]
+
+        # bin spikes similar to bincount2D: x = spike times, y = spike clusters
+        xscale = ts
+        xind = (np.floor((i_spikes - np.min(ts)) / bin_size)).astype(np.int64)
+        yscale, yind = np.unique(i_clusters, return_inverse=True)
+        nx, ny = [xscale.size, yscale.size]
+        ind2d = np.ravel_multi_index(np.c_[yind, xind].transpose(), dims=(ny, nx))
+        r = np.bincount(ind2d, minlength=nx * ny, weights=None).reshape(ny, nx)
+
+        # store (ts represent bin edges, so there are one fewer bins)
+        bs_idxs = np.isin(ids, yscale)
+        binned_spikes[i, bs_idxs, :] = r[:, :-1]
+
+        # smooth
+        if smoothing > 0:
+            idxs = np.where(bs_idxs)[0]
+            for j in range(r.shape[0]):
+                binned_spikes_conv[i, idxs[j], :] = convolve(
+                    r[j, :], window, mode='same', method='auto')[:-1]
+
+    # average
+    if smoothing > 0:
+        binned_spikes_ = np.copy(binned_spikes_conv)
+    else:
+        binned_spikes_ = np.copy(binned_spikes)
+    if return_fr:
+        binned_spikes_ /= bin_size
+
+    peth_means = np.mean(binned_spikes_, axis=0)
+    peth_stds = np.std(binned_spikes_, axis=0)
+
+    if smoothing > 0:
+        peth_means = peth_means[:, n_offset:-n_offset]
+        peth_stds = peth_stds[:, n_offset:-n_offset]
+        binned_spikes = binned_spikes_[:, :, n_offset:-n_offset]
+        tscale = tscale[n_offset:-n_offset]
+
+    # package output
+    tscale = (tscale[:-1] + tscale[1:]) / 2
+    peths = dict({'means': peth_means, 'stds': peth_stds, 'tscale': tscale, 'cscale': ids})
+    return peths, binned_spikes
