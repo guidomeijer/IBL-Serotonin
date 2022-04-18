@@ -33,6 +33,9 @@ DATE_GOOD_OPTO = '2021-07-01'
 # This is the date at which light shielding was added so that the mouse couldn't see the opto stim
 DATE_LIGHT_SHIELD = '2021-06-08'
 
+# Date at which a ramp for the light pulses was introduced (against light artifacts)
+DATE_OPTO_RAMP = '2022-02-14'
+
 
 def load_subjects(behavior=None):
     subjects = pd.read_csv(join(pathlib.Path(__file__).parent.resolve(), 'subjects.csv'))
