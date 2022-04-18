@@ -46,18 +46,21 @@ def load_subjects(behavior=None):
     return subjects
 
 
-def paths():
+def paths(dropbox=False):
     """
     Make a file in the root of the repository called 'serotonin_paths.py' with in it:
 
-    DATA_PATH = '/path/to/Flatiron/data'
     FIG_PATH = '/path/to/save/figures'
-    SAVE_PATH = '/path/to/save/data'
+    DROPBOX_PATH = '/path/to/Dropbox'
 
     """
-    from serotonin_paths import FIG_PATH
+    from serotonin_paths import FIG_PATH, DROPBOX_PATH
+    if dropbox:
+        fig_path = DROPBOX_PATH
+    else:
+        fig_path = FIG_PATH
     save_path = join(dirname(realpath(__file__)), 'Data')
-    return FIG_PATH, save_path
+    return fig_path, save_path
 
 
 def figure_style():
