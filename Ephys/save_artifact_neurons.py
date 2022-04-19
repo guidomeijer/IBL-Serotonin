@@ -45,7 +45,7 @@ artifact_neurons = artifact_neurons.append(pd.DataFrame(data={
 
 # ZFM-03330, 2022-02-16
 artifact_neurons = artifact_neurons.append(pd.DataFrame(data={
-    'subject': 'ZFM-03330', 'date': '2022-02-16', 'pid': '0e236047-e8ca-49b8-a18e-d0f6ff3ee592', 'probe': 'probe01',
+    'subject': 'ZFM-03330', 'date': '2022-02-16', 'pid': '455d9684-12b3-4c40-97a3-5a47b9c31589', 'probe': 'probe01',
     'neuron_id': [185]}))
 
 # ZFM-03330, 2022-02-17
