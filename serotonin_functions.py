@@ -74,7 +74,7 @@ def figure_style():
             font="Arial",
             rc={"font.size": 7,
                  "axes.titlesize": 8,
-                 "axes.labelsize": 8,
+                 "axes.labelsize": 7,
                  "axes.linewidth": 0.5,
                  "lines.linewidth": 1,
                  "lines.markersize": 3,

@@ -49,8 +49,12 @@ summary_df = light_neurons[light_neurons['expression'] == 1].groupby(['full_regi
 summary_df['n_neurons'] = light_neurons[light_neurons['expression'] == 1].groupby(['full_region']).size()
 summary_df['modulation_index'] = light_neurons[light_neurons['expression'] == 1].groupby(['full_region']).mean()['mod_index_late']
 summary_df = summary_df.reset_index()
+summary_df['perc_enh_late'] =  (summary_df['enhanced_late'] / summary_df['n_neurons']) * 100
+summary_df['perc_supp_late'] =  (summary_df['suppressed_late'] / summary_df['n_neurons']) * 100
 summary_df['perc_mod'] =  (summary_df['modulated'] / summary_df['n_neurons']) * 100
 summary_df = summary_df[summary_df['n_neurons'] >= MIN_NEURONS]
+summary_df['perc_supp_late'] = -summary_df['perc_supp_late']
+
 # Get ordered regions
 ordered_regions = summary_df.sort_values('perc_mod', ascending=False).reset_index()
 
@@ -70,3 +74,25 @@ ax1.set(xlabel='Modulated neurons (%)', ylabel='', xlim=[0, 50], xticks=np.arang
 plt.tight_layout()
 sns.despine(trim=False)
 plt.savefig(join(fig_path, 'figure2_perc_light_modulated_neurons_per_region.pdf'))
+
+# %%
+f, ax1 = plt.subplots(1, 1, figsize=(5, 3.5), dpi=dpi)
+
+ax1.plot([0, 0], [0, summary_df.shape[0]], color=[0.5, 0.5, 0.5])
+
+ax1.hlines(y=np.arange(ordered_regions.shape[0]), xmin=0, xmax=ordered_regions['perc_enh_late'],
+           color=colors['enhanced'])
+ax1.hlines(y=np.arange(ordered_regions.shape[0]), xmin=ordered_regions['perc_supp_late'], xmax=0,
+           color=colors['suppressed'])
+ax1.plot(ordered_regions['perc_supp_late'], np.arange(ordered_regions.shape[0]), 'o',
+         color=colors['suppressed'])
+ax1.plot(ordered_regions['perc_enh_late'], np.arange(ordered_regions.shape[0]), 'o',
+         color=colors['enhanced'])
+ax1.set(ylabel='', xlabel='5-HT modulated neurons (%)', xlim=[-60, 40],
+        xticklabels=np.concatenate((np.arange(60, 0, -20), np.arange(0, 41, 20))))
+ax1.spines['bottom'].set_position(('data', summary_df.shape[0]))
+ax1.margins(x=0)
+
+plt.tight_layout()
+sns.despine(trim=True)
+plt.savefig(join(fig_path, 'figure2_light_modulation_per_region.pdf'))
