@@ -24,6 +24,7 @@ light_neurons = pd.read_csv(join(save_path, 'light_modulated_neurons.csv'))
 
 # Get full region names
 light_neurons['full_region'] = combine_regions(light_neurons['region'], split_thalamus=False)
+#light_neurons['full_region'] = light_neurons['region']
 
 # Drop root and void
 light_neurons = light_neurons.reset_index(drop=True)
@@ -61,7 +62,7 @@ colors, dpi = figure_style()
 f, ax1 = plt.subplots(1, 1, figsize=(2.75, 2), dpi=dpi)
 sns.barplot(x='perc_mod', y='full_region', data=summary_df.sort_values('perc_mod', ascending=False),
             color=colors['general'], ax=ax1)
-ax1.set(xlabel='5-HT modulated neurons (%)', ylabel='', xlim=[0, 50], xticks=np.arange(0, 51, 10))
+ax1.set(xlabel='Modulated neurons (%)', ylabel='', xlim=[0, 50], xticks=np.arange(0, 51, 10))
 #ax1.plot([-1, ax1.get_xlim()[1]], [5, 5], ls='--', color='grey')
 #plt.xticks(rotation=90)
 #ax1.margins(x=0)

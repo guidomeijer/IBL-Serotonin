@@ -48,7 +48,7 @@ f, ax1 = plt.subplots(1, 1, figsize=(1.5, 2), dpi=dpi)
 
 sns.swarmplot(x='sert-cre', y='perc_mod', data=all_mice, order=[1, 0],
               palette=[colors['sert'], colors['wt']], ax=ax1)
-ax1.set(xticklabels=['SERT', 'WT'], ylabel='5-HT modulated neurons (%)', ylim=[0, 80], xlabel='')
+ax1.set(xticklabels=['SERT', 'WT'], ylabel='Modulated neurons (%)', ylim=[0, 80], xlabel='')
 
 sns.despine(trim=True)
 plt.tight_layout()
