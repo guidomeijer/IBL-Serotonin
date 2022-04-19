@@ -76,8 +76,10 @@ sns.despine(trim=False)
 plt.savefig(join(fig_path, 'figure2_perc_light_modulated_neurons_per_region.pdf'))
 
 # %%
-f, ax1 = plt.subplots(1, 1, figsize=(5, 3.5), dpi=dpi)
+f, ax1 = plt.subplots(1, 1, figsize=(3, 2), dpi=dpi)
 
+sns.stripplot(x='perc_enh_late', y='full_region', data=summary_df, order=ordered_regions['full_region'],
+              color='k', alpha=0, ax=ax1)  # this actually doesn't plot anything
 ax1.plot([0, 0], [0, summary_df.shape[0]], color=[0.5, 0.5, 0.5])
 
 ax1.hlines(y=np.arange(ordered_regions.shape[0]), xmin=0, xmax=ordered_regions['perc_enh_late'],
@@ -88,7 +90,7 @@ ax1.plot(ordered_regions['perc_supp_late'], np.arange(ordered_regions.shape[0]),
          color=colors['suppressed'])
 ax1.plot(ordered_regions['perc_enh_late'], np.arange(ordered_regions.shape[0]), 'o',
          color=colors['enhanced'])
-ax1.set(ylabel='', xlabel='5-HT modulated neurons (%)', xlim=[-60, 40],
+ax1.set(ylabel='', xlabel='Modulated neurons (%)', xlim=[-60, 40],
         xticklabels=np.concatenate((np.arange(60, 0, -20), np.arange(0, 41, 20))))
 ax1.spines['bottom'].set_position(('data', summary_df.shape[0]))
 ax1.margins(x=0)
