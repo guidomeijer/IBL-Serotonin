@@ -18,8 +18,8 @@ import pandas as pd
 # Settings
 fig_dir, data_dir = paths()
 CLUSTERING = 'gaussian'  # gaussian or k-means
-FEATURES = ['spike_width', 'rp_slope', 'pt_ratio', 'rc_slope', 'spike_amp']
-#FEATURES = ['spike_width', 'spike_amp']
+#FEATURES = ['spike_width', 'rp_slope', 'pt_ratio', 'rc_slope', 'spike_amp']
+FEATURES = ['spike_width', 'pt_ratio']
 #FEATURES = ['spike_width', 'rp_slope', 'rc_slope', 'pt_ratio']
 #FEATURES = ['spike_width', 'rp_slope', 'rc_slope', 'pt_ratio', 'peak_to_trough', 'firing_rate']
 #FEATURES = ['spike_width', 'firing_rate']
