@@ -44,7 +44,7 @@ all_mice = all_mice.rename({0: 'perc_mod'}, axis=1)
 # %%
 
 colors, dpi = figure_style()
-f, ax1 = plt.subplots(1, 1, figsize=(1.5, 1.8), dpi=dpi)
+f, ax1 = plt.subplots(1, 1, figsize=(1.5, 1.75), dpi=dpi)
 
 sns.swarmplot(x='sert-cre', y='perc_mod', data=all_mice, order=[1, 0],
               palette=[colors['sert'], colors['wt']], ax=ax1)

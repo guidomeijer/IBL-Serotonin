@@ -60,10 +60,10 @@ ordered_regions = summary_df.sort_values('perc_mod', ascending=False).reset_inde
 
 
 
-# %% Plot
+# %% Plot percentage modulated neurons per region
 
 colors, dpi = figure_style()
-f, ax1 = plt.subplots(1, 1, figsize=(2.75, 2), dpi=dpi)
+f, ax1 = plt.subplots(1, 1, figsize=(2.5, 2), dpi=dpi)
 sns.barplot(x='perc_mod', y='full_region', data=summary_df.sort_values('perc_mod', ascending=False),
             color=colors['general'], ax=ax1)
 ax1.set(xlabel='Modulated neurons (%)', ylabel='', xlim=[0, 50], xticks=np.arange(0, 51, 10))
