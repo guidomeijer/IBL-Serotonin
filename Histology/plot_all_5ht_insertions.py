@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 import argparse
 from iblviewer.launcher import IBLViewer
+from serotonin_functions import load_subjects
 
 
 class ProbeData:
@@ -45,8 +46,7 @@ class ProbeData:
                                 django='session__project__name__icontains,serotonin,'
                                        'session__qc__lt,50,'
                                        'json__extended_qc__alignment_count__gt,0')
-        subjects = pd.read_csv('/home/guido/Repositories/IBL-Serotonin/subjects.csv')
-        subjects = subjects[~((subjects['expression'] == 0) & (subjects['sert-cre'] == 1))]
+        subjects = load_subjects()
         ins = []
         for i, insertion in enumerate(all_ins):
             if insertion['session_info']['subject'] in subjects['subject'].values:

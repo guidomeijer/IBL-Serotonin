@@ -57,14 +57,14 @@ ordered_regions = sert_neurons.groupby('full_region').median().sort_values('late
 # %%
 
 colors, dpi = figure_style()
-f, ax1 = plt.subplots(1, 1, figsize=(3, 2), dpi=dpi)
+f, ax1 = plt.subplots(1, 1, figsize=(3.5, 2.2), dpi=dpi)
 #sns.pointplot(x='latency', y='full_region', data=sert_neurons, order=ordered_regions['full_region'],
 #              join=False, ci=68, color=colors['general'], ax=ax1)
 sns.boxplot(x='latency', y='full_region', data=sert_neurons, order=ordered_regions['full_region'],
-            color=colors['general'], fliersize=0, ax=ax1)
-ax1.set(xlim=[0, 1], xlabel='Modulation onset latency (s)', ylabel='')
+            color=colors['general'], fliersize=0, linewidth=0.75, ax=ax1)
+ax1.set(xlim=[-0.01, 1.01], xlabel='Modulation onset latency (s)', ylabel='')
 #plt.xticks(rotation=90)
 plt.tight_layout()
-sns.despine(trim=True)
+sns.despine(trim=True, offset=3)
 plt.savefig(join(fig_path, 'figure4_modulation_latency_per_region.pdf'))
 
