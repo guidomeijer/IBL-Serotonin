@@ -117,7 +117,7 @@ roc_auc, cluster_ids = roc_single_event(spikes.times, spikes.clusters,
 mod_index = 2 * (roc_auc - 0.5)
 
 # Get region
-region = remap(clusters.atlas_id[NEURON])[0]
+region = remap(clusters.acronym[NEURON])[0]
 
 # Calculate mean spike rate
 stim_intervals = np.vstack((opto_train_times, opto_train_times + 1)).T
@@ -133,16 +133,37 @@ print(f'ZETA p-value: {p_value}')
 
 # %% Plot PSTH
 colors, dpi = figure_style()
-p, ax_mod = plt.subplots(2, 3, figsize=(1.75, 1.75), dpi=dpi)
+p, ax = plt.subplots(1, 1, figsize=(1.75, 1.75), dpi=dpi)
+ax.add_patch(Rectangle((0, 0), 1, 100, color='royalblue', alpha=0.25, lw=0))
+ax.add_patch(Rectangle((0, 0), 1, -100, color='royalblue', alpha=0.25, lw=0))
+peri_event_time_histogram(spikes.times, spikes.clusters, opto_train_times,
+                          NEURON, t_before=T_BEFORE, t_after=T_AFTER, bin_size=BIN_SIZE,
+                          smoothing=SMOOTHING,  include_raster=True, error_bars='sem', ax=ax,
+                          pethline_kwargs={'color': 'black', 'lw': 1},
+                          errbar_kwargs={'color': 'black', 'alpha': 0.3},
+                          raster_kwargs={'color': 'black', 'lw': 0.3},
+                          eventline_kwargs={'lw': 0})
+ax.set(ylim=[ax.get_ylim()[0], ax.get_ylim()[1] + ax.get_ylim()[1] * 0.2])
+#ax.plot([0, 1], [0, 0], lw=2, color='royalblue')
+ax.set(ylabel='Firing rate (spks/s)', xlabel='Time (s)',
+       yticks=np.linspace(0, np.round(ax.get_ylim()[1]), 3),
+       ylim=[ax.get_ylim()[0], np.round(ax.get_ylim()[1])])
+ax.yaxis.set_major_formatter(FormatStrFormatter('%.0f'))
+ax.yaxis.set_label_coords(-.2, .75)
+
+plt.tight_layout()
+plt.savefig(join(fig_path,  f'figure4_psth_{region}_{SUBJECT}_{DATE}_{PROBE}_neuron{NEURON}.pdf'))
+
+p, ax_mod = plt.subplots(1, 1, figsize=(1.75, 1.75), dpi=dpi)
 ax_mod.plot(dRate['vecT'], dRate['vecRate'])
 ax_mod.plot(latency, dRate['vecRate'][np.argmin(np.abs(dRate['vecT'] - latency))],
             'x', color='red', lw=3, markersize=5)
-#ax_mod.text(0.05, 30, f'{latency*1000:.2f} ms', color='r', fontweight='bold')
-ax_mod.set(xlabel='Time (s)', ylabel='Inst. spiking rate (spks/s)',
+ax_mod.text(0.1, 50, f'{latency*1000:.1f} ms', color='r', fontweight='bold')
+ax_mod.set(xlabel='Time from stim. onset (s)', ylabel='Inst. spiking rate (spks/s)',
            xlim=[0, .4], ylim=[0, 80])
 sns.despine(trim=True)
 plt.tight_layout()
-plt.savefig(join(fig_path, f'figure4_{region}_{SUBJECT}_{DATE}_{PROBE}_neuron{NEURON}.pdf'))
+plt.savefig(join(fig_path, f'figure4_inst_{region}_{SUBJECT}_{DATE}_{PROBE}_neuron{NEURON}.pdf'))
 
 
 
