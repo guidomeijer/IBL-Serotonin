@@ -158,7 +158,7 @@ p, ax_mod = plt.subplots(1, 1, figsize=(1.75, 1.75), dpi=dpi)
 ax_mod.plot(dRate['vecT'], dRate['vecRate'])
 ax_mod.plot(latency, dRate['vecRate'][np.argmin(np.abs(dRate['vecT'] - latency))],
             'x', color='red', lw=3, markersize=5)
-ax_mod.text(0.1, 50, f'{latency*1000:.1f} ms', color='r', fontweight='bold')
+ax_mod.text(0.1, 50, f'{latency*1000:.1f} ms', color='red', fontweight='bold')
 ax_mod.set(xlabel='Time from stim. onset (s)', ylabel='Inst. spiking rate (spks/s)',
            xlim=[0, .4], ylim=[0, 80])
 sns.despine(trim=True)

@@ -103,7 +103,7 @@ print(f'ZETA p-value: {p_value}')
 
 # %% Plot PSTH
 colors, dpi = figure_style()
-p, ax = plt.subplots(1, 1, figsize=(1.75, 2), dpi=dpi)
+p, ax = plt.subplots(1, 1, figsize=(1.5, 1.75), dpi=dpi)
 ax.add_patch(Rectangle((0, 0), 1, 100, color='royalblue', alpha=0.25, lw=0))
 ax.add_patch(Rectangle((0, 0), 1, -100, color='royalblue', alpha=0.25, lw=0))
 peri_event_time_histogram(spikes.times, spikes.clusters, opto_train_times,
@@ -119,7 +119,7 @@ ax.set(ylabel='Firing rate (spks/s)', xlabel='Time (s)',
        yticks=np.linspace(0, np.round(ax.get_ylim()[1]), 3),
        ylim=[ax.get_ylim()[0], np.round(ax.get_ylim()[1])])
 ax.yaxis.set_major_formatter(FormatStrFormatter('%.0f'))
-ax.yaxis.set_label_coords(-.2, .75)
+ax.yaxis.set_label_coords(-.25, .75)
 
 plt.tight_layout()
 
