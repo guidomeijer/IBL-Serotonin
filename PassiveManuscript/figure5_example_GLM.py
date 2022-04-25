@@ -25,7 +25,7 @@ PLOT = ['pupil_diameter', 'motion_energy_left', 'paw_l', 'nose_tip']
 LABELS = ['Pupil diameter', 'Video motion energy', 'Paw movement', 'Nose movement']
 BINSIZE = 0.04
 T_BEFORE = 1
-T_AFTER = 2
+T_AFTER = 3
 MOT_KERNLEN = 0.4
 MOT_NBASES = 10
 OPTO_KERNLEN = 1
@@ -60,6 +60,7 @@ design = dm.DesignMatrix(opto_df, vartypes=vartypes, binwidth=BINSIZE)
 # Get basis functions
 motion_bases_func = mut.full_rcos(MOT_KERNLEN, MOT_NBASES, design.binf)
 opto_bases_func = mut.full_rcos(OPTO_KERNLEN, OPTO_NBASES, design.binf)
+
 
 # %% Plot
 time_ax = np.linspace(-T_BEFORE, T_AFTER, opto_df['pupil_diameter'][0].shape[0])

@@ -41,7 +41,6 @@ light_neurons['suppressed_early'] = light_neurons['modulated'] & (light_neurons[
 # Add expression
 subjects = load_subjects()
 for i, nickname in enumerate(np.unique(subjects['subject'])):
-    light_neurons.loc[light_neurons['subject'] == nickname, 'expression'] = subjects.loc[subjects['subject'] == nickname, 'expression'].values[0]
     light_neurons.loc[light_neurons['subject'] == nickname, 'sert-cre'] = subjects.loc[subjects['subject'] == nickname, 'sert-cre'].values[0]
 
 # Calculate summary statistics

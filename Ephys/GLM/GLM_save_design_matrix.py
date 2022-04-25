@@ -61,6 +61,14 @@ for i in rec.index.values:
         mot_body = smooth_interpolate_signal_sg(mot_body)
         mot_left = smooth_interpolate_signal_sg(mot_left)
         mot_right = smooth_interpolate_signal_sg(mot_right)
+        
+        # Transform into %
+        mot_body = ((mot_body - np.percentile(mot_body[~np.isnan(mot_body)], 2))
+                    / np.percentile(mot_body[~np.isnan(mot_body)], 2)) * 100
+        mot_left = ((mot_left - np.percentile(mot_left[~np.isnan(mot_left)], 2))
+                    / np.percentile(mot_left[~np.isnan(mot_left)], 2)) * 100
+        mot_right = ((mot_right - np.percentile(mot_right[~np.isnan(mot_right)], 2))
+                     / np.percentile(mot_right[~np.isnan(mot_right)], 2)) * 100
     except:
         print('Failed to get motion energy')
         mot_body = np.zeros(times_body.shape)
@@ -81,7 +89,10 @@ for i in rec.index.values:
     # Get pupil diameter
     print('Loading in pupil size')
     _, pupil_diameter = get_raw_and_smooth_pupil_dia(eid, 'left', one)
-    pupil_diameter[np.isnan(pupil_diameter)] = 0
+    # Transform into % 
+    diameter_perc = ((pupil_diameter - np.percentile(pupil_diameter[~np.isnan(pupil_diameter)], 2))
+                     / np.percentile(pupil_diameter[~np.isnan(pupil_diameter)], 2)) * 100
+    pupil_diameter[np.isnan(diameter_perc)] = 0 # Set NaN to 0
     opto_df['pupil_diameter'] = make_bins(pupil_diameter, times_left, opto_df['trial_start'],
                                           opto_df['trial_end'], BINSIZE)
 
@@ -92,6 +103,8 @@ for i in rec.index.values:
         this_dist = np.linalg.norm(XYs[dlc_key][1:] - XYs[dlc_key][:-1], axis=1)
         if np.sum(np.isnan(this_dist)) < this_dist.shape[0] / 2:
             this_dlc = smooth_interpolate_signal_sg(this_dist)
+            this_dlc = ((this_dlc - np.percentile(this_dlc[~np.isnan(this_dlc)], 2))
+                        / np.percentile(this_dlc[~np.isnan(this_dlc)], 2)) * 100
         opto_df[dlc_key] = make_bins(this_dlc, diff_video_times, opto_df['trial_start'],
                                      opto_df['trial_end'], BINSIZE)
 
