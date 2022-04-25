@@ -17,7 +17,7 @@ one = ONE()
 ba = AllenAtlas()
 
 # Settings
-OVERWRITE = False
+OVERWRITE = True
 BINSIZE = 0.04
 T_BEFORE = 1
 T_AFTER = 2
@@ -61,7 +61,7 @@ for i in rec.index.values:
         mot_body = smooth_interpolate_signal_sg(mot_body)
         mot_left = smooth_interpolate_signal_sg(mot_left)
         mot_right = smooth_interpolate_signal_sg(mot_right)
-        
+
         # Transform into %
         mot_body = ((mot_body - np.percentile(mot_body[~np.isnan(mot_body)], 2))
                     / np.percentile(mot_body[~np.isnan(mot_body)], 2)) * 100
@@ -89,7 +89,7 @@ for i in rec.index.values:
     # Get pupil diameter
     print('Loading in pupil size')
     _, pupil_diameter = get_raw_and_smooth_pupil_dia(eid, 'left', one)
-    # Transform into % 
+    # Transform into %
     diameter_perc = ((pupil_diameter - np.percentile(pupil_diameter[~np.isnan(pupil_diameter)], 2))
                      / np.percentile(pupil_diameter[~np.isnan(pupil_diameter)], 2)) * 100
     pupil_diameter[np.isnan(diameter_perc)] = 0 # Set NaN to 0

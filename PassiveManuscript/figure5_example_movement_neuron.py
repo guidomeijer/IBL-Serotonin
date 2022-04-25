@@ -32,7 +32,8 @@ one = ONE()
 SUBJECT = 'ZFM-02600'
 DATE = '2021-08-28'
 PROBE = 'probe01'
-NEURON = 171
+#NEURON = 171
+NEURON = 517
 
 T_BEFORE = 1  # for plotting
 T_AFTER = 2
@@ -69,8 +70,6 @@ p_value, latencies, dZETA, dRate = getZeta(spikes.times[spikes.clusters == NEURO
                                            tplRestrictRange=(0 + ZETA_BEFORE, 1 + ZETA_BEFORE),
                                            dblUseMaxDur=2 + ZETA_BEFORE,
                                            boolReturnZETA=True, boolReturnRate=True)
-latency = latencies[3] - ZETA_BEFORE
-dZETA['vecSpikeT'] = dZETA['vecSpikeT'] - ZETA_BEFORE
 
 # Get spike counts for baseline and event timewindow
 baseline_times = np.column_stack(((opto_train_times - PRE_TIME[0]), (opto_train_times - PRE_TIME[1])))

@@ -26,8 +26,7 @@ BIN_SIZE = 0.01
 SMOOTHING = 0.05
 BASELINE = [-1, 0]
 MIN_FR = 0.1
-fig_path, save_path = paths(dropbox=True)
-fig_path = join(fig_path, 'PaperPassive')
+fig_path, save_path = paths()
 
 # Load in light modulated neurons
 light_neurons = pd.read_csv(join(save_path, 'light_modulated_neurons.csv'))
@@ -74,24 +73,14 @@ for i, pid in enumerate(np.unique(light_neurons['pid'])):
     # Loop over neurons
     for n, index in enumerate(these_neurons.index.values):
         if np.mean(peths['means'][n, :]) > MIN_FR:
-            # Calculate percentage change in firing rate
-            peth_perc = ((peths['means'][n, :]
-                          - np.mean(peths['means'][n, ((tscale > BASELINE[0]) & (tscale < BASELINE[1]))]))
-                         / np.mean(peths['means'][n, ((tscale > BASELINE[0]) & (tscale < BASELINE[1]))])) * 100
-
-            # Calculate percentage change in firing rate
-            peth_ratio = ((peths['means'][n, :]
-                           - np.mean(peths['means'][n, ((tscale > BASELINE[0]) & (tscale < BASELINE[1]))]))
-                          / (peths['means'][n, :]
-                             + np.mean(peths['means'][n, ((tscale > BASELINE[0]) & (tscale < BASELINE[1]))])))
 
             # Add to dataframe
             peths_df = pd.concat((peths_df, pd.DataFrame(index=[peths_df.shape[0]], data={
-                'peth': [peths['means'][n, :]], 'peth_perc': [peth_perc], 'peth_ratio': [peth_ratio],
-                'region': these_neurons.loc[index, 'full_region'], 'modulation': these_neurons.loc[index, 'mod_index_late'],
+                'peth': [peths['means'][n, :]],  'time': [tscale], 'region': these_neurons.loc[index, 'full_region'],
+                'modulation': these_neurons.loc[index, 'mod_index_late'],
                 'neuron_id': these_neurons.loc[index, 'neuron_id'], 'subject': these_neurons.loc[index, 'subject'],
                 'eid': these_neurons.loc[index, 'eid'], 'acronym': these_neurons.loc[index, 'region']})))
 
-# Save output 
+# Save output
 peths_df.to_pickle(join(save_path, 'psth.pickle'))
 
