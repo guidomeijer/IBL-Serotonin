@@ -236,7 +236,7 @@ def load_trials(eid, laser_stimulation=False, invert_choice=False, invert_stimsi
     return trials
 
 
-def combine_regions(acronyms, split_thalamus=True, abbreviate=False):
+def combine_regions(acronyms, split_thalamus=False, abbreviate=False):
     regions = np.array(['root'] * len(acronyms), dtype=object)
     if abbreviate:
         regions[np.in1d(acronyms, ['ILA', 'PL', 'MOs', 'ACAd', 'ACAv'])] = 'mPFC'
@@ -256,7 +256,7 @@ def combine_regions(acronyms, split_thalamus=True, abbreviate=False):
         regions[np.in1d(acronyms, ['ZI'])] = 'ZI'
         regions[np.in1d(acronyms, ['PAG'])] = 'PAG'
         regions[np.in1d(acronyms, ['RL', 'IF', 'IPN', 'CLI', 'DR'])] = 'Raphe'        
-        regions[np.in1d(acronyms, ['SSp-bfd'])] = 'S1'
+        regions[np.in1d(acronyms, ['SSp-bfd'])] = 'BC'
         regions[np.in1d(acronyms, ['LGv', 'LGd'])] = 'LG'
         regions[np.in1d(acronyms, ['PIR'])] = 'Pir'
         regions[np.in1d(acronyms, ['SNr', 'SNc', 'SNl'])] = 'SN'
@@ -295,8 +295,20 @@ def combine_regions(acronyms, split_thalamus=True, abbreviate=False):
     return regions
 
 
-def remap(acronyms, source='Allen', dest='Beryl', combine=False, split_thalamus=False, abbreviate=True,
-          brainregions=None):
+def high_level_regions(acronyms):
+    first_level_regions = combine_regions(acronyms, abbreviate=True)
+    regions = np.array(['root'] * len(first_level_regions), dtype=object)
+    regions[np.in1d(first_level_regions, ['mPFC', 'ORB'])] = 'Frontal cortex'
+    regions[np.in1d(first_level_regions, ['PIR', 'BC', 'PPC'])] = 'Sensory cortex'
+    regions[np.in1d(first_level_regions, ['Raphe', 'MRN', 'SN', 'PAG', 'SC'])] = 'Midbrain'
+    regions[np.in1d(first_level_regions, ['Hipp'])] = 'Hippocampus'
+    regions[np.in1d(first_level_regions, ['Thal'])] = 'Thalamus'
+    regions[np.in1d(first_level_regions, ['Amyg'])] = 'Amygdala'
+    return regions
+    
+
+def remap(acronyms, source='Allen', dest='Beryl', combine=False, split_thalamus=False,
+          abbreviate=True, brainregions=None):
     br = brainregions or BrainRegions()
     _, inds = ismember(br.acronym2id(acronyms), br.id[br.mappings[source]])
     remapped_acronyms = br.get(br.id[br.mappings[dest][inds]])['acronym']
