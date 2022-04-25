@@ -62,11 +62,14 @@ f, (ax1, ax2) = plt.subplots(1, 2, figsize=(3.5, 1.75), dpi=dpi)
 lplt = sns.lineplot(x='time', y='pupil_diameter', hue='sert-cre', data=all_mot_df, ax=ax1,
                     ci=68, hue_order=['SERT', 'WT'], palette=[colors['sert'], colors['wt']])
 ax1.legend(frameon=False)
-ax1.set(xlabel='Time (s)', ylabel='Pupil size (%)')
+ax1.set(xlabel='Time (s)', ylabel='Pupil size (%)', xticks=[-1, 0, 1, 2, 3])
 
 sns.lineplot(x='time', y='paw_l', hue='sert-cre', data=all_mot_df, ax=ax2,
              ci=68, hue_order=['SERT', 'WT'], palette=[colors['sert'], colors['wt']], legend=False)
-ax2.set(xlabel='Time (s)', ylabel='Paw movement (a.u.)')
+ax2.set(xlabel='Time (s)', ylabel='Paw movement (%)', xticks=[-1, 0, 1, 2, 3])
+
+plt.tight_layout()
+sns.despine(trim=True)
     
     
     
