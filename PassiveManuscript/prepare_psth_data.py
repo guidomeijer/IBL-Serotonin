@@ -22,8 +22,8 @@ one = ONE()
 # Settings
 T_BEFORE = 1  # for plotting
 T_AFTER = 2
-BIN_SIZE = 0.05
-SMOOTHING = 0.025
+BIN_SIZE = 0.1
+SMOOTHING = 0.1
 BASELINE = [-1, 0]
 MIN_FR = 0.1
 fig_path, save_path = paths()
