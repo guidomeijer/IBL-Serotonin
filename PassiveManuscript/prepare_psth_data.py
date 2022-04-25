@@ -22,8 +22,8 @@ one = ONE()
 # Settings
 T_BEFORE = 1  # for plotting
 T_AFTER = 2
-BIN_SIZE = 0.01
-SMOOTHING = 0.05
+BIN_SIZE = 0.05
+SMOOTHING = 0.025
 BASELINE = [-1, 0]
 MIN_FR = 0.1
 fig_path, save_path = paths()
@@ -79,7 +79,8 @@ for i, pid in enumerate(np.unique(light_neurons['pid'])):
                 'peth': [peths['means'][n, :]],  'time': [tscale], 'region': these_neurons.loc[index, 'full_region'],
                 'modulation': these_neurons.loc[index, 'mod_index_late'],
                 'neuron_id': these_neurons.loc[index, 'neuron_id'], 'subject': these_neurons.loc[index, 'subject'],
-                'eid': these_neurons.loc[index, 'eid'], 'acronym': these_neurons.loc[index, 'region']})))
+                'eid': these_neurons.loc[index, 'eid'], 'acronym': these_neurons.loc[index, 'region'],
+                'probe': probe, 'date': date, 'pid': pid})))
 
 # Save output
 peths_df.to_pickle(join(save_path, 'psth.pickle'))
