@@ -85,7 +85,7 @@ for i in rec.index.values:
     # Transform into %
     diameter_perc = ((pupil_diameter - np.percentile(pupil_diameter[~np.isnan(pupil_diameter)], 2))
                      / np.percentile(pupil_diameter[~np.isnan(pupil_diameter)], 2)) * 100
-    pupil_diameter[np.isnan(diameter_perc)] = 0 # Set NaN to 0
+    diameter_perc[np.isnan(diameter_perc)] = 0 # Set NaN to 0
     opto_df['pupil_diameter'] = make_bins(diameter_perc, times_left, opto_df['trial_start'],
                                           opto_df['trial_end'], BINSIZE)
 

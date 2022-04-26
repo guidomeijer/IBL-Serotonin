@@ -20,11 +20,11 @@ ba = AllenAtlas()
 one = ONE()
 
 # Settings
-OVERWRITE = False
+OVERWRITE = True
 NEURON_QC = True
 PRE_TIME = [0.2, 0]  # for significance testing
-POST_TIME_EARLY = [0, 0.2]
-POST_TIME_LATE = [0.8, 1]
+POST_TIME_EARLY = [0, 0.5]
+POST_TIME_LATE = [0.5, 1]
 BIN_SIZE = 0.05
 MIN_FR = 0.1
 fig_path, save_path = paths()

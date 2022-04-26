@@ -101,6 +101,7 @@ for i in rec.index.values:
                          desc='Motion energy right')
     design.add_covariate('pupil_diameter', opto_df['pupil_diameter'], motion_bases_func, offset=-MOT_KERNLEN,
                          desc='Pupil diameter')
+
     design.compile_design_matrix()
     print('Compiled design matrix')
 
