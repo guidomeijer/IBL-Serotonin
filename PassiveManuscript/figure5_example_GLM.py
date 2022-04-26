@@ -13,10 +13,6 @@ from matplotlib.patches import Rectangle
 import neurencoding.utils as mut
 import neurencoding.design_matrix as dm
 from serotonin_functions import query_ephys_sessions, paths, figure_style
-from one.api import ONE
-from ibllib.atlas import AllenAtlas
-one = ONE()
-ba = AllenAtlas()
 
 # Settings
 SUBJECT = 'ZFM-03330'
@@ -67,10 +63,11 @@ time_ax = np.linspace(-T_BEFORE, T_AFTER, opto_df['pupil_diameter'][0].shape[0])
 colors, dpi = figure_style()
 f, ax1 = plt.subplots(1, 1, figsize=(1.75, 1.75), dpi=dpi)
 for i, metric in enumerate(PLOT):
-    plt.plot(time_ax, opto_df[metric][1], label=LABELS[i])
+    norm_metric = opto_df[metric][1] / np.max(opto_df[metric][1])
+    plt.plot(time_ax, norm_metric, label=LABELS[i])
 ax1.add_patch(Rectangle((0, 0), 1, ax1.get_ylim()[1], color='royalblue', alpha=0.25, lw=0))
 ax1.add_patch(Rectangle((0, 0), 1, -1, color='royalblue', alpha=0.25, lw=0))
-plt.legend(frameon=False, bbox_to_anchor=(1, 0))
+plt.legend(frameon=False, bbox_to_anchor=(0.4, -0.2, 0.5, 0.2))
 ax1.axis('off')
 plt.tight_layout()
 plt.savefig(join(fig_path, 'figure5_example_traces.pdf'))

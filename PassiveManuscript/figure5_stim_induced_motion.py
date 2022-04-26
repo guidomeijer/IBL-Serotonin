@@ -40,32 +40,41 @@ all_mot_df = pd.DataFrame()
 for i, dm_file in enumerate(all_dm):
     this_opto_df = pd.read_pickle(dm_file)
     this_mot_df = pd.DataFrame()
-    
-    # Baseline subtract pupil size
-    
-    
     for j, metric in enumerate(METRICS):
         this_mot_df[metric] = [item for row in this_opto_df[metric] for item in row]
     this_mot_df['time'] = np.tile(time_ax, this_opto_df.shape[0])
+    this_mot_df['trial'] = np.repeat(np.arange(this_opto_df.shape[0]) + 1, time_ax.shape[0])
     this_mot_df['subject'] = dm_file[-27:-18]
     this_mot_df['date'] = dm_file[-17:-7]
     this_mot_df['sert-cre'] = subjects.loc[subjects['subject'] == dm_file[-27:-18], 'sert-cre'].values[0]
+    
+    # Baseline subtract
+    for t in np.unique(this_mot_df['trial']):
+        this_mot_df.loc[this_mot_df['trial'] == t, 'pupil_baseline'] = (
+            this_mot_df.loc[this_mot_df['trial'] == t, 'pupil_diameter'].values
+            - this_mot_df.loc[(this_mot_df['trial'] == t) & (this_mot_df['time'] < 0), 'pupil_diameter'].mean())
+        this_mot_df.loc[this_mot_df['trial'] == t, 'paw_l_baseline'] = (
+            this_mot_df.loc[this_mot_df['trial'] == t, 'paw_l'].values
+            - this_mot_df.loc[(this_mot_df['trial'] == t) & (this_mot_df['time'] < 0), 'paw_l'].mean())
+    
     all_mot_df = pd.concat((all_mot_df, this_mot_df), ignore_index=True)
     
-# Change labels for plotting
-all_mot_df.loc[all_mot_df['sert-cre'] == 1, 'sert-cre'] ='SERT'
-all_mot_df.loc[all_mot_df['sert-cre'] == 0, 'sert-cre'] ='WT'
+# Restructure df for plotting
+plot_df = all_mot_df.groupby(['subject', 'time']).mean()
+plot_df.loc[plot_df['sert-cre'] == 1, 'sert-cre'] ='SERT'
+plot_df.loc[plot_df['sert-cre'] == 0, 'sert-cre'] ='WT'
     
 # %% Plot
 colors, dpi = figure_style()
 f, (ax1, ax2) = plt.subplots(1, 2, figsize=(3.5, 1.75), dpi=dpi)
-lplt = sns.lineplot(x='time', y='pupil_diameter', hue='sert-cre', data=all_mot_df, ax=ax1,
-                    ci=68, hue_order=['SERT', 'WT'], palette=[colors['sert'], colors['wt']])
-ax1.legend(frameon=False)
-ax1.set(xlabel='Time (s)', ylabel='Pupil size (%)', xticks=[-1, 0, 1, 2, 3])
 
-sns.lineplot(x='time', y='paw_l', hue='sert-cre', data=all_mot_df, ax=ax2,
-             ci=68, hue_order=['SERT', 'WT'], palette=[colors['sert'], colors['wt']], legend=False)
+lplt = sns.lineplot(x='time', y='pupil_baseline', hue='sert-cre', data=plot_df, ax=ax1, ci=68,
+                    hue_order=['SERT', 'WT'], palette=[colors['sert'], colors['wt']])
+ax1.legend(frameon=False, loc='upper left')
+ax1.set(xlabel='Time (s)', ylabel='Pupil size (%)', xticks=[-1, 0, 1, 2, 3], yticks=[-5, 0, 5, 10, 15])
+
+sns.lineplot(x='time', y='paw_l_baseline', hue='sert-cre', data=plot_df, ax=ax2, ci=68,
+             hue_order=['SERT', 'WT'], palette=[colors['sert'], colors['wt']], legend=False)
 ax2.set(xlabel='Time (s)', ylabel='Paw movement (%)', xticks=[-1, 0, 1, 2, 3])
 
 plt.tight_layout()
