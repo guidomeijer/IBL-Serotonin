@@ -49,7 +49,7 @@ all_glm_df.loc[all_glm_df['motion_energy_right'] < 0.00001, 'motion_energy_right
 all_glm_df.loc[all_glm_df['motion_energy_body'] < 0.00001, 'motion_energy_body'] = np.nan
 
 # Get average motion regressor
-all_glm_df['all_motion'] = all_glm_df[MOTION_REG].max(axis=1)
+all_glm_df['all_motion'] = all_glm_df[MOTION_REG].mean(axis=1)
 
 # Get ratio
 all_glm_df['ratio_opto'] = ((all_glm_df['opto_stim'] - all_glm_df['all_motion'])

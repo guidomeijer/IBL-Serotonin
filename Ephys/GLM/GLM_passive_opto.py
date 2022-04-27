@@ -26,7 +26,7 @@ BINSIZE = 0.04
 MOT_KERNLEN = 0.4
 MOT_NBASES = 10
 OPTO_KERNLEN = 1
-OPTO_NBASES = [4, 6, 8, 10, 12]
+OPTO_NBASES = 6
 fig_path, save_path = paths()
 
 # Query sessions
