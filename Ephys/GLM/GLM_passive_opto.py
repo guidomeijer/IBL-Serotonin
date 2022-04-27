@@ -80,12 +80,12 @@ for i in rec.index.values:
     opto_bases_funcs = []
     for j, n_bases in enumerate(OPTO_NBASES):
         opto_bases_funcs.append(mut.full_rcos(OPTO_KERNLEN, n_bases, design.binf))
-    
+
     # Add regressors
-    for k in len(opto_bases_funcs):    
+    for k in range(len(opto_bases_funcs)):
         design.add_covariate_timing(f'opto_{opto_bases_funcs[k].shape[1]}_bases', 'opto_start',
                                     opto_bases_funcs[k], desc='Optogenetic stimulation')
-    design.add_covariate_box('opto_boxcar', 'opto_start', 'opto_end', desc='Optogenetic stimulation')
+    design.add_covariate_boxcar('opto_boxcar', 'opto_start', 'opto_end', desc='Optogenetic stimulation')
     design.add_covariate('wheel_velocity', opto_df['wheel_velocity'], motion_bases_func, offset=-MOT_KERNLEN,
                          desc='Wheel velocity')
     design.add_covariate('nose', opto_df['nose_tip'], motion_bases_func, offset=-MOT_KERNLEN,

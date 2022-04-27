@@ -22,7 +22,7 @@ BINSIZE = 0.04
 T_BEFORE = 1
 T_AFTER = 2
 STIM_DUR = 1
-DLC_MARKERS = ['nose_tip', 'paw_l', 'paw_r', 'tongue_end_l', 'tongue_end_r']
+DLC_MARKERS = ['nose_tip', 'paw_l', 'paw_r', 'tongue_end_l']
 fig_path, save_path = paths()
 
 # Query sessions
