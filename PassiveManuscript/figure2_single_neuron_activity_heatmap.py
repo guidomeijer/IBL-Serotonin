@@ -117,7 +117,7 @@ plt.savefig(join(fig_path, 'figure2_all_neurons.pdf'))
 peths_df = peths_df.sort_values(['region', 'modulation'], ascending=[True, False])
 f, ((ax_hc, ax_snr, ax_ppc, ax_am, ax_mpfc, ax_th),
     (ax_pag, ax_pir, ax_orb, ax_1, ax_2, ax_3),
-    (ax_bc, ax_sc, ax_str, ax_cb, ax_4, ax_5)) = plt.subplots(3, 6, figsize=(7, 3.5), sharex=True, dpi=dpi)
+    (ax_bc, ax_sc, ax_m2, ax_cb, ax_4, ax_5)) = plt.subplots(3, 6, figsize=(7, 3.5), sharex=True, dpi=dpi)
 title_font = 7
 
 these_peths = peths_df[peths_df['region'] == 'Medial prefrontal cortex']
@@ -171,15 +171,20 @@ ax_th.set(yticks=[1], yticklabels=[these_peths.shape[0]], xlabel='Time (s)')
 ax_th.set_title('Thalamus', fontsize=title_font)
 ax_th.plot([0, 0], [-1, 1], ls='--', color='k')
 ax_th.xaxis.set_tick_params(which='both', labelbottom=True)
-
-
+"""
 these_peths = peths_df[peths_df['region'] == 'Tail of the striatum']
 img = ax_str.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=sns.diverging_palette(220, 20, as_cmap=True),
                  vmin=VMIN, vmax=VMAX, extent=[-T_BEFORE, T_AFTER, -1, 1], interpolation='none')
 ax_str.set(yticks=[1], yticklabels=[these_peths.shape[0]], xlabel='Time (s)', xticks=[-1, 0, 1, 2])
 ax_str.set_title('Tail of the striatum', fontsize=title_font)
 ax_str.plot([0, 0], [-1, 1], ls='--', color='k')
-
+"""
+these_peths = peths_df[peths_df['region'] == 'Secondary motor cortex']
+img = ax_m2.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=sns.diverging_palette(220, 20, as_cmap=True),
+                 vmin=VMIN, vmax=VMAX, extent=[-T_BEFORE, T_AFTER, -1, 1], interpolation='none')
+ax_m2.set(yticks=[1], yticklabels=[these_peths.shape[0]], xlabel='Time (s)', xticks=[-1, 0, 1, 2])
+ax_m2.set_title('Secondary motor cortex', fontsize=title_font)
+ax_m2.plot([0, 0], [-1, 1], ls='--', color='k')
 
 these_peths = peths_df[peths_df['region'] == 'Barrel cortex']
 img = ax_bc.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=sns.diverging_palette(220, 20, as_cmap=True),

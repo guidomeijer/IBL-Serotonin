@@ -138,30 +138,29 @@ def query_opto_sessions(subject, one=None):
     return [sess['url'][-36:] for sess in sessions]
 
 
-def query_ephys_sessions(selection='aligned', one=None):
+def query_ephys_sessions(selection='aligned', acronym=None, one=None):
     if one is None:
         one = ONE()
-    if selection == 'all':
-        # Query all opto_ephysChoiceWorld sessions
-        ins = one.alyx.rest('insertions', 'list',
-                        django='session__project__name__icontains,serotonin_inference,'
-                               'session__qc__lt,50')
-    elif selection == 'aligned':
+    assert selection in ['all', 'aligned', 'aligned-behavior']
+    DJANGO_STR = ('session__project__name__icontains,serotonin_inference,'
+                 'session__qc__lt,50')
+    if selection == 'aligned':
         # Query all ephys-histology aligned sessions
-        ins = one.alyx.rest('insertions', 'list',
-                        django='session__project__name__icontains,serotonin_inference,'
-                               'session__qc__lt,50,'
-                               'json__extended_qc__alignment_count__gt,0')
-    elif selection == 'aligned-behavior':
+        DJANGO_STR = DJANGO_STR + ',json__extended_qc__alignment_count__gt,0'
+    if selection == 'aligned-behavior':
         # Query sessions with an alignment and that meet behavior criterion
-        ins = one.alyx.rest('insertions', 'list',
-                        django='session__project__name__icontains,serotonin_inference,'
-                               'session__qc__lt,50,'
-                               'json__extended_qc__alignment_count__gt,0,'
-                               'session__extended_qc__behavior,1')
+        DJANGO_STR = DJANGO_STR + ',session__extended_qc__behavior,1'
+
+    # Query sessions
+    if acronym is None:
+        ins = one.alyx.rest('insertions', 'list', django=DJANGO_STR)
+    elif type(acronym) is str:
+        ins = one.alyx.rest('insertions', 'list', django=DJANGO_STR, atlas_acronym=acronym)
     else:
         ins = []
-
+        for i, ac in enumerate(acronym):
+            ins = ins + one.alyx.rest('insertions', 'list', django=DJANGO_STR, atlas_acronym=ac)
+            
     # Only include subjects from subjects.csv
     incl_subjects = load_subjects()
     ins = [i for i in ins if i['session_info']['subject'] in incl_subjects['subject'].values]
@@ -173,6 +172,7 @@ def query_ephys_sessions(selection='aligned', one=None):
     rec['probe'] = np.array([i['name'] for i in ins])
     rec['subject'] = np.array([i['session_info']['subject'] for i in ins])
     rec['date'] = np.array([i['session_info']['start_time'][:10] for i in ins])
+    rec = rec.drop_duplicates('pid', ignore_index=True)
     return rec
 
 
@@ -240,7 +240,8 @@ def load_trials(eid, laser_stimulation=False, invert_choice=False, invert_stimsi
 def combine_regions(acronyms, split_thalamus=False, abbreviate=False):
     regions = np.array(['root'] * len(acronyms), dtype=object)
     if abbreviate:
-        regions[np.in1d(acronyms, ['ILA', 'PL', 'MOs', 'ACAd', 'ACAv'])] = 'mPFC'
+        regions[np.in1d(acronyms, ['ILA', 'PL', 'ACAd', 'ACAv'])] = 'mPFC'
+        regions[np.in1d(acronyms, ['MOs'])] = 'M2'
         regions[np.in1d(acronyms, ['ORBl', 'ORBm'])] = 'ORB'
         if split_thalamus:
             regions[np.in1d(acronyms, ['PO'])] = 'PO'
@@ -267,7 +268,8 @@ def combine_regions(acronyms, split_thalamus=False, abbreviate=False):
         regions[np.in1d(acronyms, ['CP', 'STR', 'STRd', 'STRv'])] = 'Str'
         regions[np.in1d(acronyms, ['CA1', 'CA3', 'DG'])] = 'Hipp'
     else:
-        regions[np.in1d(acronyms, ['ILA', 'PL', 'MOs', 'ACAd', 'ACAv'])] = 'Medial prefrontal cortex'
+        regions[np.in1d(acronyms, ['ILA', 'PL', 'ACAd', 'ACAv'])] = 'Medial prefrontal cortex'
+        regions[np.in1d(acronyms, ['MOs'])] = 'Secondary motor cortex'
         regions[np.in1d(acronyms, ['ORBl', 'ORBm'])] = 'Orbitofrontal cortex'
         if split_thalamus:
             regions[np.in1d(acronyms, ['PO'])] = 'Thalamus (PO)'
