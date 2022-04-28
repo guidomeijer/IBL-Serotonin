@@ -19,7 +19,7 @@ tsne = TSNE(n_components=2, random_state=42)
 
 # Paths
 fig_path, data_path = paths(dropbox=True)
-fig_path = join(fig_path, 'PaperPassive')
+fig_path = join(fig_path, 'PaperPassive', 'figure2')
 
 # Load in PSTH data
 psth_df = pd.read_pickle(join(data_path, 'psth.pickle'))

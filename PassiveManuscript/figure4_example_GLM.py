@@ -27,7 +27,7 @@ MOT_NBASES = 10
 OPTO_KERNLEN = 1
 OPTO_NBASES = 6
 fig_path, save_path = paths(dropbox=True)
-fig_path= join(fig_path, 'PaperPassive')
+fig_path= join(fig_path, 'PaperPassive', 'figure4')
 
 # Load in data
 opto_df = pd.read_pickle(join(save_path, 'GLM', f'dm_{SUBJECT}_{DATE}.pickle'))
@@ -70,7 +70,7 @@ ax1.add_patch(Rectangle((0, 0), 1, -1, color='royalblue', alpha=0.25, lw=0))
 plt.legend(frameon=False, bbox_to_anchor=(0.4, -0.2, 0.5, 0.2))
 ax1.axis('off')
 plt.tight_layout()
-plt.savefig(join(fig_path, 'figure5_example_traces.pdf'))
+plt.savefig(join(fig_path, 'example_traces.pdf'))
 
 # %%
 f, ax1 = plt.subplots(1, 1, figsize=(0.25, 0.5), dpi=dpi)
@@ -78,7 +78,7 @@ line_styles = ['-', '--', '-.', ':', '-', '--']
 for i in range(opto_bases_func.shape[1]):
     ax1.plot(opto_bases_func[:, i], ls=line_styles[i], color='grey')
 ax1.axis('off')
-plt.savefig(join(fig_path, 'figure5_example_basis_functions.pdf'))
+plt.savefig(join(fig_path, 'example_basis_functions.pdf'))
   
    
 

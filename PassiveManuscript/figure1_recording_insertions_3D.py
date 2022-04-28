@@ -27,7 +27,7 @@ CMAP = 'tab10'
 
 # Paths
 fig_path, _ = paths(dropbox=True)
-fig_path = join(fig_path, 'PaperPassive')
+fig_path = join(fig_path, 'PaperPassive', 'figure1')
 
 # Load in recording target coordinates
 rec_targets = pd.read_csv(join(pathlib.Path(__file__).parent.absolute(), '..', 'recording_targets.csv'))
@@ -64,4 +64,4 @@ sns.heatmap([np.arange(len(subjects))], cmap=CMAP, cbar=False, ax=ax)
 ax.set(yticks=[], xticklabels=np.arange(len(subjects)) + 1)
 ax.set_xlabel('Mice', labelpad=2)
 plt.tight_layout()
-plt.savefig(join(fig_path, 'figure1_colorbar.pdf'))
+plt.savefig(join(fig_path, 'colorbar.pdf'))

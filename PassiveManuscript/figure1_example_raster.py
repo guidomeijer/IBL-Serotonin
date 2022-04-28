@@ -9,7 +9,8 @@ import numpy as np
 from one.api import ONE
 import matplotlib.pyplot as plt
 import seaborn as sns
-from serotonin_functions import load_passive_opto_times
+from os.path import join
+from serotonin_functions import load_passive_opto_times, paths
 from brainbox.ephys_plots import scatter_raster_plot
 from brainbox.plot_base import plot_scatter
 from brainbox.processing import bincount2D
@@ -18,6 +19,10 @@ from brainbox.io.one import SpikeSortingLoader
 from ibllib.atlas import AllenAtlas
 one = ONE()
 ba = AllenAtlas()
+
+# Paths
+fig_path, save_path = paths(dropbox=True)
+fig_path = join(fig_path, 'PaperPassive', 'figure1')
 
 #eid = '0d24afce-9d3c-449e-ac9f-577eefefbd7e'
 eid = '0d24afce-9d3c-449e-ac9f-577eefefbd7e'
@@ -50,5 +55,4 @@ f.suptitle(f'{eid}')
 
 plt.tight_layout()
 sns.despine(trim=True, offset=4)
-plt.savefig('/home/guido/Figures/PaperPassive/figure1_example_raster.pdf')
-plt.savefig('/home/guido/Dropbox/Work/PaperPassive/figure1_example_raster.pdf')
+plt.savefig(join(fig_path, 'example_raster.pdf'))

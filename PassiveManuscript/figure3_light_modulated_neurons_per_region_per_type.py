@@ -17,7 +17,7 @@ MIN_NEURONS = 10
 
 # Paths
 fig_path, save_path = paths(dropbox=True)
-fig_path = join(fig_path, 'PaperPassive')
+fig_path = join(fig_path, 'PaperPassive', 'figure3')
 
 # Load in results
 light_neurons = pd.read_csv(join(save_path, 'light_modulated_neurons.csv'))
@@ -98,7 +98,7 @@ ax1.legend(frameon=False, bbox_to_anchor=(0.98, 1))
 
 sns.despine(trim=True)
 plt.tight_layout()
-plt.savefig(join(fig_path, 'figure3_ratio_mod_neurons.pdf'))
+plt.savefig(join(fig_path, 'ratio_mod_neurons.pdf'))
 
 # %%  Plot percentage of enhanced and suppressed neurons per type and region
 
@@ -131,4 +131,4 @@ ax1.margins(x=0)
 
 plt.tight_layout()
 sns.despine(trim=True)
-plt.savefig(join(fig_path, 'figure3_light_modulation_per_region.pdf'))
+plt.savefig(join(fig_path, 'light_modulation_per_region.pdf'))

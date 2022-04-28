@@ -21,8 +21,8 @@ MIN_NEURONS = 0
 AP = [2, -1.5, -3.5]
 
 # Paths
-_, save_path = paths()
-fig_path = '/home/guido/Dropbox/Work/PaperPassive/'
+fig_path, save_path = paths(dropbox=True)
+fig_path = join(fig_path, 'PaperPassive', 'figure1')
 
 # Load in results
 all_neurons = pd.read_csv(join(save_path, 'light_modulated_neurons.csv'))
@@ -78,5 +78,5 @@ cbar = f.colorbar(mappable=ax1.images[0], cax=cb_ax)
 cbar.ax.set_ylabel('# recorded neurons', rotation=270, labelpad=10)
 #cbar.ax.set_yticks([0, 25, 50])
 
-plt.savefig(join(fig_path, 'figure1_brain_map_n_neurons.pdf'))
+plt.savefig(join(fig_path, 'brain_map_n_neurons.pdf'))
 

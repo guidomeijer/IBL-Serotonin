@@ -72,7 +72,7 @@ POST_TIME = [0, 1]
 BIN_SIZE = 0.05
 SMOOTHING = 0.025
 fig_path, save_path = paths(dropbox=True)
-fig_path = join(fig_path, 'PaperPassive')
+fig_path = join(fig_path, 'PaperPassive', 'figure4')
 
 # Get session details
 ins = one.alyx.rest('insertions', 'list', date=DATE, subject=SUBJECT, name=PROBE)
@@ -152,7 +152,7 @@ ax.yaxis.set_major_formatter(FormatStrFormatter('%.0f'))
 ax.yaxis.set_label_coords(-.2, .75)
 
 plt.tight_layout()
-plt.savefig(join(fig_path,  f'figure4_psth_{region}_{SUBJECT}_{DATE}_{PROBE}_neuron{NEURON}.pdf'))
+plt.savefig(join(fig_path,  f'psth_{region}_{SUBJECT}_{DATE}_{PROBE}_neuron{NEURON}.pdf'))
 
 p, ax_mod = plt.subplots(1, 1, figsize=(1.75, 1.75), dpi=dpi)
 ax_mod.plot(dRate['vecT'], dRate['vecRate'])
@@ -163,7 +163,7 @@ ax_mod.set(xlabel='Time from stim. onset (s)', ylabel='Inst. spiking rate (spks/
            xlim=[0, .4], ylim=[0, 80])
 sns.despine(trim=True)
 plt.tight_layout()
-plt.savefig(join(fig_path, f'figure4_inst_{region}_{SUBJECT}_{DATE}_{PROBE}_neuron{NEURON}.pdf'))
+plt.savefig(join(fig_path, f'inst_{region}_{SUBJECT}_{DATE}_{PROBE}_neuron{NEURON}.pdf'))
 
 
 

@@ -20,7 +20,7 @@ AP = [2, -1.5, -3.5]
 
 # Paths
 fig_path, save_path = paths(dropbox=True)
-fig_path = join(fig_path, 'PaperPassive')
+fig_path = join(fig_path, 'PaperPassive', 'figure2')
 
 # Load in results
 all_neurons = pd.read_csv(join(save_path, 'light_modulated_neurons.csv'))
@@ -53,5 +53,5 @@ ax1.set(xticklabels=['SERT', 'WT'], ylabel='Modulated neurons (%)', ylim=[0, 80]
 sns.despine(trim=True)
 plt.tight_layout()
 
-plt.savefig(join(fig_path, 'figure2_light_mod_summary.pdf'))
-plt.savefig(join(fig_path, 'figure2_light_mod_summary.jpg'), dpi=300)
+plt.savefig(join(fig_path, 'light_mod_summary.pdf'))
+plt.savefig(join(fig_path, 'light_mod_summary.jpg'), dpi=300)

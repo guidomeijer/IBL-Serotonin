@@ -20,13 +20,19 @@ tsne = TSNE(n_components=2, random_state=42)
 # Settings
 MOTION_REG = ['wheel_velocity', 'nose', 'paw_l', 'paw_r', 'tongue_end_l', 'tongue_end_r',
               'motion_energy_body', 'motion_energy_left', 'motion_energy_right', 'pupil_diameter']
+OPTO_REG = ['opto_4_bases', 'opto_6_bases', 'opto_8_bases', 'opto_10_bases', 'opto_12_bases', 
+            'opto_boxcar']
 MIN_NEURONS = 5
 EX_NEURON_1 = 145
 EX_PID_1 = '17b1fed7-c04c-45f3-a474-c19a3d1c3ea8'
 EX_NEURON_2 = 263
 EX_PID_2 = 'ad7e0c6e-d8de-4771-986b-382d0ae9af3a'
-EX_NEURON_3 = 211
-EX_PID_3 = '7a82c06b-0e33-454b-a98f-786a4024c1d0'
+EX_NEURON_3 = 177
+EX_PID_3 = 'ad7e0c6e-d8de-4771-986b-382d0ae9af3a'
+
+#EX_NEURON_3 = 211
+#EX_PID_3 = '7a82c06b-0e33-454b-a98f-786a4024c1d0'
+
 EX_NEURON_5 = 507
 EX_PID_5 = 'ea3cefba-dda1-4f8e-bd85-97547181a660'
 EX_NEURON_4 = 282
@@ -50,7 +56,7 @@ EX_PID_1 = 'ad7e0c6e-d8de-4771-986b-382d0ae9af3a'
 
 # Initialize some things
 fig_path, save_path = paths(dropbox=True)
-fig_path = join(fig_path, 'PaperPassive')
+fig_path = join(fig_path, 'PaperPassive', 'figure4')
 subjects = load_subjects()
 
 # Load in GLM output
@@ -68,8 +74,9 @@ all_glm_df.loc[all_glm_df['motion_energy_left'] < 0.00001, 'motion_energy_left']
 all_glm_df.loc[all_glm_df['motion_energy_right'] < 0.00001, 'motion_energy_right'] = np.nan
 all_glm_df.loc[all_glm_df['motion_energy_body'] < 0.00001, 'motion_energy_body'] = np.nan
 
-# Get average motion regressor
-all_glm_df['all_motion'] = all_glm_df[MOTION_REG].mean(axis=1)
+# Get maximum motion and opto regressor
+all_glm_df['all_motion'] = all_glm_df[MOTION_REG].max(axis=1)
+all_glm_df['opto_stim'] = all_glm_df[OPTO_REG].max(axis=1)
 
 # Get ratio
 all_glm_df['ratio_opto'] = ((all_glm_df['opto_stim'] - all_glm_df['all_motion'])
@@ -99,7 +106,7 @@ sc = axs['A'].scatter(merged_df['dim_1'], merged_df['dim_2'], c=merged_df['ratio
 axs['A'].axis('off')
 cbar = plt.colorbar(sc, orientation="horizontal", pad=0.05, ax=axs['A'])
 cbar.set_ticks([-1, -0.5, 0, 0.5, 1])
-cbar.set_label('Ratio movement / stimulation')
+cbar.set_label('Ratio stimulation / motion')
 
 ex_neuron = merged_df[(merged_df['neuron_id'] == EX_NEURON_1) & (merged_df['pid'] == EX_PID_1)].index.values[0]
 axs['A'].plot([merged_df.loc[ex_neuron, 'dim_1'], 36], [merged_df.loc[ex_neuron, 'dim_2'], 25],
@@ -120,8 +127,8 @@ axs['A'].plot([merged_df.loc[ex_neuron, 'dim_1'], 36], [merged_df.loc[ex_neuron,
               color='k')
 axs['D'].plot(merged_df.loc[ex_neuron, 'time'], merged_df.loc[ex_neuron, 'peth'])
 axs['D'].plot([0, 0], axs['D'].get_ylim(), color='grey', ls='--', lw=0.75)
-axs['D'].plot([0, 1], [-0.2, -0.2], color='k', lw=0.5)
-axs['D'].text(0.5, -2, '1s', ha='center')
+axs['D'].plot([0, 1], [-0.5, -0.5], color='k', lw=0.5)
+axs['D'].text(0.5, -5, '1s', ha='center')
 axs['D'].axis('off')
 
 ex_neuron = merged_df[(merged_df['neuron_id'] == EX_NEURON_4) & (merged_df['pid'] == EX_PID_4)].index.values[0]
@@ -149,6 +156,7 @@ axs['G'].axis('off')
 
 plt.tight_layout()
 sns.despine(trim=True)
-plt.savefig(join(fig_path, 'figure5_GLM_PSTH.pdf'))
+
+#plt.savefig(join(fig_path, 'GLM_PSTH.pdf'))
 
 

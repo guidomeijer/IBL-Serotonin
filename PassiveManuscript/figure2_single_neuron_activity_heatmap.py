@@ -27,7 +27,7 @@ SMOOTHING = 0.05
 BASELINE = [-1, 0]
 MIN_FR = 0.1
 fig_path, save_path = paths(dropbox=True)
-fig_path = join(fig_path, 'PaperPassive')
+fig_path = join(fig_path, 'PaperPassive', 'figure2')
 
 # Load in light modulated neurons
 light_neurons = pd.read_csv(join(save_path, 'light_modulated_neurons.csv'))
@@ -229,6 +229,6 @@ cbar.ax.set_yticks([-1, 0, 1])
 
 
 #plt.tight_layout(pad=3)
-plt.savefig(join(fig_path, 'figure2_heatmap_per_region.pdf'), bbox_inches='tight')
+plt.savefig(join(fig_path, 'heatmap_per_region.pdf'), bbox_inches='tight')
 
 

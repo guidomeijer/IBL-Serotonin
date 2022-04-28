@@ -17,7 +17,7 @@ MIN_NEURONS = 20
 
 # Paths
 fig_path, save_path = paths(dropbox=True)
-fig_path = join(fig_path, 'PaperPassive')
+fig_path = join(fig_path, 'PaperPassive', 'figure2')
 
 # Load in results
 light_neurons = pd.read_csv(join(save_path, 'light_modulated_neurons.csv'))
@@ -72,7 +72,7 @@ ax1.set(xlabel='Modulated neurons (%)', ylabel='', xlim=[0, 50], xticks=np.arang
 
 plt.tight_layout()
 sns.despine(trim=False)
-plt.savefig(join(fig_path, 'figure2_perc_light_modulated_neurons_per_region.pdf'))
+plt.savefig(join(fig_path, 'perc_light_modulated_neurons_per_region.pdf'))
 
 # %%
 f, ax1 = plt.subplots(1, 1, figsize=(3, 2), dpi=dpi)
@@ -96,4 +96,4 @@ ax1.margins(x=0)
 
 plt.tight_layout()
 sns.despine(trim=True)
-plt.savefig(join(fig_path, 'figure2_light_modulation_per_region.pdf'))
+plt.savefig(join(fig_path, 'light_modulation_per_region.pdf'))

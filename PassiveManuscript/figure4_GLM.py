@@ -16,10 +16,12 @@ from serotonin_functions import paths, load_subjects, remap, figure_style, combi
 # Initialize some things
 MOTION_REG = ['wheel_velocity', 'nose', 'paw_l', 'paw_r', 'tongue_end_l', 'tongue_end_r',
               'motion_energy_body', 'motion_energy_left', 'motion_energy_right', 'pupil_diameter']
+OPTO_REG = ['opto_4_bases', 'opto_6_bases', 'opto_8_bases', 'opto_10_bases', 'opto_12_bases', 
+            'opto_boxcar']
 MIN_NEURONS_RATIO = 5
 MIN_NEURONS_PERC = 20
 fig_path, save_path = paths(dropbox=True)
-fig_path = join(fig_path, 'PaperPassive')
+fig_path = join(fig_path, 'PaperPassive', 'figure4')
 subjects = load_subjects()
 
 # Load in GLM output
@@ -48,8 +50,9 @@ all_glm_df.loc[all_glm_df['motion_energy_left'] < 0.00001, 'motion_energy_left']
 all_glm_df.loc[all_glm_df['motion_energy_right'] < 0.00001, 'motion_energy_right'] = np.nan
 all_glm_df.loc[all_glm_df['motion_energy_body'] < 0.00001, 'motion_energy_body'] = np.nan
 
-# Get maximum motion regressor
+# Get maximum motion and opto regressor
 all_glm_df['all_motion'] = all_glm_df[MOTION_REG].max(axis=1)
+all_glm_df['opto_stim'] = all_glm_df[OPTO_REG].max(axis=1)
 
 # Get ratio
 all_glm_df['ratio_opto'] = ((all_glm_df['opto_stim'] - all_glm_df['all_motion'])
@@ -82,7 +85,7 @@ print(f'p-value motion: {p_motion}')
 grouped_df = all_glm_df[all_glm_df['modulated']].groupby('subject').mean()
 
 # Calculate percentage stim modulated neurons that are better explained by stim vs motion
-all_glm_df['better_stim'] = (all_glm_df['ratio_opto'] > 0.5) & (all_glm_df['modulated'])
+all_glm_df['better_stim'] = (all_glm_df['ratio_opto'] > 0) & (all_glm_df['modulated'])
 summary_df = all_glm_df[(all_glm_df['sert-cre'] == 1)].groupby(['full_region']).sum()
 summary_df['n_neurons'] = all_glm_df.groupby(['full_region']).size()
 summary_df = summary_df.reset_index()
@@ -95,7 +98,7 @@ summary_df['perc_supp_late'] = -summary_df['perc_supp_late']
 ordered_regions = summary_df.sort_values('perc_mod', ascending=False).reset_index()
 
 # %% Plot overall variance explained
-"""
+
 colors, dpi = figure_style()
 f, ax1 = plt.subplots(1, 1, figsize=(1.2, 1.75), dpi=dpi)
 sns.boxplot(x='sert-cre', y='score', data=all_glm_df[all_glm_df['modulated'] == 1], ax=ax1,
@@ -105,11 +108,24 @@ ax1.set(xticklabels=['SERT', 'WT'], xlabel='', ylabel='Variance explained by ful
 
 plt.tight_layout()
 sns.despine(trim=True, offset=3)
-plt.savefig(join(fig_path, 'figure5_var_ex_full_model.pdf'))
+plt.savefig(join(fig_path, 'var_ex_full_model.pdf'))
+
+# %% Plot variance explained by motion and opto
+
+colors, dpi = figure_style()
+glm_df_long = all_glm_df[all_glm_df['modulated'] == 1].melt(['pid', 'neuron_id'], ['opto_stim', 'all_motion'])
+f, ax1 = plt.subplots(1, 1, figsize=(1.2, 1.75), dpi=dpi)
+sns.boxplot(x='variable', y='value', data=glm_df_long,
+            palette=[colors['glm_motion'], colors['glm_stim']],
+            order=['all_motion', 'opto_stim'], fliersize=0, linewidth=0.75, ax=ax1)
+ax1.set(xticklabels=['Motion', 'Stim.'], xlabel='', ylabel=u'Δ variance explained',
+        ylim=[0.00001, 0.1], yscale='log')
+
+plt.tight_layout()
+sns.despine(trim=True, offset=3)
+plt.savefig(join(fig_path, 'var_explained_mot_stim.pdf'))
+
 """
-
-
-
 # %% Plot variance explained by motion and opto
 colors, dpi = figure_style()
 f, (ax1, ax2) = plt.subplots(1, 2, figsize=(2.5, 1.75), dpi=dpi)
@@ -125,22 +141,23 @@ ax2.set(xticklabels=['SERT', 'WT'], xlabel='', ylabel=u'Δ var. explained by mot
 
 plt.tight_layout(w_pad=4)
 sns.despine(trim=True, offset=3)
-plt.savefig(join(fig_path, 'figure4_var_explained_mot_stim.pdf'))
+plt.savefig(join(fig_path, 'var_explained_mot_stim.pdf'))
+"""
 
-# %%
+# %% Plot histogram of motion / stim ratio
 colors, dpi = figure_style()
 f, ax1 = plt.subplots(1, 1, figsize=(1.75, 1.75), dpi=dpi)
 
 ax1.hist(all_glm_df.loc[(all_glm_df['modulated'] == 1) & (all_glm_df['sert-cre'] == 1), 'ratio_opto'],
          bins=15, color='grey')
-ax1.set(ylabel='Neuron count', xlabel='Ratio stimulation / motion', ylim=[0, 100],
+ax1.set(ylabel='Neuron count', xlabel='Ratio stimulation / motion', ylim=[0, 120],
         xticks=[-1, -0.5, 0, 0.5, 1])
 
 plt.tight_layout()
 sns.despine(trim=True)
-plt.savefig(join(fig_path, 'figure4_ratio_motion_stim.pdf'))
+plt.savefig(join(fig_path, 'ratio_motion_stim.pdf'))
 
-# %%
+# %% Plot ratio per region
 
 # Drop root and only keep modulated neurons
 glm_df_slice = all_glm_df[(all_glm_df['sert-cre'] == 1) & (all_glm_df['modulated'] == 1)
@@ -153,18 +170,14 @@ sort_regions = glm_df_slice.groupby('full_region').mean()['ratio_opto'].sort_val
 
 f, ax1 = plt.subplots(1, 1, figsize=(2.5, 1.75), dpi=dpi)
 ax1.plot([0, 0], [-1, glm_df_slice.shape[0]], color=[0.5, 0.5, 0.5], ls='--')
-"""
-sns.barplot(x='ratio_opto', y='full_region', color='orange', ax=ax1,
-            data=glm_df_slice, order=sort_regions, ci=68, errwidth=1)
-"""
 sns.boxplot(x='ratio_opto', y='full_region', color='orange', ax=ax1,
-            data=glm_df_slice, order=sort_regions, fliersize=0)
+            data=glm_df_slice, order=sort_regions, fliersize=0, linewidth=0.75)
 ax1.set(ylabel='', xlabel='Ratio stimulation / motion', xlim=[-1, 1],
         xticks=[-1, -0.5, 0, 0.5, 1])
 
 plt.tight_layout()
 sns.despine(trim=True)
-plt.savefig(join(fig_path, 'figure4_ratio_opto_motion_per_region.pdf'))
+plt.savefig(join(fig_path, 'ratio_opto_motion_per_region.pdf'))
 
 
 
@@ -173,15 +186,15 @@ colors, dpi = figure_style()
 f, ax1 = plt.subplots(1, 1, figsize=(2.5, 2), dpi=dpi)
 sns.barplot(x='perc_mod', y='full_region', data=summary_df.sort_values('perc_mod', ascending=False),
             color=colors['general'], ax=ax1)
-ax1.text(17, 7, 'Ratio stim. / mot.\n> 0.5', ha='center')
-ax1.set(xlabel='Modulated neurons (%)', ylabel='', xlim=[0, 30], xticks=np.arange(0, 31, 10))
+ax1.text(22, 7, 'Stim. / Mot. > 0', ha='center')
+ax1.set(xlabel='Modulated neurons (%)', ylabel='', xlim=[0, 40], xticks=np.arange(0, 41, 10))
 #ax1.plot([-1, ax1.get_xlim()[1]], [5, 5], ls='--', color='grey')
 #plt.xticks(rotation=90)
 #ax1.margins(x=0)
 
 plt.tight_layout()
 sns.despine(trim=False)
-plt.savefig(join(fig_path, 'figure4_perc_modulated_neurons_per_region.pdf'))
+plt.savefig(join(fig_path, 'perc_modulated_neurons_per_region.pdf'))
 
 
 """

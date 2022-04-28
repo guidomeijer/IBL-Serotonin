@@ -19,7 +19,7 @@ import pandas as pd
 
 # Settings
 fig_dir, data_dir = paths(dropbox=True)
-fig_dir = join(fig_dir, 'PaperPassive')
+fig_dir = join(fig_dir, 'PaperPassive', 'figure3')
 CLUSTERING = 'gaussian'  # gaussian or k-means
 #FEATURES = ['spike_width', 'rp_slope', 'pt_ratio', 'rc_slope', 'spike_amp']
 FEATURES = ['spike_width', 'pt_ratio']
@@ -96,7 +96,7 @@ ax.axis('off')
 
 #plt.tight_layout()
 #sns.despine(trim=True)
-plt.savefig(join(fig_dir, 'figure3_mean_waveforms.pdf'), bbox_inches='tight')
+plt.savefig(join(fig_dir, 'mean_waveforms.pdf'), bbox_inches='tight')
 
 # %% Plot waveform clustering
 f, ax = plt.subplots(1, 1, figsize=(1.75, 1.75), dpi=dpi)
@@ -111,7 +111,7 @@ ax.legend(frameon=False, markerscale=2, bbox_to_anchor=(0.2, 0.8), handletextpad
 
 plt.tight_layout()
 sns.despine(trim=True)
-plt.savefig(join(fig_dir, 'figure3_waveform_clustering.pdf'))
+plt.savefig(join(fig_dir, 'waveform_clustering.pdf'))
 
 # %% Plot firing rate distribution of clusters
 
@@ -125,6 +125,6 @@ fix_hist_step_vertical_line_at_end(ax)
 
 plt.tight_layout()
 sns.despine(trim=True)
-plt.savefig(join(fig_dir, 'figure3_firing_rate_dist.pdf'))
+plt.savefig(join(fig_dir, 'firing_rate_dist.pdf'))
 
 

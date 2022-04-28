@@ -6,23 +6,17 @@ By: Guido Meijer
 """
 
 import numpy as np
-from os.path import join, isdir
-import seaborn as sns
+from os.path import join
 import matplotlib.pyplot as plt
 from matplotlib.ticker import FormatStrFormatter
 from brainbox.task.closed_loop import roc_single_event
-import pandas as pd
-from os import mkdir
 from sklearn.metrics import roc_curve
 from brainbox.population.decode import get_spike_counts_in_bins
-from brainbox.metrics.single_units import spike_sorting_metrics
 from matplotlib.patches import Rectangle
-from serotonin_functions import figure_style
 from brainbox.io.one import SpikeSortingLoader
-from brainbox.singlecell import calculate_peths
 from zetapy import getZeta
 from brainbox.plot import peri_event_time_histogram
-from serotonin_functions import paths, remap,  load_passive_opto_times
+from serotonin_functions import paths, remap,  load_passive_opto_times, figure_style
 from one.api import ONE
 from ibllib.atlas import AllenAtlas
 ba = AllenAtlas()
@@ -43,7 +37,6 @@ DATE = '2021-03-09'
 PROBE= 'probe00'
 NEURON = 692
 
-
 T_BEFORE = 1  # for plotting
 T_AFTER = 2
 ZETA_BEFORE = 0  # baseline period to include for zeta test
@@ -52,7 +45,7 @@ POST_TIME = [0, 1]
 BIN_SIZE = 0.05
 SMOOTHING = 0.025
 fig_path, save_path = paths(dropbox=True)
-fig_path = join(fig_path, 'PaperPassive')
+fig_path = join(fig_path, 'PaperPassive', 'figure4')
 
 # Get session details
 ins = one.alyx.rest('insertions', 'list', date=DATE, subject=SUBJECT, name=PROBE)
@@ -133,7 +126,7 @@ ax.yaxis.set_label_coords(-0.25, .75)
 
 plt.tight_layout()
 
-plt.savefig(join(fig_path, f'figure5_stim_{region}_{SUBJECT}_{DATE}_{PROBE}_neuron{NEURON}.pdf'))
+plt.savefig(join(fig_path, f'stim_{region}_{SUBJECT}_{DATE}_{PROBE}_neuron{NEURON}.pdf'))
 
 
 

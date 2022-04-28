@@ -14,7 +14,7 @@ from serotonin_functions import paths, figure_style, load_subjects
 
 # Paths
 fig_path, save_path = paths(dropbox=True)
-fig_path = join(fig_path, 'PaperPassive')
+fig_path = join(fig_path, 'PaperPassive', 'figure3')
 
 # Load in results
 light_neurons = pd.read_csv(join(save_path, 'light_modulated_neurons.csv'), index_col=0)
@@ -77,4 +77,4 @@ ax1.legend(frameon=False, bbox_to_anchor=(0.25, 0.8))
 
 plt.tight_layout()
 sns.despine(trim=False)
-plt.savefig(join(fig_path, 'figure3_light_modulated_neurons_per_type.pdf'))
+plt.savefig(join(fig_path, 'light_modulated_neurons_per_type.pdf'))

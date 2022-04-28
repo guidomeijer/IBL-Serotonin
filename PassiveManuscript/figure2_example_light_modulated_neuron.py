@@ -79,7 +79,7 @@ POST_TIME = [0, 1]
 BIN_SIZE = 0.05
 SMOOTHING = 0.025
 fig_path, save_path = paths(dropbox=True)
-fig_path = join(fig_path, 'PaperPassive')
+fig_path = join(fig_path, 'PaperPassive', 'figure2')
 
 # Get session details
 ins = one.alyx.rest('insertions', 'list', date=DATE, subject=SUBJECT, name=PROBE)
@@ -160,7 +160,7 @@ ax.yaxis.set_label_coords(-.2, .75)
 
 plt.tight_layout()
 
-plt.savefig(join(fig_path, f'figure2_{region}_{SUBJECT}_{DATE}_{PROBE}_neuron{NEURON}.pdf'))
+plt.savefig(join(fig_path, f'{region}_{SUBJECT}_{DATE}_{PROBE}_neuron{NEURON}.pdf'))
 
 
 

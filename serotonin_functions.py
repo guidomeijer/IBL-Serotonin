@@ -95,20 +95,21 @@ def figure_style():
     matplotlib.rcParams['pdf.fonttype'] = 42
     matplotlib.rcParams['ps.fonttype'] = 42
     colors = {'general': 'orange',
+              'grey': [0.75, 0.75, 0.75],
               'sert': sns.color_palette('Dark2')[0],
               'wt': [0.75, 0.75, 0.75],
               'left': sns.color_palette('colorblind')[1],
               'right': sns.color_palette('colorblind')[0],
               'enhanced': sns.color_palette('colorblind')[3],
               'suppressed': sns.color_palette('colorblind')[0],
-              'no-modulation': sns.color_palette('colorblind')[7],
               'stim': sns.color_palette('colorblind')[9],
               'no-stim': sns.color_palette('colorblind')[7],
+              'glm_stim': '#CF453C',
+              'glm_motion': '#6180E9',
               'probe': sns.color_palette('colorblind')[4],
               'block': sns.color_palette('colorblind')[6],
               'RS': sns.color_palette('Set2')[0],
-              'FS': sns.color_palette('Set2')[1],
-              'early': [0.6, 0.6, 0.6], 'late': 'k'}
+              'FS': sns.color_palette('Set2')[1]}
     screen_width = tk.Tk().winfo_screenwidth()
     dpi = screen_width / 12
     return colors, dpi

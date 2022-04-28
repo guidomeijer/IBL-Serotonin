@@ -19,7 +19,7 @@ MIN_NEURONS = 10
 MOTION_REG = ['wheel_velocity', 'nose', 'paw_l', 'paw_r', 'tongue_end_l', 'tongue_end_r',
               'motion_energy_body', 'motion_energy_left', 'motion_energy_right', 'pupil_diameter']
 fig_path, save_path = paths(dropbox=True)
-fig_path = join(fig_path, 'PaperPassive')
+fig_path = join(fig_path, 'PaperPassive', 'supp_figure2')
 subjects = load_subjects()
 
 # Load in GLM output
@@ -65,4 +65,4 @@ ax1.set(ylabel='', xlabel=u'Δ var. explained by motion', xlim=[0, 0.3],
 
 plt.tight_layout()
 sns.despine(trim=True, offset=2)
-plt.savefig(join(fig_path, f'supp_figure{FIG}_GLM_motion_per_region.pdf'))
+plt.savefig(join(fig_path, 'GLM_motion_per_region.pdf'))
