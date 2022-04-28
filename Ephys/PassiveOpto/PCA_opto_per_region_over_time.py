@@ -34,7 +34,7 @@ BIN_SIZE = 0.01
 SMOOTHING = 0.02
 MIN_FR = 0.1
 PLOT = True
-_, fig_path, save_path = paths()
+fig_path, save_path = paths()
 fig_path = join(fig_path, 'Ephys', 'PCA')
 
 # Get binning time vectors
@@ -65,9 +65,12 @@ for i in rec.index.values:
         print(f'Found {len(opto_train_times)} passive laser pulses')
 
     # Load in spikes
-    sl = SpikeSortingLoader(pid=pid, one=one, atlas=ba)
-    spikes, clusters, channels = sl.load_spike_sorting()
-    clusters = sl.merge_clusters(spikes, clusters, channels)
+    try:
+        sl = SpikeSortingLoader(pid=pid, one=one, atlas=ba)
+        spikes, clusters, channels = sl.load_spike_sorting()
+        clusters = sl.merge_clusters(spikes, clusters, channels)
+    except:
+        continue
 
     # Filter neurons that pass QC
     if 'metrics' in clusters.keys():
@@ -86,7 +89,7 @@ for i in rec.index.values:
 
     # Exclude artifact neurons
     clusters_pass = np.array([i for i in clusters_pass if i not in artifact_neurons.loc[
-        (artifact_neurons['eid'] == eid) & (artifact_neurons['probe'] == probe), 'neuron_id'].values])
+        artifact_neurons['pid'] == pid, 'neuron_id'].values])
     if clusters_pass.shape[0] == 0:
             continue
 
@@ -96,7 +99,7 @@ for i in rec.index.values:
     clusters_pass = clusters_pass[np.isin(clusters_pass, np.unique(spikes.clusters))]
 
     # Get regions from Beryl atlas
-    clusters['region'] = remap(clusters['atlas_id'], combine=True)
+    clusters['region'] = remap(clusters['acronym'], combine=True)
     clusters_regions = clusters['region'][clusters_pass]
 
     # Loop over regions

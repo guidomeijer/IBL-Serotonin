@@ -22,7 +22,7 @@ one = ONE()
 # Settings
 OVERWRITE = True
 NEURON_QC = True
-PRE_TIME = [0.2, 0]  # for significance testing
+PRE_TIME = [0.5, 0]  # for modulation index
 POST_TIME_EARLY = [0, 0.5]
 POST_TIME_LATE = [0.5, 1]
 BIN_SIZE = 0.05
@@ -60,9 +60,12 @@ for i in rec.index.values:
         print(f'Found {len(opto_train_times)} passive laser pulses')
 
     # Load in spikes
-    sl = SpikeSortingLoader(pid=pid, one=one, atlas=ba)
-    spikes, clusters, channels = sl.load_spike_sorting()
-    clusters = sl.merge_clusters(spikes, clusters, channels)
+    try:
+        sl = SpikeSortingLoader(pid=pid, one=one, atlas=ba)
+        spikes, clusters, channels = sl.load_spike_sorting()
+        clusters = sl.merge_clusters(spikes, clusters, channels)
+    except:
+        continue
 
     if 'acronym' not in clusters.keys():
         print(f'No brain regions found for {eid}')

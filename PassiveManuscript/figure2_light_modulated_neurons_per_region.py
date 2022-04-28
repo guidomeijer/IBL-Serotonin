@@ -44,9 +44,9 @@ for i, nickname in enumerate(np.unique(subjects['subject'])):
     light_neurons.loc[light_neurons['subject'] == nickname, 'sert-cre'] = subjects.loc[subjects['subject'] == nickname, 'sert-cre'].values[0]
 
 # Calculate summary statistics
-summary_df = light_neurons[light_neurons['expression'] == 1].groupby(['full_region']).sum()
-summary_df['n_neurons'] = light_neurons[light_neurons['expression'] == 1].groupby(['full_region']).size()
-summary_df['modulation_index'] = light_neurons[light_neurons['expression'] == 1].groupby(['full_region']).mean()['mod_index_late']
+summary_df = light_neurons[light_neurons['sert-cre'] == 1].groupby(['full_region']).sum()
+summary_df['n_neurons'] = light_neurons[light_neurons['sert-cre'] == 1].groupby(['full_region']).size()
+summary_df['modulation_index'] = light_neurons[light_neurons['sert-cre'] == 1].groupby(['full_region']).mean()['mod_index_late']
 summary_df = summary_df.reset_index()
 summary_df['perc_enh_late'] =  (summary_df['enhanced_late'] / summary_df['n_neurons']) * 100
 summary_df['perc_supp_late'] =  (summary_df['suppressed_late'] / summary_df['n_neurons']) * 100

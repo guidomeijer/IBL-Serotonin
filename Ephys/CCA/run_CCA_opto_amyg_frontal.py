@@ -29,11 +29,11 @@ pca = PCA(n_components=10)
 # Settings
 NEURON_QC = True  # whether to use neuron qc to exclude bad units
 MIN_NEURONS = 10  # minimum neurons per region
-N_PERMUT = 500  # number of times to get spontaneous population correlation for permutation testing
+N_PERMUT = 100  # number of times to get spontaneous population correlation for permutation testing
 WIN_SIZE = 0.2  # window size in seconds
 PRE_TIME = 1  # time before stim onset in s
 POST_TIME = 2  # time after stim onset in s
-SMOOTHING = 0.1  # smoothing of psth
+SMOOTHING = 0  # smoothing of psth
 MIN_FR = 0.5  # minimum firing rate over the whole recording
 N_PC = 10  # number of PCs to use
 TEST_FRAC = 0.5  # fraction to use for testing in cross-validation
@@ -45,7 +45,8 @@ fig_path, save_path = paths()
 fig_path = join(fig_path, 'Ephys', 'CCA')
 
 # Initialize some things
-REGION_PAIRS = [['Amyg', 'M2'], ['Amyg', 'mPFC'], ['M2', 'mPFC']]
+REGION_PAIRS = [['Amyg', 'M2'], ['Amyg', 'mPFC'], ['M2', 'mPFC'], ['M2', 'ORB'], ['M2', 'Pir'],
+                ['ORB', 'Pir']]
 np.random.seed(42)  # fix random seed for reproducibility
 n_time_bins = int((PRE_TIME + POST_TIME) / WIN_SIZE)
 lio = LeaveOneOut()
@@ -84,9 +85,12 @@ for i, eid in enumerate(np.unique(rec['eid'])):
     spikes, clusters, channels, clusters_pass = dict(), dict(), dict(), dict()
     for (pid, probe) in zip(rec.loc[rec['eid'] == eid, 'pid'].values, rec.loc[rec['eid'] == eid, 'probe'].values):
 
-        sl = SpikeSortingLoader(pid=pid, one=one, atlas=ba)
-        spikes[probe], clusters[probe], channels[probe] = sl.load_spike_sorting()
-        clusters[probe] = sl.merge_clusters(spikes[probe], clusters[probe], channels[probe])
+        try:
+            sl = SpikeSortingLoader(pid=pid, one=one, atlas=ba)
+            spikes[probe], clusters[probe], channels[probe] = sl.load_spike_sorting()
+            clusters[probe] = sl.merge_clusters(spikes[probe], clusters[probe], channels[probe])
+        except:
+            continue
 
         # Filter neurons that pass QC and artifact neurons
         if NEURON_QC:
@@ -164,94 +168,95 @@ for i, eid in enumerate(np.unique(rec['eid'])):
     for r, reg_pair in enumerate(REGION_PAIRS):
         region_1 = reg_pair[0]
         region_2 = reg_pair[1]
-        print(f'Calculating {region_1}-{region_2}')
-
-        """
-        # Fit communication subspace axis and get population correlation
-        # for SPONTANEOUS activity
-        r_spont = np.empty([N_PERMUT, n_time_bins])
-        r_opto = np.empty(n_time_bins)
-        for jj in range(N_PERMUT):
+        if (region_1 in pca_spont.keys()) & (region_2 in pca_spont.keys()):
+            print(f'Calculating {region_1}-{region_2}')
+    
+            """
+            # Fit communication subspace axis and get population correlation
+            # for SPONTANEOUS activity
+            r_spont = np.empty([N_PERMUT, n_time_bins])
+            r_opto = np.empty(n_time_bins)
+            for jj in range(N_PERMUT):
+                for tb in range(n_time_bins):
+                    this_r = np.empty(N_BOOTSTRAP)
+                    for bb in range(N_BOOTSTRAP):
+                        x_train, x_test, y_train, y_test = train_test_split(
+                            pca_spont[region_1][jj, :, :, tb], pca_spont[region_2][jj, :, :, tb],
+                            test_size=TEST_FRAC, shuffle=True)
+                        cca.fit(x_train, y_train)
+                        spont_x, spont_y = cca.transform(x_test, y_test)
+                        this_r[bb], _ = pearsonr(np.squeeze(spont_x), np.squeeze(spont_y))
+                    r_spont[jj, tb] = np.mean(this_r)
+    
+            # For OPTO activity
             for tb in range(n_time_bins):
                 this_r = np.empty(N_BOOTSTRAP)
                 for bb in range(N_BOOTSTRAP):
                     x_train, x_test, y_train, y_test = train_test_split(
-                        pca_spont[region_1][jj, :, :, tb], pca_spont[region_2][jj, :, :, tb],
+                        pca_opto[region_1][:, :, tb], pca_opto[region_2][:, :, tb],
                         test_size=TEST_FRAC, shuffle=True)
                     cca.fit(x_train, y_train)
-                    spont_x, spont_y = cca.transform(x_test, y_test)
-                    this_r[bb], _ = pearsonr(np.squeeze(spont_x), np.squeeze(spont_y))
-                r_spont[jj, tb] = np.mean(this_r)
-
-        # For OPTO activity
-        for tb in range(n_time_bins):
-            this_r = np.empty(N_BOOTSTRAP)
-            for bb in range(N_BOOTSTRAP):
-                x_train, x_test, y_train, y_test = train_test_split(
-                    pca_opto[region_1][:, :, tb], pca_opto[region_2][:, :, tb],
-                    test_size=TEST_FRAC, shuffle=True)
-                cca.fit(x_train, y_train)
-                opto_x, opto_y = cca.transform(x_test, y_test)
-                this_r[bb], _ = pearsonr(np.squeeze(opto_x), np.squeeze(opto_y))
-            r_opto[tb] = np.mean(this_r)
-        """
-
-        # Fit communication subspace axis and get population correlation
-        # for SPONTANEOUS activity
-        r_spont = np.empty([N_PERMUT, n_time_bins])
-        r_opto = np.empty(n_time_bins)
-        for ij in range(N_PERMUT):
+                    opto_x, opto_y = cca.transform(x_test, y_test)
+                    this_r[bb], _ = pearsonr(np.squeeze(opto_x), np.squeeze(opto_y))
+                r_opto[tb] = np.mean(this_r)
+            """
+    
+            # Fit communication subspace axis and get population correlation
+            # for SPONTANEOUS activity
+            r_spont = np.empty([N_PERMUT, n_time_bins])
+            r_opto = np.empty(n_time_bins)
+            for ij in range(N_PERMUT):
+                for tb in range(n_time_bins):
+                    spont_x = np.empty(pca_spont[region_1][ij, :, :, tb].shape[0])
+                    spont_y = np.empty(pca_spont[region_1][ij, :, :, tb].shape[0])
+                    for train_index, test_index in lio.split(pca_spont[region_1][ij, :, :, tb]):
+                        cca.fit(pca_spont[region_1][ij, train_index, :, tb],
+                                pca_spont[region_2][ij, train_index, :, tb])
+                        x, y = cca.transform(pca_spont[region_1][ij, test_index, :, tb],
+                                             pca_spont[region_2][ij, test_index, :, tb])
+                        spont_x[test_index] = x.T
+                        spont_y[test_index] = y.T
+                    r_spont[ij, tb], _ = pearsonr(spont_x, spont_y)
+    
+            # For OPTO activity
             for tb in range(n_time_bins):
-                spont_x = np.empty(pca_spont[region_1][ij, :, :, tb].shape[0])
-                spont_y = np.empty(pca_spont[region_1][ij, :, :, tb].shape[0])
-                for train_index, test_index in lio.split(pca_spont[region_1][ij, :, :, tb]):
-                    cca.fit(pca_spont[region_1][ij, train_index, :, tb],
-                            pca_spont[region_2][ij, train_index, :, tb])
-                    x, y = cca.transform(pca_spont[region_1][ij, test_index, :, tb],
-                                         pca_spont[region_2][ij, test_index, :, tb])
-                    spont_x[test_index] = x.T
-                    spont_y[test_index] = y.T
-                r_spont[ij, tb], _ = pearsonr(spont_x, spont_y)
-
-        # For OPTO activity
-        for tb in range(n_time_bins):
-            opto_x = np.empty(pca_opto[region_1][:, :, tb].shape[0])
-            opto_y = np.empty(pca_opto[region_1][:, :, tb].shape[0])
-            for train_index, test_index in lio.split(pca_opto[region_1][:, :, tb]):
-                cca.fit(pca_opto[region_1][train_index, :, tb],
-                        pca_opto[region_2][train_index, :, tb])
-                x, y = cca.transform(pca_opto[region_1][test_index, :, tb],
-                                     pca_opto[region_2][test_index, :, tb])
-                opto_x[test_index] = x.T
-                opto_y[test_index] = y.T
-            r_opto[tb], _ = pearsonr(opto_x, opto_y)
-
-        # Add to dataframe
-        cca_df = pd.concat((cca_df, pd.DataFrame(data={
-            'subject': subject, 'date': date, 'eid': eid, 'region_1': region_1, 'region_2': region_2,
-            'region_pair': f'{region_1}-{region_2}', 'r_opto': r_opto,
-            'r_spont_05': np.quantile(r_spont, 0.05, axis=0),
-            'r_spont_95': np.quantile(r_spont, 0.95, axis=0),
-            'time': psth_opto['tscale']})), ignore_index=True)
-
-        # Plot this region pair
-        if PLOT_IND:
-            colors, dpi = figure_style()
-            f, ax1 = plt.subplots(1, 1, figsize=(3, 3), dpi=dpi)
-            #ax1.fill_between(psth_opto['tscale'], np.mean(r_spont, axis=0)-np.std(r_spont)/2,
-            #                 np.mean(r_spont, axis=0)+np.std(r_spont)/2, color='grey', alpha=0.2)
-            ax1.fill_between(psth_opto['tscale'], np.quantile(r_spont, 0.05, axis=0),
-                             np.quantile(r_spont, 0.95, axis=0), color='grey', alpha=0.2)
-            #ax1.plot(psth_opto['tscale'], np.mean(r_spont, axis=0), color='grey', lw=1)
-            ax1.plot(psth_opto['tscale'], r_opto, lw=2)
-            ax1.plot([0, 0], ax1.get_ylim(), color='k', ls='--')
-            ax1.set(xlabel='Time (s)', ylabel='Population correlation (r)',
-                    title=f'{region_1}-{region_2}')
-            sns.despine(trim=True)
-            plt.tight_layout()
-            plt.savefig(join(fig_path, 'FrontAmyg', f'{region_1}-{region_2}_{subject}_{date}'), dpi=300)
-            plt.close(f)
-
-    # Save results
-    cca_df.to_csv(join(save_path, 'cca_results_front_amyg.csv'))
+                opto_x = np.empty(pca_opto[region_1][:, :, tb].shape[0])
+                opto_y = np.empty(pca_opto[region_1][:, :, tb].shape[0])
+                for train_index, test_index in lio.split(pca_opto[region_1][:, :, tb]):
+                    cca.fit(pca_opto[region_1][train_index, :, tb],
+                            pca_opto[region_2][train_index, :, tb])
+                    x, y = cca.transform(pca_opto[region_1][test_index, :, tb],
+                                         pca_opto[region_2][test_index, :, tb])
+                    opto_x[test_index] = x.T
+                    opto_y[test_index] = y.T
+                r_opto[tb], _ = pearsonr(opto_x, opto_y)
+    
+            # Add to dataframe
+            cca_df = pd.concat((cca_df, pd.DataFrame(data={
+                'subject': subject, 'date': date, 'eid': eid, 'region_1': region_1, 'region_2': region_2,
+                'region_pair': f'{region_1}-{region_2}', 'r_opto': r_opto,
+                'r_spont_05': np.quantile(r_spont, 0.05, axis=0),
+                'r_spont_95': np.quantile(r_spont, 0.95, axis=0),
+                'time': psth_opto['tscale']})), ignore_index=True)
+    
+            # Plot this region pair
+            if PLOT_IND:
+                colors, dpi = figure_style()
+                f, ax1 = plt.subplots(1, 1, figsize=(3, 3), dpi=dpi)
+                #ax1.fill_between(psth_opto['tscale'], np.mean(r_spont, axis=0)-np.std(r_spont)/2,
+                #                 np.mean(r_spont, axis=0)+np.std(r_spont)/2, color='grey', alpha=0.2)
+                ax1.fill_between(psth_opto['tscale'], np.quantile(r_spont, 0.05, axis=0),
+                                 np.quantile(r_spont, 0.95, axis=0), color='grey', alpha=0.2)
+                #ax1.plot(psth_opto['tscale'], np.mean(r_spont, axis=0), color='grey', lw=1)
+                ax1.plot(psth_opto['tscale'], r_opto, lw=2)
+                ax1.plot([0, 0], ax1.get_ylim(), color='k', ls='--')
+                ax1.set(xlabel='Time (s)', ylabel='Population correlation (r)',
+                        title=f'{region_1}-{region_2}')
+                sns.despine(trim=True)
+                plt.tight_layout()
+                plt.savefig(join(fig_path, 'FrontAmyg', f'{region_1}-{region_2}_{subject}_{date}'), dpi=300)
+                plt.close(f)
+    
+        # Save results
+        cca_df.to_csv(join(save_path, 'cca_results_front_amyg.csv'))
 

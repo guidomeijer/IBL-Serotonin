@@ -56,9 +56,12 @@ for i, pid in enumerate(np.unique(light_neurons['pid'])):
         continue
 
     # Load in spikes
-    sl = SpikeSortingLoader(pid=pid, one=one, atlas=ba)
-    spikes, clusters, channels = sl.load_spike_sorting()
-    clusters = sl.merge_clusters(spikes, clusters, channels)
+    try:
+        sl = SpikeSortingLoader(pid=pid, one=one, atlas=ba)
+        spikes, clusters, channels = sl.load_spike_sorting()
+        clusters = sl.merge_clusters(spikes, clusters, channels)
+    except:
+        continue    
 
     # Take slice of dataframe
     these_neurons = light_neurons[(light_neurons['modulated'] == 1)
