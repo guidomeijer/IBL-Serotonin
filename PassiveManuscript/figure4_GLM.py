@@ -179,7 +179,57 @@ plt.tight_layout()
 sns.despine(trim=True)
 plt.savefig(join(fig_path, 'ratio_opto_motion_per_region.pdf'))
 
+# %% Plot variance explained by opto per region
 
+# Drop root and only keep modulated neurons
+glm_df_slice = all_glm_df[(all_glm_df['sert-cre'] == 1) & (all_glm_df['modulated'] == 1)
+                          & (all_glm_df['full_region'] != 'root')]
+grouped_df = glm_df_slice.groupby('full_region').size()
+grouped_df = grouped_df[grouped_df >= MIN_NEURONS_RATIO]
+glm_df_slice = glm_df_slice[glm_df_slice['full_region'].isin(grouped_df.index.values)]
+
+sort_regions = glm_df_slice.groupby('full_region').median()['opto_stim'].sort_values(ascending=False).index.values
+
+f, ax1 = plt.subplots(1, 1, figsize=(2.5, 1.75), dpi=dpi)
+ax1.plot([0, 0], [-1, glm_df_slice.shape[0]], color=[0.5, 0.5, 0.5], ls='--')
+sns.boxplot(x='opto_stim', y='full_region', color='orange', ax=ax1,
+            data=glm_df_slice, order=sort_regions, fliersize=0, linewidth=0.75)
+ax1.set(ylabel='', xlabel=u'Δ var. explained by stimulation', xscale='log', xlim=[0.0001, 1])
+
+plt.tight_layout()
+sns.despine(trim=True)
+plt.savefig(join(fig_path, 'opto_per_region.pdf'))
+
+# %% Plot variance explained by motion per region
+
+# Drop root and only keep modulated neurons
+glm_df_slice = all_glm_df[(all_glm_df['sert-cre'] == 1) & (all_glm_df['modulated'] == 1)
+                          & (all_glm_df['full_region'] != 'root')]
+grouped_df = glm_df_slice.groupby('full_region').size()
+grouped_df = grouped_df[grouped_df >= MIN_NEURONS_RATIO]
+glm_df_slice = glm_df_slice[glm_df_slice['full_region'].isin(grouped_df.index.values)]
+
+sort_regions = glm_df_slice.groupby('full_region').median()['all_motion'].sort_values(ascending=False).index.values
+
+f, ax1 = plt.subplots(1, 1, figsize=(2.5, 1.75), dpi=dpi)
+ax1.plot([0, 0], [-1, glm_df_slice.shape[0]], color=[0.5, 0.5, 0.5], ls='--')
+sns.boxplot(x='all_motion', y='full_region', color='orange', ax=ax1,
+            data=glm_df_slice, order=sort_regions, fliersize=0, linewidth=0.75)
+ax1.set(ylabel='', xlabel=u'Δ var. explained by motion', xscale='log', xlim=[0.0001, 1])
+
+plt.tight_layout()
+sns.despine(trim=True)
+plt.savefig(join(fig_path, 'motion_per_region.pdf'))
+
+# %% Plot var explained by opto vs motion per neuron in scatterplot
+
+f, ax1 = plt.subplots(1, 1, figsize=(1.75, 1.75), dpi=dpi)
+ax1.scatter(all_glm_df['opto_stim'], all_glm_df['all_motion'], c=colors['general'], s=2)
+ax1.plot([0.0001, 1], [0.0001, 1], color='k')
+ax1.set(xlabel=u'Δ var. explained by stimulation', ylabel=u'Δ var. explained by motion',
+        xlim=[0.0001, 1], ylim=[0.0001, 1], xscale='log', yscale='log')
+plt.tight_layout()
+sns.despine(trim=True)
 
 # %% Plot percentage modulated neurons but only the ones that are better explained by opto
 colors, dpi = figure_style()

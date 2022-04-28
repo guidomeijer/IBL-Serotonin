@@ -96,7 +96,7 @@ psth_df['dim_2'] = dim_red_psth[:, 1]
 # Merge GLM and PSTH dataframes
 merged_df = pd.merge(all_glm_df, psth_df, on=['subject', 'date', 'neuron_id', 'pid'])
 
-# %% Plot
+# %% Plot ratio
 colors, dpi = figure_style()
 f = plt.figure(figsize=(4, 2), dpi=dpi)
 axs = f.subplot_mosaic('EAB\nFAC\nGAD\n', gridspec_kw={'width_ratios':[1, 2, 1]})
@@ -157,6 +157,134 @@ axs['G'].axis('off')
 plt.tight_layout()
 sns.despine(trim=True)
 
-#plt.savefig(join(fig_path, 'GLM_PSTH.pdf'))
+plt.savefig(join(fig_path, 'GLM_PSTH_ratio.pdf'))
+
+# %% Plot variance explained by opto
+colors, dpi = figure_style()
+f = plt.figure(figsize=(4, 2), dpi=dpi)
+axs = f.subplot_mosaic('EAB\nFAC\nGAD\n', gridspec_kw={'width_ratios':[1, 2, 1]})
+sc = axs['A'].scatter(merged_df['dim_1'], merged_df['dim_2'], c=np.log10(merged_df['opto_stim']),
+                      cmap='plasma', vmin=np.log10(0.001), vmax=np.log10(0.1))
+#ax1.legend(frameon=False, bbox_to_anchor=(1, 0.7))
+axs['A'].axis('off')
+cbar = plt.colorbar(sc, orientation="horizontal", pad=0.05, ax=axs['A'])
+cbar.set_ticks(np.log10([0.001, 0.01, 0.1]))
+cbar.set_ticklabels([0.001, 0.1, 0.1])
+cbar.set_label(u'Δ var. explained by stimulation')
+
+ex_neuron = merged_df[(merged_df['neuron_id'] == EX_NEURON_1) & (merged_df['pid'] == EX_PID_1)].index.values[0]
+axs['A'].plot([merged_df.loc[ex_neuron, 'dim_1'], 36], [merged_df.loc[ex_neuron, 'dim_2'], 25],
+              color='k')
+axs['B'].plot(merged_df.loc[ex_neuron, 'time'], merged_df.loc[ex_neuron, 'peth'])
+axs['B'].plot([0, 0], axs['B'].get_ylim(), color='grey', ls='--', lw=0.75)
+axs['B'].axis('off')
+
+ex_neuron = merged_df[(merged_df['neuron_id'] == EX_NEURON_2) & (merged_df['pid'] == EX_PID_2)].index.values[0]
+axs['A'].plot([merged_df.loc[ex_neuron, 'dim_1'], 36], [merged_df.loc[ex_neuron, 'dim_2'], -7],
+              color='k')
+axs['C'].plot(merged_df.loc[ex_neuron, 'time'], merged_df.loc[ex_neuron, 'peth'])
+axs['C'].plot([0, 0], axs['C'].get_ylim(), color='grey', ls='--', lw=0.75)
+axs['C'].axis('off')
+
+ex_neuron = merged_df[(merged_df['neuron_id'] == EX_NEURON_3) & (merged_df['pid'] == EX_PID_3)].index.values[0]
+axs['A'].plot([merged_df.loc[ex_neuron, 'dim_1'], 36], [merged_df.loc[ex_neuron, 'dim_2'], -20],
+              color='k')
+axs['D'].plot(merged_df.loc[ex_neuron, 'time'], merged_df.loc[ex_neuron, 'peth'])
+axs['D'].plot([0, 0], axs['D'].get_ylim(), color='grey', ls='--', lw=0.75)
+axs['D'].plot([0, 1], [-0.5, -0.5], color='k', lw=0.5)
+axs['D'].text(0.5, -5, '1s', ha='center')
+axs['D'].axis('off')
+
+ex_neuron = merged_df[(merged_df['neuron_id'] == EX_NEURON_4) & (merged_df['pid'] == EX_PID_4)].index.values[0]
+axs['A'].plot([merged_df.loc[ex_neuron, 'dim_1'], -38], [merged_df.loc[ex_neuron, 'dim_2'], 25],
+              color='k')
+axs['E'].plot(merged_df.loc[ex_neuron, 'time'], merged_df.loc[ex_neuron, 'peth'])
+axs['E'].plot([0, 0], axs['E'].get_ylim(), color='grey', ls='--', lw=0.75)
+axs['E'].axis('off')
+
+ex_neuron = merged_df[(merged_df['neuron_id'] == EX_NEURON_5) & (merged_df['pid'] == EX_PID_5)].index.values[0]
+axs['A'].plot([merged_df.loc[ex_neuron, 'dim_1'], -38], [merged_df.loc[ex_neuron, 'dim_2'], 0],
+              color='k')
+axs['F'].plot(merged_df.loc[ex_neuron, 'time'], merged_df.loc[ex_neuron, 'peth'])
+axs['F'].plot([0, 0], axs['F'].get_ylim(), color='grey', ls='--', lw=0.75)
+axs['F'].axis('off')
+
+ex_neuron = merged_df[(merged_df['neuron_id'] == EX_NEURON_6) & (merged_df['pid'] == EX_PID_6)].index.values[0]
+axs['A'].plot([merged_df.loc[ex_neuron, 'dim_1'], -38], [merged_df.loc[ex_neuron, 'dim_2'], -20],
+              color='k')
+axs['G'].plot(merged_df.loc[ex_neuron, 'time'], merged_df.loc[ex_neuron, 'peth'])
+axs['G'].plot([0, 0], axs['G'].get_ylim(), color='grey', ls='--', lw=0.75)
+axs['G'].plot([0, 1], [-2, -2], color='k', lw=0.5)
+axs['G'].text(0.5, -7, '1s', ha='center')
+axs['G'].axis('off')
+
+plt.tight_layout()
+sns.despine(trim=True)
+
+plt.savefig(join(fig_path, 'GLM_PSTH_opto.pdf'))
+
+# %% Plot variance explained by motion
+colors, dpi = figure_style()
+f = plt.figure(figsize=(4, 2), dpi=dpi)
+axs = f.subplot_mosaic('EAB\nFAC\nGAD\n', gridspec_kw={'width_ratios':[1, 2, 1]})
+sc = axs['A'].scatter(merged_df['dim_1'], merged_df['dim_2'], c=np.log10(merged_df['all_motion']),
+                      cmap='plasma', vmin=np.log10(0.001), vmax=np.log10(0.1))
+#ax1.legend(frameon=False, bbox_to_anchor=(1, 0.7))
+axs['A'].axis('off')
+cbar = plt.colorbar(sc, orientation="horizontal", pad=0.05, ax=axs['A'])
+cbar.set_ticks(np.log10([0.001, 0.01, 0.1]))
+cbar.set_ticklabels([0.001, 0.1, 0.1])
+cbar.set_label(u'Δ var. explained by motion')
+
+ex_neuron = merged_df[(merged_df['neuron_id'] == EX_NEURON_1) & (merged_df['pid'] == EX_PID_1)].index.values[0]
+axs['A'].plot([merged_df.loc[ex_neuron, 'dim_1'], 36], [merged_df.loc[ex_neuron, 'dim_2'], 25],
+              color='k')
+axs['B'].plot(merged_df.loc[ex_neuron, 'time'], merged_df.loc[ex_neuron, 'peth'])
+axs['B'].plot([0, 0], axs['B'].get_ylim(), color='grey', ls='--', lw=0.75)
+axs['B'].axis('off')
+
+ex_neuron = merged_df[(merged_df['neuron_id'] == EX_NEURON_2) & (merged_df['pid'] == EX_PID_2)].index.values[0]
+axs['A'].plot([merged_df.loc[ex_neuron, 'dim_1'], 36], [merged_df.loc[ex_neuron, 'dim_2'], -7],
+              color='k')
+axs['C'].plot(merged_df.loc[ex_neuron, 'time'], merged_df.loc[ex_neuron, 'peth'])
+axs['C'].plot([0, 0], axs['C'].get_ylim(), color='grey', ls='--', lw=0.75)
+axs['C'].axis('off')
+
+ex_neuron = merged_df[(merged_df['neuron_id'] == EX_NEURON_3) & (merged_df['pid'] == EX_PID_3)].index.values[0]
+axs['A'].plot([merged_df.loc[ex_neuron, 'dim_1'], 36], [merged_df.loc[ex_neuron, 'dim_2'], -20],
+              color='k')
+axs['D'].plot(merged_df.loc[ex_neuron, 'time'], merged_df.loc[ex_neuron, 'peth'])
+axs['D'].plot([0, 0], axs['D'].get_ylim(), color='grey', ls='--', lw=0.75)
+axs['D'].plot([0, 1], [-0.5, -0.5], color='k', lw=0.5)
+axs['D'].text(0.5, -5, '1s', ha='center')
+axs['D'].axis('off')
+
+ex_neuron = merged_df[(merged_df['neuron_id'] == EX_NEURON_4) & (merged_df['pid'] == EX_PID_4)].index.values[0]
+axs['A'].plot([merged_df.loc[ex_neuron, 'dim_1'], -38], [merged_df.loc[ex_neuron, 'dim_2'], 25],
+              color='k')
+axs['E'].plot(merged_df.loc[ex_neuron, 'time'], merged_df.loc[ex_neuron, 'peth'])
+axs['E'].plot([0, 0], axs['E'].get_ylim(), color='grey', ls='--', lw=0.75)
+axs['E'].axis('off')
+
+ex_neuron = merged_df[(merged_df['neuron_id'] == EX_NEURON_5) & (merged_df['pid'] == EX_PID_5)].index.values[0]
+axs['A'].plot([merged_df.loc[ex_neuron, 'dim_1'], -38], [merged_df.loc[ex_neuron, 'dim_2'], 0],
+              color='k')
+axs['F'].plot(merged_df.loc[ex_neuron, 'time'], merged_df.loc[ex_neuron, 'peth'])
+axs['F'].plot([0, 0], axs['F'].get_ylim(), color='grey', ls='--', lw=0.75)
+axs['F'].axis('off')
+
+ex_neuron = merged_df[(merged_df['neuron_id'] == EX_NEURON_6) & (merged_df['pid'] == EX_PID_6)].index.values[0]
+axs['A'].plot([merged_df.loc[ex_neuron, 'dim_1'], -38], [merged_df.loc[ex_neuron, 'dim_2'], -20],
+              color='k')
+axs['G'].plot(merged_df.loc[ex_neuron, 'time'], merged_df.loc[ex_neuron, 'peth'])
+axs['G'].plot([0, 0], axs['G'].get_ylim(), color='grey', ls='--', lw=0.75)
+axs['G'].plot([0, 1], [-2, -2], color='k', lw=0.5)
+axs['G'].text(0.5, -7, '1s', ha='center')
+axs['G'].axis('off')
+
+plt.tight_layout()
+sns.despine(trim=True)
+
+plt.savefig(join(fig_path, 'GLM_PSTH_motion.pdf'))
 
 
