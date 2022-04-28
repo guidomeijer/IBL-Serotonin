@@ -227,7 +227,9 @@ f, ax1 = plt.subplots(1, 1, figsize=(1.75, 1.75), dpi=dpi)
 ax1.scatter(all_glm_df['opto_stim'], all_glm_df['all_motion'], c=colors['general'], s=2)
 ax1.plot([0.0001, 1], [0.0001, 1], color='k')
 ax1.set(xlabel=u'Δ var. explained by stimulation', ylabel=u'Δ var. explained by motion',
-        xlim=[0.0001, 1], ylim=[0.0001, 1], xscale='log', yscale='log')
+        xlim=[0.0001, 1], ylim=[0.0001, 1], xscale='log', yscale='log',
+        xticks=[0.0001, 0.01, 1], yticks=[0.0001, 0.01, 1])
+plt.minorticks_off()
 plt.tight_layout()
 sns.despine(trim=True)
 
