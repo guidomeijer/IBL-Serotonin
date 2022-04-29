@@ -30,9 +30,9 @@ pca = PCA(n_components=10)
 NEURON_QC = True  # whether to use neuron qc to exclude bad units
 MIN_NEURONS = 10  # minimum neurons per region
 N_PERMUT = 100  # number of times to get spontaneous population correlation for permutation testing
-WIN_SIZE = 0.25  # window size in seconds
-PRE_TIME = 1  # time before stim onset in s
-POST_TIME = 3  # time after stim onset in s
+WIN_SIZE = 0.05  # window size in seconds
+PRE_TIME = 0.5  # time before stim onset in s
+POST_TIME = 2  # time after stim onset in s
 SMOOTHING = 0  # smoothing of psth
 MIN_FR = 0.5  # minimum firing rate over the whole recording
 N_PC = 10  # number of PCs to use
@@ -42,7 +42,7 @@ PLOT_IND = True  # plot individual region pairs
 
 # Paths
 fig_path, save_path = paths()
-fig_path = join(fig_path, 'Ephys', 'CCA')
+fig_path = join(fig_path, 'Ephys', 'CCA', 'FrontAmygSmallBins')
 
 # Initialize some things
 REGION_PAIRS = [['Amyg', 'M2'], ['Amyg', 'mPFC'], ['M2', 'mPFC'], ['M2', 'ORB'], ['M2', 'Pir'],
@@ -170,7 +170,7 @@ for i, eid in enumerate(np.unique(rec['eid'])):
         region_2 = reg_pair[1]
         if (region_1 in pca_spont.keys()) & (region_2 in pca_spont.keys()):
             print(f'Calculating {region_1}-{region_2}')
-    
+
             """
             # Fit communication subspace axis and get population correlation
             # for SPONTANEOUS activity
@@ -187,7 +187,7 @@ for i, eid in enumerate(np.unique(rec['eid'])):
                         spont_x, spont_y = cca.transform(x_test, y_test)
                         this_r[bb], _ = pearsonr(np.squeeze(spont_x), np.squeeze(spont_y))
                     r_spont[jj, tb] = np.mean(this_r)
-    
+
             # For OPTO activity
             for tb in range(n_time_bins):
                 this_r = np.empty(N_BOOTSTRAP)
@@ -200,7 +200,7 @@ for i, eid in enumerate(np.unique(rec['eid'])):
                     this_r[bb], _ = pearsonr(np.squeeze(opto_x), np.squeeze(opto_y))
                 r_opto[tb] = np.mean(this_r)
             """
-    
+
             # Fit communication subspace axis and get population correlation
             # for SPONTANEOUS activity
             r_spont = np.empty([N_PERMUT, n_time_bins])
@@ -217,7 +217,7 @@ for i, eid in enumerate(np.unique(rec['eid'])):
                         spont_x[test_index] = x.T
                         spont_y[test_index] = y.T
                     r_spont[ij, tb], _ = pearsonr(spont_x, spont_y)
-    
+
             # For OPTO activity
             for tb in range(n_time_bins):
                 opto_x = np.empty(pca_opto[region_1][:, :, tb].shape[0])
@@ -230,7 +230,7 @@ for i, eid in enumerate(np.unique(rec['eid'])):
                     opto_x[test_index] = x.T
                     opto_y[test_index] = y.T
                 r_opto[tb], _ = pearsonr(opto_x, opto_y)
-    
+
             # Add to dataframe
             cca_df = pd.concat((cca_df, pd.DataFrame(data={
                 'subject': subject, 'date': date, 'eid': eid, 'region_1': region_1, 'region_2': region_2,
@@ -238,7 +238,7 @@ for i, eid in enumerate(np.unique(rec['eid'])):
                 'r_spont_05': np.quantile(r_spont, 0.05, axis=0),
                 'r_spont_95': np.quantile(r_spont, 0.95, axis=0),
                 'time': psth_opto['tscale']})), ignore_index=True)
-    
+
             # Plot this region pair
             if PLOT_IND:
                 colors, dpi = figure_style()
@@ -254,9 +254,9 @@ for i, eid in enumerate(np.unique(rec['eid'])):
                         title=f'{region_1}-{region_2}')
                 sns.despine(trim=True)
                 plt.tight_layout()
-                plt.savefig(join(fig_path, 'FrontAmyg', f'{region_1}-{region_2}_{subject}_{date}'), dpi=300)
+                plt.savefig(join(fig_path, f'{region_1}-{region_2}_{subject}_{date}'), dpi=300)
                 plt.close(f)
-    
+
         # Save results
-        cca_df.to_csv(join(save_path, 'cca_results_front_amyg.csv'))
+       # cca_df.to_csv(join(save_path, 'cca_results_front_amyg.csv'))
 
