@@ -118,15 +118,15 @@ plt.savefig(join(fig_path, 'figure2_all_neurons.pdf'))
 # %%
 # Plot per region
 peths_df = peths_df.sort_values(['region', 'modulation'], ascending=[True, False])
-f, ((ax_hc, ax_snr, ax_ppc, ax_am, ax_mpfc, ax_th),
-    (ax_pag, ax_pir, ax_orb, ax_1, ax_2, ax_3),
-    (ax_bc, ax_sc, ax_m2, ax_cb, ax_4, ax_5)) = plt.subplots(3, 6, figsize=(7, 3.5), sharex=True, dpi=dpi)
+f, ((ax_hc, ax_mpfc, ax_ppc, ax_pag, ax_th, ax_am),
+    (ax_pir, ax_orb, ax_bc, ax_1, ax_2, ax_3),
+    (ax_m2, ax_sc, ax_str, ax_cb, ax_4, ax_5)) = plt.subplots(3, 6, figsize=(7, 3.5), sharex=True, dpi=dpi)
 title_font = 7
 
 these_peths = peths_df[peths_df['region'] == 'Medial prefrontal cortex']
 img = ax_mpfc.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=sns.diverging_palette(220, 20, as_cmap=True),
                  vmin=VMIN, vmax=VMAX, extent=[-T_BEFORE, T_AFTER, -1, 1], interpolation='none')
-ax_mpfc.set(yticks=[1], yticklabels=[these_peths.shape[0]], xlabel='Time (s)')
+ax_mpfc.set(yticks=[1], yticklabels=[these_peths.shape[0]])
 ax_mpfc.set_title('Medial prefrontal cortex', fontsize=title_font)
 ax_mpfc.plot([0, 0], [-1, 1], ls='--', color='k')
 ax_mpfc.xaxis.set_tick_params(which='both', labelbottom=True)
@@ -163,7 +163,7 @@ ax_hc.plot([0, 0], [-1, 1], ls='--', color='k')
 these_peths = peths_df[peths_df['region'] == 'Piriform']
 img = ax_pir.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=sns.diverging_palette(220, 20, as_cmap=True),
                  vmin=VMIN, vmax=VMAX, extent=[-T_BEFORE, T_AFTER, -1, 1], interpolation='none')
-ax_pir.set(yticks=[1], yticklabels=[these_peths.shape[0]])
+ax_pir.set(yticks=[1], yticklabels=[these_peths.shape[0]], ylabel='Mod. neurons')
 ax_pir.set_title('Piriform', fontsize=title_font)
 ax_pir.plot([0, 0], [-1, 1], ls='--', color='k')
 
@@ -174,14 +174,14 @@ ax_th.set(yticks=[1], yticklabels=[these_peths.shape[0]], xlabel='Time (s)')
 ax_th.set_title('Thalamus', fontsize=title_font)
 ax_th.plot([0, 0], [-1, 1], ls='--', color='k')
 ax_th.xaxis.set_tick_params(which='both', labelbottom=True)
-"""
+
 these_peths = peths_df[peths_df['region'] == 'Tail of the striatum']
 img = ax_str.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=sns.diverging_palette(220, 20, as_cmap=True),
                  vmin=VMIN, vmax=VMAX, extent=[-T_BEFORE, T_AFTER, -1, 1], interpolation='none')
 ax_str.set(yticks=[1], yticklabels=[these_peths.shape[0]], xlabel='Time (s)', xticks=[-1, 0, 1, 2])
 ax_str.set_title('Tail of the striatum', fontsize=title_font)
 ax_str.plot([0, 0], [-1, 1], ls='--', color='k')
-"""
+
 these_peths = peths_df[peths_df['region'] == 'Secondary motor cortex']
 img = ax_m2.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=sns.diverging_palette(220, 20, as_cmap=True),
                  vmin=VMIN, vmax=VMAX, extent=[-T_BEFORE, T_AFTER, -1, 1], interpolation='none')
@@ -192,7 +192,7 @@ ax_m2.plot([0, 0], [-1, 1], ls='--', color='k')
 these_peths = peths_df[peths_df['region'] == 'Barrel cortex']
 img = ax_bc.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=sns.diverging_palette(220, 20, as_cmap=True),
                  vmin=VMIN, vmax=VMAX, extent=[-T_BEFORE, T_AFTER, -1, 1], interpolation='none')
-ax_bc.set(yticks=[1], yticklabels=[these_peths.shape[0]], xlabel='Time (s)', ylabel='Mod. neurons',
+ax_bc.set(yticks=[1], yticklabels=[these_peths.shape[0]],
           xticks=[-1, 0, 1, 2])
 ax_bc.set_title('Barrel cortex', fontsize=title_font)
 ax_bc.plot([0, 0], [-1, 1], ls='--', color='k')
@@ -200,7 +200,7 @@ ax_bc.plot([0, 0], [-1, 1], ls='--', color='k')
 these_peths = peths_df[peths_df['region'] == 'Periaqueductal gray']
 img = ax_pag.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=sns.diverging_palette(220, 20, as_cmap=True),
                  vmin=VMIN, vmax=VMAX, extent=[-T_BEFORE, T_AFTER, -1, 1], interpolation='none')
-ax_pag.set(yticks=[1], yticklabels=[these_peths.shape[0]], ylabel='Mod. neurons')
+ax_pag.set(yticks=[1], yticklabels=[these_peths.shape[0]], xlabel='Time (s)')
 ax_pag.set_title('Periaqueductal gray', fontsize=title_font)
 ax_pag.plot([0, 0], [-1, 1], ls='--', color='k')
 
@@ -210,14 +210,14 @@ img = ax_sc.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=sns.diverg
 ax_sc.set(yticks=[1], yticklabels=[these_peths.shape[0]], xlabel='Time (s)', xticks=[-1, 0, 1, 2])
 ax_sc.set_title('Superior colliculus', fontsize=title_font)
 ax_sc.plot([0, 0], [-1, 1], ls='--', color='k')
-
+"""
 these_peths = peths_df[peths_df['region'] == 'Substantia nigra']
 img = ax_snr.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=sns.diverging_palette(220, 20, as_cmap=True),
                  vmin=VMIN, vmax=VMAX, extent=[-T_BEFORE, T_AFTER, -1, 1], interpolation='none')
 ax_snr.set(yticks=[1], yticklabels=[these_peths.shape[0]])
 ax_snr.set_title('Substantia nigra', fontsize=title_font)
 ax_snr.plot([0, 0], [-1, 1], ls='--', color='k')
-
+"""
 # hide axis off empty plots
 ax_1.axis('off')
 ax_2.axis('off')

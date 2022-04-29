@@ -54,18 +54,29 @@ summary_df['perc_mod'] =  (summary_df['modulated'] / summary_df['n_neurons']) * 
 summary_df = summary_df[summary_df['n_neurons'] >= MIN_NEURONS]
 summary_df['perc_supp_late'] = -summary_df['perc_supp_late']
 
+summary_no_df = light_neurons[light_neurons['sert-cre'] == 0].groupby(['full_region']).sum()
+summary_no_df['n_neurons'] = light_neurons[light_neurons['sert-cre'] == 0].groupby(['full_region']).size()
+summary_no_df = summary_no_df.reset_index()
+summary_no_df['perc_mod'] =  (summary_no_df['modulated'] / summary_no_df['n_neurons']) * 100
+summary_no_df = summary_no_df[summary_no_df['n_neurons'] >= MIN_NEURONS]
+summary_no_df = pd.concat((summary_no_df, pd.DataFrame(data={
+    'full_region': summary_df.loc[~summary_df['full_region'].isin(summary_no_df['full_region']), 'full_region'],
+    'perc_mod': np.zeros(np.sum(~summary_df['full_region'].isin(summary_no_df['full_region'])))})))
+
 # Get ordered regions
 ordered_regions = summary_df.sort_values('perc_mod', ascending=False).reset_index()
-
 
 
 # %% Plot percentage modulated neurons per region
 
 colors, dpi = figure_style()
 f, ax1 = plt.subplots(1, 1, figsize=(2.5, 2), dpi=dpi)
-sns.barplot(x='perc_mod', y='full_region', data=summary_df.sort_values('perc_mod', ascending=False),
-            color=colors['general'], ax=ax1)
+sns.barplot(x='perc_mod', y='full_region', data=summary_df, order=ordered_regions['full_region'],
+            color=colors['sert'], ax=ax1, label='SERT')
+sns.barplot(x='perc_mod', y='full_region', data=summary_no_df, order=ordered_regions['full_region'],
+            color=colors['wt'], ax=ax1, label='WT')
 ax1.set(xlabel='Modulated neurons (%)', ylabel='', xlim=[0, 50], xticks=np.arange(0, 51, 10))
+ax1.legend(frameon=False, bbox_to_anchor=(0.5, 0.3))
 #ax1.plot([-1, ax1.get_xlim()[1]], [5, 5], ls='--', color='grey')
 #plt.xticks(rotation=90)
 #ax1.margins(x=0)

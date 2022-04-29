@@ -17,10 +17,10 @@ from serotonin_functions import (paths, remap, query_ephys_sessions, load_passiv
 from one.api import ONE
 from ibllib.atlas import AllenAtlas
 ba = AllenAtlas()
-one = ONE()
+one = ONE(mode='remote')
 
 # Settings
-OVERWRITE = True
+OVERWRITE = False
 NEURON_QC = True
 PRE_TIME = [0.5, 0]  # for modulation index
 POST_TIME_EARLY = [0, 0.5]
