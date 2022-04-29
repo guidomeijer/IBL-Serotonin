@@ -113,7 +113,7 @@ def figure_style():
               'Thal': '#60B94B', 'SC': '#833535', 'PPC': '#4976B9',
               'ORB': '#DEAC57', 'mPFC': '#A17A43', 'Hipp': '#AC4688',
               'Str': '#302255', 'SNr': '#664A9F', 'MRN': '#AD4542',
-              'PAG': '#F26868'}
+              'PAG': '#F26868', 'M2': '#43311D'}
     screen_width = tk.Tk().winfo_screenwidth()
     dpi = screen_width / 12
     return colors, dpi
