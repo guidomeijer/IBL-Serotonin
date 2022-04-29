@@ -20,6 +20,7 @@ ba = AllenAtlas()
 one = ONE()
 
 # Settings
+REGIONS = ['M2', 'mPFC', 'ORB', 'Amyg', 'Thal', 'Hipp', 'PPC', 'PAG', 'Pir']
 T_BEFORE = 1  # for plotting
 T_AFTER = 2
 BIN_SIZE = 0.1
@@ -29,7 +30,7 @@ fig_path = join(fig_path, 'Ephys')
 
 # Load in light modulated neurons
 light_neurons = pd.read_csv(join(save_path, 'light_modulated_neurons.csv'))
-light_neurons['full_region'] = combine_regions(light_neurons['region'], split_thalamus=False)
+light_neurons['full_region'] = combine_regions(light_neurons['region'], split_thalamus=False, abbreviate=True)
 light_neurons = light_neurons[light_neurons['full_region'] != 'root']
 
 # Only select neurons from sert-cre mice
@@ -74,27 +75,48 @@ for i, pid in enumerate(np.unique(light_neurons['pid'])):
     
     # Loop over regions
     for j, reg in enumerate(these_neurons['full_region'].unique()):
+        # Normalize and offset mean for plotting
+        pop_mean = peths['means'][these_neurons['full_region'] == reg].mean(axis=0)
+        pop_mean = (pop_mean / np.max(pop_mean))
+        pop_mean = pop_mean - np.mean(pop_mean[tscale < 0])
+        pop_median = np.median(peths['means'][these_neurons['full_region'] == reg], axis=0)
+        pop_median = (pop_median / np.max(pop_median))
+        pop_median = pop_median - np.median(pop_median[tscale < 0])
+        
         peths_df = pd.concat((peths_df, pd.DataFrame(data={
-            'mean': peths['means'][these_neurons['full_region'] == reg].mean(axis=0),
-            'median': np.median(peths['means'][these_neurons['full_region'] == reg], axis=0),
+            'mean': pop_mean, 'median': pop_median,
             'std': peths['means'][these_neurons['full_region'] == reg].std(axis=0),
-            'time': peths['tscale'], 'region': reg, 'subject': subject, 'date': date, 'pid': pid})))
-
-peths_df['çv'] = peths_df['std'] / peths_df['mean'] 
-peths_df = peths_df.reset_index(drop=True)
+            'time': peths['tscale'], 'region': reg, 'subject': subject, 'date': date, 'pid': pid})),
+            ignore_index=True)
+    
 
 # %% Plot
+
 colors, dpi = figure_style()
-f, axs = plt.subplots(1, 4, figsize=(7, 1.75), dpi=dpi)
-sns.lineplot(x='time', y='mean', hue='region', data=peths_df, ax=axs[0], ci=68, palette='tab10')
-axs[0].set(xlabel='Time (s)', ylabel='Mean population activity (spks/s)')
-axs[0].legend(frameon=False)
+peths_df = peths_df[peths_df['region'].isin(REGIONS)]
+ORDER = ['Hipp', 'PPC', 'M2', 'Thal', 'Amyg', 'Pir', 'ORB', 'mPFC', 'PAG']
+COLORS = [colors[i] for i in ORDER]
 
-sns.lineplot(x='time', y='median', hue='region', data=peths_df, ax=axs[1], ci=68)
+f, ax = plt.subplots(1, 1, figsize=(3.5, 3.5), dpi=dpi)
 
-sns.lineplot(x='time', y='std', hue='region', data=peths_df, ax=axs[2], ci=68)
+offset = np.arange(len(peths_df['region'].unique())) / 5
+peths_df['mean_offset'] = peths_df['mean'].copy()
+peths_df['median_offset'] = peths_df['median'].copy()
+for k, reg in enumerate(ORDER):
+    peths_df.loc[peths_df['region'] == reg, 'mean_offset'] = (
+        peths_df.loc[peths_df['region'] == reg, 'mean'] + offset[k])
+    peths_df.loc[peths_df['region'] == reg, 'median_offset'] = (
+        peths_df.loc[peths_df['region'] == reg, 'median'] + offset[k])
+sns.lineplot(x='time', y='mean_offset', hue='region', data=peths_df, ax=ax, ci=68, hue_order=ORDER,
+             palette=COLORS, legend=None)
+ax.axis('off')
+for k, y_text in enumerate(offset):
+    ax.text(-1, y_text, ORDER[k], ha='right', va='top', color=COLORS[k])
+ax.plot([0, 0], [-0.5, np.max(offset)+0.1], color='grey', ls='--')
+ax.plot([-1, -0.5], [-0.3, -0.3], color='k')    
+ax.text(-0.75, -0.42, '0.5s', ha='center')
 
-sns.lineplot(x='time', y='cv', hue='region', data=peths_df, ax=axs[3], ci=68)
+sns.despine(trim=True)
 
 
 

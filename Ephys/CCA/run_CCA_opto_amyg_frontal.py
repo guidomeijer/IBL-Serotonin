@@ -216,7 +216,9 @@ for i, eid in enumerate(np.unique(rec['eid'])):
                                              pca_spont[region_2][ij, test_index, :, tb])
                         spont_x[test_index] = x.T
                         spont_y[test_index] = y.T
+                    asd
                     r_spont[ij, tb], _ = pearsonr(spont_x, spont_y)
+                    
 
             # For OPTO activity
             for tb in range(n_time_bins):
