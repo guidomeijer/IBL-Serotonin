@@ -120,6 +120,7 @@ def figure_style():
               'BC': sns.color_palette('tab20c')[1],
               'Str': sns.color_palette('tab20c')[12],
               'SNr': sns.color_palette('tab20c')[13],
+              'Thal': sns.color_palette('tab10')[3],
               'Hipp': sns.color_palette('tab20')[12]}
     screen_width = tk.Tk().winfo_screenwidth()
     dpi = screen_width / 12
