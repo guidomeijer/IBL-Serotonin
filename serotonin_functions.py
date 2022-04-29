@@ -109,7 +109,11 @@ def figure_style():
               'probe': sns.color_palette('colorblind')[4],
               'block': sns.color_palette('colorblind')[6],
               'RS': sns.color_palette('Set2')[0],
-              'FS': sns.color_palette('Set2')[1]}
+              'FS': sns.color_palette('Set2')[1],
+              'Thal': '#60B94B', 'SC': '#833535', 'PPC': '#4976B9',
+              'ORB': '#DEAC57', 'mPFC': '#A17A43', 'Hipp': '#AC4688',
+              'Str': '#302255', 'SNr': '#664A9F', 'MRN': '#AD4542',
+              'PAG': '#F26868'}
     screen_width = tk.Tk().winfo_screenwidth()
     dpi = screen_width / 12
     return colors, dpi
