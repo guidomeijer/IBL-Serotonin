@@ -110,10 +110,17 @@ def figure_style():
               'block': sns.color_palette('colorblind')[6],
               'RS': sns.color_palette('Set2')[0],
               'FS': sns.color_palette('Set2')[1],
-              'Thal': '#60B94B', 'SC': '#833535', 'PPC': '#4976B9',
-              'ORB': '#DEAC57', 'mPFC': '#A17A43', 'Hipp': '#AC4688',
-              'Str': '#302255', 'SNr': '#664A9F', 'MRN': '#AD4542',
-              'PAG': '#F26868', 'M2': '#43311D'}
+              'SC': sns.color_palette('tab20c')[4],
+              'MRN': sns.color_palette('tab20c')[5],
+              'PAG': sns.color_palette('tab20c')[6],
+              'M2': sns.color_palette('tab20c')[8],
+              'mPFC': sns.color_palette('tab20c')[9],
+              'ORB': sns.color_palette('tab20c')[10],
+              'PPC': sns.color_palette('tab20c')[0],
+              'BC': sns.color_palette('tab20c')[1],
+              'Str': sns.color_palette('tab20c')[12],
+              'SNr': sns.color_palette('tab20c')[13],
+              'Hipp': sns.color_palette('tab20')[12]}
     screen_width = tk.Tk().winfo_screenwidth()
     dpi = screen_width / 12
     return colors, dpi
