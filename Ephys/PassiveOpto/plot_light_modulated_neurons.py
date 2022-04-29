@@ -19,7 +19,7 @@ from brainbox.singlecell import calculate_peths
 from serotonin_functions import paths, load_passive_opto_times
 from one.api import ONE
 from ibllib.atlas import AllenAtlas
-ba = AllenAtlas()
+ba = AllenAtlas()   
 one = ONE()
 
 # Settings

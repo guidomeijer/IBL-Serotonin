@@ -18,7 +18,7 @@ one = ONE()
 ba = AllenAtlas()
 
 # Settings
-METRICS = ['pupil_diameter', 'paw_l', 'nose_tip']
+METRICS = ['pupil_diameter', 'paw_l', 'nose_tip', 'motion_energy_left']
 LABELS = ['Pupil diameter', 'Paw movement', 'Nose movement']
 BINSIZE = 0.04
 T_BEFORE = 1
@@ -66,16 +66,28 @@ plot_df.loc[plot_df['sert-cre'] == 0, 'sert-cre'] ='WT'
     
 # %% Plot
 colors, dpi = figure_style()
-f, (ax1, ax2) = plt.subplots(1, 2, figsize=(3.5, 1.75), dpi=dpi)
+f, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4, figsize=(7, 1.75), dpi=dpi)
 
-lplt = sns.lineplot(x='time', y='pupil_baseline', hue='sert-cre', data=plot_df, ax=ax1, ci=68,
+lplt = sns.lineplot(x='time', y='pupil_baseline', hue='sert-cre', data=plot_df, ax=ax1, estimator=None,
+                    units='subject',
                     hue_order=['SERT', 'WT'], palette=[colors['sert'], colors['wt']])
 ax1.legend(frameon=False, loc='upper left')
 ax1.set(xlabel='Time (s)', ylabel='Pupil size (%)', xticks=[-1, 0, 1, 2, 3], yticks=[-5, 0, 5, 10, 15])
 
-sns.lineplot(x='time', y='paw_l_baseline', hue='sert-cre', data=plot_df, ax=ax2, ci=68,
-             hue_order=['SERT', 'WT'], palette=[colors['sert'], colors['wt']], legend=False)
+sns.lineplot(x='time', y='paw_l_baseline', hue='sert-cre', data=plot_df, ax=ax2, estimator=None,
+             units='subject', hue_order=['SERT', 'WT'], palette=[colors['sert'], colors['wt']],
+             legend=False)
 ax2.set(xlabel='Time (s)', ylabel='Paw movement (%)', xticks=[-1, 0, 1, 2, 3])
+
+sns.lineplot(x='time', y='nose_tip', hue='sert-cre', data=plot_df, ax=ax3, estimator=None,
+             units='subject', hue_order=['SERT', 'WT'], palette=[colors['sert'], colors['wt']],
+             legend=False)
+ax3.set(xlabel='Time (s)', ylabel='Nose movement (%)', xticks=[-1, 0, 1, 2, 3])
+
+sns.lineplot(x='time', y='motion_energy_left', hue='sert-cre', data=plot_df, ax=ax4, estimator=None,
+             units='subject', hue_order=['SERT', 'WT'], palette=[colors['sert'], colors['wt']],
+             legend=False)
+ax4.set(xlabel='Time (s)', ylabel='Video motion energy (%)', xticks=[-1, 0, 1, 2, 3])
 
 plt.tight_layout()
 sns.despine(trim=True)

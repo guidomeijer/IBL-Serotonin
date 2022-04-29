@@ -23,16 +23,16 @@ from one.api import ONE
 from ibllib.atlas import AllenAtlas
 ba = AllenAtlas()
 one = ONE()
-cca = CCA(n_components=1)
+cca = CCA(n_components=1, max_iter=1000)
 pca = PCA(n_components=10)
 
 # Settings
 NEURON_QC = True  # whether to use neuron qc to exclude bad units
 MIN_NEURONS = 10  # minimum neurons per region
 N_PERMUT = 100  # number of times to get spontaneous population correlation for permutation testing
-WIN_SIZE = 0.2  # window size in seconds
+WIN_SIZE = 0.25  # window size in seconds
 PRE_TIME = 1  # time before stim onset in s
-POST_TIME = 2  # time after stim onset in s
+POST_TIME = 3  # time after stim onset in s
 SMOOTHING = 0  # smoothing of psth
 MIN_FR = 0.5  # minimum firing rate over the whole recording
 N_PC = 10  # number of PCs to use
@@ -46,7 +46,7 @@ fig_path = join(fig_path, 'Ephys', 'CCA')
 
 # Initialize some things
 REGION_PAIRS = [['Amyg', 'M2'], ['Amyg', 'mPFC'], ['M2', 'mPFC'], ['M2', 'ORB'], ['M2', 'Pir'],
-                ['ORB', 'Pir']]
+                ['ORB', 'Pir'], ['mPFC', 'AON'], ['M2', 'AON'], ['Amyg', 'AON']]
 np.random.seed(42)  # fix random seed for reproducibility
 n_time_bins = int((PRE_TIME + POST_TIME) / WIN_SIZE)
 lio = LeaveOneOut()
@@ -234,7 +234,7 @@ for i, eid in enumerate(np.unique(rec['eid'])):
             # Add to dataframe
             cca_df = pd.concat((cca_df, pd.DataFrame(data={
                 'subject': subject, 'date': date, 'eid': eid, 'region_1': region_1, 'region_2': region_2,
-                'region_pair': f'{region_1}-{region_2}', 'r_opto': r_opto,
+                'region_pair': f'{region_1}-{region_2}', 'r_opto': r_opto, 'r_spont_mean': r_spont.mean(axis=0),
                 'r_spont_05': np.quantile(r_spont, 0.05, axis=0),
                 'r_spont_95': np.quantile(r_spont, 0.95, axis=0),
                 'time': psth_opto['tscale']})), ignore_index=True)
