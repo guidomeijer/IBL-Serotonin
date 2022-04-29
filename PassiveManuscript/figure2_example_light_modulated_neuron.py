@@ -63,12 +63,19 @@ SUBJECT = 'ZFM-01802'
 DATE = '2021-03-11'
 PROBE = 'probe00'
 NEURON = 207
-"""
+
 # Good example thalamus
 SUBJECT = 'ZFM-01802'
 DATE = '2021-03-09'
 PROBE = 'probe00'
 NEURON = 47
+"""
+
+# Good example CA1
+SUBJECT = 'ZFM-01802'
+DATE = '2021-03-09'
+PROBE = 'probe00'
+NEURON = 550
 
 
 T_BEFORE = 1  # for plotting

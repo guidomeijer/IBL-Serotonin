@@ -28,7 +28,7 @@ pca = PCA(n_components=3)
 # Settings
 MIN_NEURONS = 10  # per region
 T_BEFORE = 1
-T_AFTER = 2
+T_AFTER = 3
 BASELINE = [-0.5, 0]
 BIN_SIZE = 0.01
 SMOOTHING = 0.02
