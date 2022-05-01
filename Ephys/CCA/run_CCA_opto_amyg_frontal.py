@@ -29,20 +29,18 @@ pca = PCA(n_components=10)
 # Settings
 NEURON_QC = True  # whether to use neuron qc to exclude bad units
 MIN_NEURONS = 10  # minimum neurons per region
-N_PERMUT = 100  # number of times to get spontaneous population correlation for permutation testing
-WIN_SIZE = 0.05  # window size in seconds
-PRE_TIME = 0.5  # time before stim onset in s
+N_PERMUT = 2  # number of times to get spontaneous population correlation for permutation testing
+WIN_SIZE = 0.2  # window size in seconds
+PRE_TIME = 1  # time before stim onset in s
 POST_TIME = 2  # time after stim onset in s
-SMOOTHING = 0  # smoothing of psth
+SMOOTHING = 0.1  # smoothing of psth
 MIN_FR = 0.5  # minimum firing rate over the whole recording
 N_PC = 10  # number of PCs to use
-TEST_FRAC = 0.5  # fraction to use for testing in cross-validation
-N_BOOTSTRAP = 50  # amount of times to bootstrap cross-validation
 PLOT_IND = True  # plot individual region pairs
 
 # Paths
 fig_path, save_path = paths()
-fig_path = join(fig_path, 'Ephys', 'CCA', 'FrontAmygSmallBins')
+fig_path = join(fig_path, 'Ephys', 'CCA', 'FrontAmyg')
 
 # Initialize some things
 REGION_PAIRS = [['Amyg', 'M2'], ['Amyg', 'mPFC'], ['M2', 'mPFC'], ['M2', 'ORB'], ['M2', 'Pir'],
@@ -216,7 +214,7 @@ for i, eid in enumerate(np.unique(rec['eid'])):
                                              pca_spont[region_2][ij, test_index, :, tb])
                         spont_x[test_index] = x.T
                         spont_y[test_index] = y.T
-                    asd
+                    
                     r_spont[ij, tb], _ = pearsonr(spont_x, spont_y)
                     
 
@@ -232,12 +230,15 @@ for i, eid in enumerate(np.unique(rec['eid'])):
                     opto_x[test_index] = x.T
                     opto_y[test_index] = y.T
                 r_opto[tb], _ = pearsonr(opto_x, opto_y)
+            
+            # Baseline subtrac
+            r_baseline = r_opto - np.mean(r_opto[psth_opto['tscale'] < 0])
 
             # Add to dataframe
             cca_df = pd.concat((cca_df, pd.DataFrame(data={
                 'subject': subject, 'date': date, 'eid': eid, 'region_1': region_1, 'region_2': region_2,
-                'region_pair': f'{region_1}-{region_2}', 'r_opto': r_opto, 'r_spont_mean': r_spont.mean(axis=0),
-                'r_spont_05': np.quantile(r_spont, 0.05, axis=0),
+                'region_pair': f'{region_1}-{region_2}', 'r_opto': r_opto, 'r_baseline': r_baseline,
+                'r_spont_mean': r_spont.mean(axis=0), 'r_spont_05': np.quantile(r_spont, 0.05, axis=0),
                 'r_spont_95': np.quantile(r_spont, 0.95, axis=0),
                 'time': psth_opto['tscale']})), ignore_index=True)
 
@@ -260,5 +261,5 @@ for i, eid in enumerate(np.unique(rec['eid'])):
                 plt.close(f)
 
         # Save results
-       # cca_df.to_csv(join(save_path, 'cca_results_front_amyg.csv'))
+        cca_df.to_csv(join(save_path, 'cca_results_front_amyg.csv'))
 

@@ -24,26 +24,22 @@ one = ONE()
 DESTRIPED_LFP = False
 # EXCLUDE = ['ZFM-02180_2021-05-19', 'ZFM-02600_2021-08-26']
 PLOT = True
-BASELINE = [-1, 0]
-STIM = [0, 1]
+BASELINE = [-.5, 0]
+STIM = [1.05, 1.55]
 WINDOW_SIZE = 1024
-_, fig_path, save_path = paths()
-fig_path = join(fig_path, 'Ephys', 'LFP', 'Ratio')
-save_path = join(save_path, 'LFP')
+fig_path, save_path = paths()
+fig_path = join(fig_path, 'Ephys', 'LFP', 'RatioPostStim')
 
 # Query sessions
-eids, _, subjects = query_ephys_sessions(return_subjects=True, one=one)
+rec = query_ephys_sessions(one=one)
+
 lfp_df = pd.DataFrame()
-for i, eid in enumerate(eids):
+
+for i in rec.index.values:
 
     # Get session details
-    try:
-        ses_details = one.get_details(eid)
-        subject = ses_details['subject']
-        date = ses_details['start_time'][:10]
-    except:
-        print('Weird error getting session data')
-        continue
+    pid, eid, probe = rec.loc[i, 'pid'], rec.loc[i, 'eid'], rec.loc[i, 'probe']
+    subject, date = rec.loc[i, 'subject'], rec.loc[i, 'date']
     print(f'Starting {subject}, {date}')
 
     # Load in laser pulse times
@@ -60,7 +56,10 @@ for i, eid in enumerate(eids):
         print(f'Found {len(opto_train_times)} passive laser pulses')
 
     # Load in channels
-    channels = bbone.load_channel_locations(eid, one=one)
+    try:
+        channels = bbone.load_channel_locations(eid, one=one)
+    except:
+        continue
 
     for p, probe in enumerate(channels.keys()):
         if 'acronym' not in channels[probe].keys():
@@ -75,9 +74,12 @@ for i, eid in enumerate(eids):
             lfp = np.load(join(save_path, f'{subject}_{date}_{probe}_cleaned_lfp.npy'))
             time = np.load(join(save_path, f'{subject}_{date}_{probe}_timestamps.npy'))
         else:
-            lfp, time = load_lfp(eid, probe, time_start=opto_on_times[0]-10,
-                                 time_end=opto_on_times[-1]+10,
-                                 relative_to='begin', one=one)
+            try:
+                lfp, time = load_lfp(eid, probe, time_start=opto_on_times[0]-10,
+                                     time_end=opto_on_times[-1]+10,
+                                     relative_to='begin', one=one)
+            except:
+                continue
 
         # Load in channels
         collections = one.list_collections(eid)
@@ -88,7 +90,7 @@ for i, eid in enumerate(eids):
         chan_ind = one.load_dataset(eid, dataset='channels.rawInd.npy', collection=collection)
 
         # Remap to Beryl atlas
-        channels[probe]['region'] = remap(channels[probe]['atlas_id'], combine=True)
+        channels[probe]['region'] = remap(channels[probe]['acronym'], combine=True)
 
         # Loop over laser pulse trains
         pulse_lfp_df = pd.DataFrame()
@@ -134,13 +136,13 @@ for i, eid in enumerate(eids):
         colors, dpi = figure_style()
         for r, region in enumerate(np.unique(pulse_lfp_df['region'])):
             f, ax1 = plt.subplots(1, 1, figsize=(2.5, 2), dpi=dpi)
-            plt.plot([0, 200], [1, 1], ls='--', color='gray')
+            plt.plot([0, 100], [1, 1], ls='--', color='gray')
             sns.lineplot(data=pulse_lfp_df[pulse_lfp_df['region'] == region], x='Hz', y='ratio', palette='Set2', ax=ax1)
-            ax1.set(ylabel='LFP ratio (stim/baseline)', xlabel='Frequency (Hz)')
+            ax1.set(ylabel='LFP ratio (stim/baseline)', xlabel='Frequency (Hz)', xlim=[0, 100])
             plt.tight_layout()
             sns.despine(trim=True)
             plt.savefig(join(fig_path, f'{region}_{subject}_{date}_{probe}'))
             plt.close(f)
 
 # Save result
-lfp_df.to_csv(join(save_path, 'LFP_ratio_opto.csv'), index=False)
+lfp_df.to_csv(join(save_path, 'LFP_ratio_opto_post_stim.csv'), index=False)
