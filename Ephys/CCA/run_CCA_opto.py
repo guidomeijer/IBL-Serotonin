@@ -35,7 +35,7 @@ PRE_TIME = 1  # time before stim onset in s
 POST_TIME = 3  # time after stim onset in s
 SMOOTHING = 0  # smoothing of psth
 SUBTRACT_MEAN = True  # whether to subtract the mean PSTH from each trial
-CROSS_VAL = 'leave-one-out'  # None, k-fold or leave-one-out
+CROSS_VAL = 'k-fold'  # None, k-fold or leave-one-out
 K_FOLD = 2  # k in k-fold
 K_FOLD_SHUFFLE = True  # whether to use a random subset of trials for fitting and testing
 K_FOLD_BOOTSTRAPS = 100  # how often to repeat the random trial selection
@@ -45,12 +45,9 @@ PLOT_IND = True  # plot individual region pairs
 
 # Paths
 fig_path, save_path = paths()
-fig_path = join(fig_path, 'Ephys', 'CCA', 'FrontAmyg')
+fig_path = join(fig_path, 'Ephys', 'CCA', 'RegionPairs')
 
-# Initialize some things
-REGION_PAIRS = [['Amyg', 'mPFC'], ['M2', 'mPFC'], ['Amyg', 'M2'], ['mPFC', 'ORB'], ['M2', 'ORB']]
-#REGION_PAIRS = [['Amyg', 'M2'], ['Amyg', 'mPFC'], ['M2', 'mPFC'], ['M2', 'ORB'], ['M2', 'Pir'],
-#                ['ORB', 'Pir'], ['mPFC', 'AON'], ['M2', 'AON'], ['Amyg', 'AON']]
+# Initialize
 np.random.seed(42)  # fix random seed for reproducibility
 n_time_bins = int((PRE_TIME + POST_TIME) / WIN_SIZE)
 lio = LeaveOneOut()
@@ -61,7 +58,7 @@ if SMOOTHING > 0:
     window /= np.sum(window)
 
 # Query sessions with frontal and amygdala
-rec = query_ephys_sessions(acronym=['MOs', 'BLA', 'MEA', 'CEA', 'ILA', 'PL', 'ACA', 'ORB'], one=one)
+rec = query_ephys_sessions(one=one)
 
 # Load in artifact neurons
 artifact_neurons = get_artifact_neurons()
@@ -113,7 +110,7 @@ for i, eid in enumerate(np.unique(rec['eid'])):
     # Create population activity arrays for all regions
     pca_opto = dict()
     for probe in spikes.keys():
-        for region in np.unique(REGION_PAIRS):
+        for region in np.unique(clusters[probe]['region']):
 
              # Exclude neurons with low firing rates
              clusters_in_region = np.where(clusters[probe]['region'] == region)[0]
@@ -149,11 +146,10 @@ for i, eid in enumerate(np.unique(rec['eid'])):
     # Perform CCA per region pair
     print('Starting CCA per region pair')
     all_cca_df = pd.DataFrame()
-    for r, reg_pair in enumerate(REGION_PAIRS):
-        region_1 = reg_pair[0]
-        region_2 = reg_pair[1]
-        if (region_1 in pca_opto.keys()) & (region_2 in pca_opto.keys()):
-            print(f'Calculating {region_1}-{region_2}')
+    for r1, region_1 in enumerate(pca_opto.keys()):
+        for r2, region_2 in enumerate(list(pca_opto.keys())[r1:]):
+            if region_1 == region_2:
+                continue
       
             # Run CCA per region pair
             r_opto = np.empty(n_time_bins)
@@ -214,5 +210,5 @@ for i, eid in enumerate(np.unique(rec['eid'])):
                 plt.close(f)
 
         # Save results
-        cca_df.to_csv(join(save_path, 'cca_results_front_amyg.csv'))
+        cca_df.to_csv(join(save_path, 'cca_results_all.csv'))
 

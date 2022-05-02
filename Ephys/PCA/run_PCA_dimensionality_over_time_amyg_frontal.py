@@ -27,8 +27,10 @@ one = ONE()
 
 # Settings
 REGIONS = ['M2', 'mPFC', 'ORB', 'Amyg', 'Pir']
+VAR_CUTOFF = 1
 NEURON_QC = True  # whether to use neuron qc to exclude bad units
 MIN_NEURONS = 10  # minimum neurons per region
+N_PERMUT = 100  # number of times to get spontaneous population correlation for permutation testing
 WIN_SIZE = 0.2  # window size in seconds
 PRE_TIME = 1  # time before stim onset in s
 POST_TIME = 2  # time after stim onset in s

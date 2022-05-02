@@ -30,10 +30,10 @@ MIN_NEURONS = 10  # per region
 T_BEFORE = 1
 T_AFTER = 3
 BASELINE = [-0.5, 0]
-BIN_SIZE = 0.01
+BIN_SIZE = 0.02
 SMOOTHING = 0.02
 MIN_FR = 0.1
-PLOT = True
+PLOT = False
 fig_path, save_path = paths()
 fig_path = join(fig_path, 'Ephys', 'PCA')
 
@@ -44,6 +44,7 @@ BIN_CENTERS = np.arange(-T_BEFORE, T_AFTER, BIN_SIZE) + (BIN_SIZE / 2)
 rec = query_ephys_sessions(one=one)
 
 pca_df = pd.DataFrame()
+pca_dist_df = pd.DataFrame()
 artifact_neurons = get_artifact_neurons()
 for i in rec.index.values:
 
@@ -74,13 +75,13 @@ for i in rec.index.values:
 
     # Filter neurons that pass QC
     if 'metrics' in clusters.keys():
-        clusters_pass = np.where(clusters['metrics']['label'] == 1)[0]
+        clusters_pass = np.where(clusters['metrics']['label'] > 0.5)[0]
     else:
         print('Calculating neuron QC metrics..')
         qc_metrics, _ = spike_sorting_metrics(spikes.times, spikes.clusters,
                                               spikes.amps, spikes.depths,
                                               cluster_ids=np.arange(clusters.channels.size))
-        clusters_pass = np.where(qc_metrics['label'] == 1)[0]
+        clusters_pass = np.where(qc_metrics['label'] > 0.5)[0]
 
     # Select spikes of passive period
     start_passive = opto_train_times[0] - 360
@@ -135,7 +136,7 @@ for i in rec.index.values:
         pca_proj = pca.fit_transform(pop_vector_norm)
 
         # Get Eucledian distance between PCA points
-        pca_diff = np.diff(pca_proj, axis=0)
+        pca_diff = np.diff(pca_proj[:, :2], axis=0)
         pca_dist = np.empty(pca_diff.shape[0])
         for kk in range(pca_diff.shape[0]):
             pca_dist[kk] = np.linalg.norm(pca_diff[kk, :])
@@ -143,6 +144,7 @@ for i in rec.index.values:
 
         # Plot result
         colors, dpi = figure_style()
+        """
         f = plt.figure(figsize=(6, 3), dpi=dpi)
         ax = plt.axes(projection='3d')
         p = ax.scatter3D(pca_proj[:, 0], pca_proj[:, 1], pca_proj[:, 2], c=peths['tscale'],
@@ -157,46 +159,42 @@ for i in rec.index.values:
         plt.savefig(join(fig_path, 'SinglePlots', f'{region}_{subject}_{date}_3D.jpg'), dpi=300)
         plt.savefig(join(fig_path, 'SinglePlots', f'{region}_{subject}_{date}_3D.pdf'))
         plt.close(f)
-
-        f, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4, figsize=(8, 2.5), dpi=dpi)
-        ax1.plot(time, pca_proj[:, 0])
-        ax1.plot([0, 0], ax1.get_ylim(), ls='--', color='grey')
-        ax1.set(ylabel='First principal component', xlabel='Time (s)', title=f'{region}')
-
-        ax2.scatter(pca_proj[:, 0], pca_proj[:, 1], c=time, cmap='twilight_r')
-        ax2.set(xlabel='PC 1', ylabel='PC 2', title=f'{region}')
-
-        ax3.plot(time, np.sum(pca_proj, axis=1))
-        ax3.plot([0, 0], ax3.get_ylim(), ls='--', color='grey')
-        ax3.set(xlabel='Time (s)', ylabel='Summed first 3 PCs')
-
-        ax4.plot(time_diff, pca_dist)
-        ax4.plot([0, 0], ax4.get_ylim(), ls='--', color='grey')
-        ax4.set(xlabel='Time (s)', ylabel='PCA distance')
-
-        sns.despine(trim=True)
-        plt.tight_layout()
-
-        plt.savefig(join(fig_path, 'SinglePlots', f'{region}_{subject}_{date}.jpg'), dpi=300)
-        plt.savefig(join(fig_path, 'SinglePlots', f'{region}_{subject}_{date}.pdf'))
-
-        plt.close(f)
+        """
+        if PLOT:
+            f, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4, figsize=(8, 2.5), dpi=dpi)
+            ax1.plot(time, pca_proj[:, 0])
+            ax1.plot([0, 0], ax1.get_ylim(), ls='--', color='grey')
+            ax1.set(ylabel='First principal component', xlabel='Time (s)', title=f'{region}')
+    
+            ax2.scatter(pca_proj[:, 0], pca_proj[:, 1], c=time, cmap='twilight_r')
+            ax2.set(xlabel='PC 1', ylabel='PC 2', title=f'{region}')
+    
+            ax3.plot(time, np.sum(pca_proj, axis=1))
+            ax3.plot([0, 0], ax3.get_ylim(), ls='--', color='grey')
+            ax3.set(xlabel='Time (s)', ylabel='Summed first 3 PCs')
+    
+            ax4.plot(time_diff, pca_dist)
+            ax4.plot([0, 0], ax4.get_ylim(), ls='--', color='grey')
+            ax4.set(xlabel='Time (s)', ylabel='PCA distance')
+    
+            sns.despine(trim=True)
+            plt.tight_layout()
+            plt.savefig(join(fig_path, 'SinglePlots', f'{region}_{subject}_{date}.jpg'), dpi=300)
+            plt.close(f)
 
         # Add to dataframe
         pca_df = pd.concat((pca_df, pd.DataFrame(data={
-            'subject': subject, 'date': date, 'eid': eid, 'probe': probe, 'region': region,
+            'subject': subject, 'date': date, 'pid': pid, 'probe': probe, 'region': region,
             'time': time, 'n_neurons': np.sum(clusters_regions == region),
             'pca1': pca_proj[:, 0], 'pca2': pca_proj[:, 1], 'pca3': pca_proj[:, 2]})))
+        pca_dist_df = pd.concat((pca_dist_df, pd.DataFrame(data={
+            'subject': subject, 'date': date, 'pid': pid, 'probe': probe, 'region': region,
+            'time': time_diff, 'n_neurons': np.sum(clusters_regions == region),
+            'pca_dist': pca_dist})))
 
     pca_df.to_csv(join(save_path, 'pca_regions.csv'), index=False)
+    pca_dist_df.to_csv(join(save_path, 'pca_dist_regions.csv'), index=False)
 pca_df = pca_df.reset_index()
 pca_df.to_csv(join(save_path, 'pca_regions.csv'), index=False)
-
-# %% Plot
-
-f, ax1 = plt.subplots(1, 1)
-sns.lineplot(x='pca1', y='pca2', data=pca_df[pca_df['region'] == 'ORBl'], estimator=None, units='subject', hue='subject')
-#sns.lineplot(x='pca1', y='pca2', data=pca_df, estimator=None, units='region', hue='region')
-
-
+pca_dist_df.to_csv(join(save_path, 'pca_dist_regions.csv'), index=False)
 
