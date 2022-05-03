@@ -10,12 +10,13 @@ import numpy as np
 from os.path import join
 import matplotlib.pyplot as plt
 import seaborn as sns
+from 
 from matplotlib.patches import Rectangle
 from serotonin_functions import paths, load_subjects, figure_style
 from dlc_functions import smooth_interpolate_signal_sg
 
 # Settings
-REGIONS = ['M2', 'mPFC', 'ORB']
+REGIONS = ['M2', 'ORB', 'mPFC']
 
 # Paths
 fig_path, save_path = paths(dropbox=True)
@@ -47,9 +48,9 @@ ax1.add_patch(Rectangle((0, 0), 1, 4, color='royalblue', alpha=0.25, lw=0))
 #ax.add_patch(Rectangle((0, 0), 1, -100, color='royalblue', alpha=0.25, lw=0))
 sns.lineplot(x='time', y='pca_dist_smooth', ax=ax1, legend='brief', hue='region', ci=68,
              data=pca_dist_df[(pca_dist_df['sert-cre'] == 1) & (pca_dist_df['region'].isin(REGIONS))],
-             hue_order=REGIONS, palette='Dark2')
-ax1.set(xlim=[-0.5, 1.5], xlabel='Time (s)', ylabel='PCA traj. displacement (a.u.)', xticks=[-0.5, 0, 0.5, 1, 1.5],
-        ylim=[0, 4])
+             hue_order=REGIONS, palette=[colors[i] for i in REGIONS])
+ax1.set(xlim=[-0.5, 1.5], xlabel='Time (s)', ylabel='PCA traj. displacement (a.u.)',
+        xticks=[-0.5, 0, 0.5, 1, 1.5], ylim=[0, 4])
 ax1.legend(title='', frameon=False, bbox_to_anchor=(0.55, 0.6))
 
 plt.tight_layout()

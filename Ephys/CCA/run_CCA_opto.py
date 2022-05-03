@@ -30,10 +30,10 @@ pca = PCA(n_components=10)
 NEURON_QC = True  # whether to use neuron qc to exclude bad units
 MIN_NEURONS = 10  # minimum neurons per region
 N_PERMUT = 2  # number of times to get spontaneous population correlation for permutation testing
-WIN_SIZE = 0.2  # window size in seconds
+WIN_SIZE = 0.05  # window size in seconds
 PRE_TIME = 1  # time before stim onset in s
 POST_TIME = 3  # time after stim onset in s
-SMOOTHING = 0  # smoothing of psth
+SMOOTHING = 0.1  # smoothing of psth
 SUBTRACT_MEAN = True  # whether to subtract the mean PSTH from each trial
 CROSS_VAL = 'k-fold'  # None, k-fold or leave-one-out
 K_FOLD = 2  # k in k-fold

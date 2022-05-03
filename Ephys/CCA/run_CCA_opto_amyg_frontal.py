@@ -29,7 +29,6 @@ pca = PCA(n_components=10)
 # Settings
 NEURON_QC = True  # whether to use neuron qc to exclude bad units
 MIN_NEURONS = 10  # minimum neurons per region
-N_PERMUT = 2  # number of times to get spontaneous population correlation for permutation testing
 WIN_SIZE = 0.05  # window size in seconds
 PRE_TIME = 1  # time before stim onset in s
 POST_TIME = 3  # time after stim onset in s

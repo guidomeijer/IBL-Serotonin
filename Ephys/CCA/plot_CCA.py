@@ -13,7 +13,9 @@ import matplotlib.pyplot as plt
 import networkx as nx
 from serotonin_functions import paths, load_subjects, figure_style
 
+# Paths
 fig_path, save_path = paths()
+fig_path = join(fig_path, 'Ephys', 'CCA', 'RegionPairs')
 
 # Load in data
 cca_df = pd.read_csv(join(save_path, 'cca_results_all.csv'))
@@ -33,6 +35,15 @@ cca_merged_stim = cca_stim.groupby(['region_1', 'region_2']).mean()
 cca_merged_stim = cca_baseline.groupby(['region_1', 'region_2']).mean()
 
 # %% Plot
-colors, dpi = figure_style()
-f, ax1 = plt.subplots(1, 1, figsize=(3, 3), dpi=dpi)
-
+for i, region_pair in enumerate(cca_df['region_pair'].unique()):
+    colors, dpi = figure_style()
+    f, ax1 = plt.subplots(1, 1, figsize=(1.75, 1.75), dpi=dpi)
+    sns.lineplot(x='time', y='r_baseline', data=cca_df[cca_df['region_pair'] == region_pair], ax=ax1,
+                 palette='tab10', ci=68)
+    ax1.plot(ax1.get_xlim(), [0, 0], ls='--', color='grey')
+    ax1.set(title=f'{region_pair}', ylabel='Population correlation (r)', xticks=[-1, 0, 1, 2, 3])
+    
+    plt.tight_layout()
+    sns.despine(trim=True)
+    plt.savefig(join(fig_path, f'{region_pair}.jpg'), dpi=300)
+    plt.close(f)
