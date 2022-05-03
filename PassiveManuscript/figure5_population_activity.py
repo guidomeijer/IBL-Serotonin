@@ -10,6 +10,7 @@ from os.path import join
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
+from scipy.stats import kruskal
 from matplotlib.patches import Rectangle
 from serotonin_functions import figure_style
 from brainbox.io.one import SpikeSortingLoader
@@ -100,12 +101,26 @@ for i, pid in enumerate(np.unique(light_neurons['pid'])):
             'time': peths['tscale'], 'region': reg, 'subject': subject, 'date': date, 'pid': pid})),
             ignore_index=True)
     
+
+# Do statistics
+mean_table_df = peths_df.pivot(index='time', columns=['region', 'pid'], values='mean_bl')
+mean_table_df = mean_table_df.reset_index()
+for i in mean_table_df.index.values:
+    mean_table_df.loc[i, 'p_value'] = kruskal(mean_table_df.loc[i, 'M2'], mean_table_df.loc[i, 'mPFC'],
+                                              mean_table_df.loc[i, 'ORB'])[1]
+
+var_table_df = peths_df.pivot(index='time', columns=['region', 'pid'], values='var_bl')
+var_table_df = var_table_df.reset_index()
+for i in var_table_df.index.values:
+    var_table_df.loc[i, 'p_value'] = kruskal(var_table_df.loc[i, 'M2'], var_table_df.loc[i, 'mPFC'],
+                                             var_table_df.loc[i, 'ORB'])[1]
+    
 # %% Plot
 
 colors, dpi = figure_style()
 f, (ax1, ax2) = plt.subplots(1, 2, figsize=(3.5, 1.75), dpi=dpi)
 ax1.add_patch(Rectangle((0, -4), 1, 6, color='royalblue', alpha=0.25, lw=0))
-sns.lineplot(x='time', y='median_bl', data=peths_df, ax=ax1, hue='region', ci=68,
+sns.lineplot(x='time', y='mean_bl', data=peths_df, ax=ax1, hue='region', ci=68,
              hue_order=REGIONS, palette=[colors[i] for i in REGIONS])
 ax1.set(xlabel='Time (s)', ylabel='Population activity (spks/s)',
         ylim=[-1, 1], xticks=[-1, 0, 1, 2])
@@ -116,7 +131,9 @@ ax2.add_patch(Rectangle((0, -0.3), 1, 0.6, color='royalblue', alpha=0.25, lw=0))
 sns.lineplot(x='time', y='cv_bl', data=peths_df, ax=ax2, hue='region', ci=68,
              hue_order=REGIONS, palette=[colors[i] for i in REGIONS], legend=None)
 ax2.set(xlabel='Time (s)', ylabel='Population variance (C.V.)',
-        xticks=[-1, 0, 1, 2], ylim=[-0.3, 0.3], yticks=[-.3, -.2, -.1, 0, .1, .2, .3])
+        xticks=[-1, 0, 1, 2], ylim=[-0.3, 0.305], yticks=[-.3, -.2, -.1, 0, .1, .2, .3])
+ax2.plot(var_table_df.loc[var_table_df['p_value'] < 0.05, 'time'],
+         np.ones(np.sum(var_table_df['p_value'] < 0.05))*0.3, color='k')
 leg = ax2.legend(frameon=True, prop={'size': 6}, loc='lower left')
 leg.get_frame().set_linewidth(0.0)
 
