@@ -14,10 +14,16 @@ from scipy.stats import mannwhitneyu
 from serotonin_functions import paths, load_subjects, remap, figure_style, combine_regions
 
 # Initialize some things
+""" 
 MOTION_REG = ['wheel_velocity', 'nose', 'paw_l', 'paw_r', 'tongue_end_l', 'tongue_end_r',
               'motion_energy_body', 'motion_energy_left', 'motion_energy_right', 'pupil_diameter']
 OPTO_REG = ['opto_4_bases', 'opto_6_bases', 'opto_8_bases', 'opto_10_bases', 'opto_12_bases', 
             'opto_boxcar']
+"""
+
+MOTION_REG = ['nose', 'paw_l', 'tongue_end_l', 'pupil_diameter']
+OPTO_REG = ['opto_onset', 'opto_boxcar']
+
 MIN_NEURONS_RATIO = 5
 MIN_NEURONS_PERC = 20
 fig_path, save_path = paths(dropbox=True)
@@ -42,13 +48,18 @@ all_glm_df = pd.merge(all_glm_df, opto_neurons, on=['subject', 'date', 'neuron_i
 # Add full region
 all_glm_df['full_region'] = combine_regions(all_glm_df['region'])
 
+# Drop ZFM-01802 for now
+all_glm_df = all_glm_df[all_glm_df['subject'] != 'ZFM-01802']
+
 # Drop root
 all_glm_df = all_glm_df[all_glm_df['region'] != 'root']
 
+"""
 # Set 0 regressors to NaN
 all_glm_df.loc[all_glm_df['motion_energy_left'] < 0.00001, 'motion_energy_left'] = np.nan
 all_glm_df.loc[all_glm_df['motion_energy_right'] < 0.00001, 'motion_energy_right'] = np.nan
 all_glm_df.loc[all_glm_df['motion_energy_body'] < 0.00001, 'motion_energy_body'] = np.nan
+"""
 
 # Get maximum motion and opto regressor
 all_glm_df['all_motion'] = all_glm_df[MOTION_REG].max(axis=1)
@@ -194,7 +205,7 @@ f, ax1 = plt.subplots(1, 1, figsize=(2.5, 1.75), dpi=dpi)
 ax1.plot([0, 0], [-1, glm_df_slice.shape[0]], color=[0.5, 0.5, 0.5], ls='--')
 sns.boxplot(x='opto_stim', y='full_region', color='orange', ax=ax1,
             data=glm_df_slice, order=sort_regions, fliersize=0, linewidth=0.75)
-ax1.set(ylabel='', xlabel=u'Δ var. explained by stimulation', xscale='log', xlim=[0.0001, 1])
+ax1.set(ylabel='', xlabel=u'Δ var. explained by stimulation', xscale='log', xlim=[0.001, 1])
 
 plt.tight_layout()
 sns.despine(trim=True)
@@ -215,7 +226,7 @@ f, ax1 = plt.subplots(1, 1, figsize=(2.5, 1.75), dpi=dpi)
 ax1.plot([0, 0], [-1, glm_df_slice.shape[0]], color=[0.5, 0.5, 0.5], ls='--')
 sns.boxplot(x='all_motion', y='full_region', color='orange', ax=ax1,
             data=glm_df_slice, order=sort_regions, fliersize=0, linewidth=0.75)
-ax1.set(ylabel='', xlabel=u'Δ var. explained by motion', xscale='log', xlim=[0.0001, 1])
+ax1.set(ylabel='', xlabel=u'Δ var. explained by motion', xscale='log', xlim=[0.001, 1])
 
 plt.tight_layout()
 sns.despine(trim=True)

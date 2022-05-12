@@ -55,7 +55,7 @@ sns.lineplot(x='time', y='r_baseline_smooth', data=cca_df,
 ax1.plot(ax1.get_xlim(), [0, 0], ls='--', color='grey')
 ax1.plot(cca_table_df['time'][p_values < 0.05], [0.2, 0.2], color='k')
 ax1.set(ylabel='Population correlation (r)', ylim=[-0.25, 0.25], yticks=[-0.2, -0.1, 0, 0.1, 0.2],
-        xticks=[-1, 0, 1, 2, 3])
+        xticks=[-1, 0, 1, 2, 3], xlabel='Time (s)')
 leg = ax1.legend(loc='lower left', prop={'size': 6})
 leg.get_frame().set_linewidth(0.0)
 

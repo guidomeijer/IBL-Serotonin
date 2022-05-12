@@ -18,10 +18,15 @@ pca = PCA(n_components=2, random_state=42)
 tsne = TSNE(n_components=2, random_state=42)
 
 # Settings
+""" 
 MOTION_REG = ['wheel_velocity', 'nose', 'paw_l', 'paw_r', 'tongue_end_l', 'tongue_end_r',
               'motion_energy_body', 'motion_energy_left', 'motion_energy_right', 'pupil_diameter']
 OPTO_REG = ['opto_4_bases', 'opto_6_bases', 'opto_8_bases', 'opto_10_bases', 'opto_12_bases', 
             'opto_boxcar']
+"""
+MOTION_REG = ['nose', 'paw_l', 'tongue_end_l', 'pupil_diameter']
+OPTO_REG = ['opto_onset', 'opto_boxcar']
+
 MIN_NEURONS = 5
 EX_NEURON_1 = 145
 EX_PID_1 = '17b1fed7-c04c-45f3-a474-c19a3d1c3ea8'
@@ -69,10 +74,15 @@ for i, nickname in enumerate(np.unique(subjects['subject'])):
     all_glm_df.loc[all_glm_df['subject'] == nickname, 'sert-cre'] = subjects.loc[
         subjects['subject'] == nickname, 'sert-cre'].values[0]
 
+# Exclude ZFM-01802 for now
+all_glm_df = all_glm_df[all_glm_df['subject'] != 'ZFM-01802']
+
+"""
 # Set 0 regressors to NaN
 all_glm_df.loc[all_glm_df['motion_energy_left'] < 0.00001, 'motion_energy_left'] = np.nan
 all_glm_df.loc[all_glm_df['motion_energy_right'] < 0.00001, 'motion_energy_right'] = np.nan
 all_glm_df.loc[all_glm_df['motion_energy_body'] < 0.00001, 'motion_energy_body'] = np.nan
+"""
 
 # Get maximum motion and opto regressor
 all_glm_df['all_motion'] = all_glm_df[MOTION_REG].max(axis=1)
@@ -164,14 +174,14 @@ colors, dpi = figure_style()
 f = plt.figure(figsize=(4, 2), dpi=dpi)
 axs = f.subplot_mosaic('EAB\nFAC\nGAD\n', gridspec_kw={'width_ratios':[1, 2, 1]})
 sc = axs['A'].scatter(merged_df['dim_1'], merged_df['dim_2'], c=np.log10(merged_df['opto_stim']),
-                      cmap='plasma', vmin=np.log10(0.001), vmax=np.log10(0.1))
+                      cmap='plasma', vmin=np.log10(0.001), vmax=np.log10(0.03))
 #ax1.legend(frameon=False, bbox_to_anchor=(1, 0.7))
 axs['A'].axis('off')
 cbar = plt.colorbar(sc, orientation="horizontal", pad=0.05, ax=axs['A'])
 cbar.set_ticks(np.log10([0.001, 0.01, 0.1]))
 cbar.set_ticklabels([0.001, 0.1, 0.1])
 cbar.set_label(u'Δ var. explained by stimulation')
-
+"""
 ex_neuron = merged_df[(merged_df['neuron_id'] == EX_NEURON_1) & (merged_df['pid'] == EX_PID_1)].index.values[0]
 axs['A'].plot([merged_df.loc[ex_neuron, 'dim_1'], 36], [merged_df.loc[ex_neuron, 'dim_2'], 25],
               color='k')
@@ -194,7 +204,7 @@ axs['D'].plot([0, 0], axs['D'].get_ylim(), color='grey', ls='--', lw=0.75)
 axs['D'].plot([0, 1], [-0.5, -0.5], color='k', lw=0.5)
 axs['D'].text(0.5, -5, '1s', ha='center')
 axs['D'].axis('off')
-
+"""
 ex_neuron = merged_df[(merged_df['neuron_id'] == EX_NEURON_4) & (merged_df['pid'] == EX_PID_4)].index.values[0]
 axs['A'].plot([merged_df.loc[ex_neuron, 'dim_1'], -38], [merged_df.loc[ex_neuron, 'dim_2'], 25],
               color='k')
@@ -208,7 +218,7 @@ axs['A'].plot([merged_df.loc[ex_neuron, 'dim_1'], -38], [merged_df.loc[ex_neuron
 axs['F'].plot(merged_df.loc[ex_neuron, 'time'], merged_df.loc[ex_neuron, 'peth'])
 axs['F'].plot([0, 0], axs['F'].get_ylim(), color='grey', ls='--', lw=0.75)
 axs['F'].axis('off')
-
+"""
 ex_neuron = merged_df[(merged_df['neuron_id'] == EX_NEURON_6) & (merged_df['pid'] == EX_PID_6)].index.values[0]
 axs['A'].plot([merged_df.loc[ex_neuron, 'dim_1'], -38], [merged_df.loc[ex_neuron, 'dim_2'], -20],
               color='k')
@@ -217,7 +227,7 @@ axs['G'].plot([0, 0], axs['G'].get_ylim(), color='grey', ls='--', lw=0.75)
 axs['G'].plot([0, 1], [-2, -2], color='k', lw=0.5)
 axs['G'].text(0.5, -7, '1s', ha='center')
 axs['G'].axis('off')
-
+"""
 plt.tight_layout()
 sns.despine(trim=True)
 

@@ -11,11 +11,13 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 from scipy.stats import kruskal
+from brainbox.metrics.single_units import spike_sorting_metrics
 from matplotlib.patches import Rectangle
 from serotonin_functions import figure_style
 from brainbox.io.one import SpikeSortingLoader
 from brainbox.singlecell import calculate_peths
-from serotonin_functions import paths, load_passive_opto_times, combine_regions, load_subjects
+from serotonin_functions import (paths, load_passive_opto_times, combine_regions, load_subjects,
+                                 get_artifact_neurons, remap)
 from one.api import ONE
 from ibllib.atlas import AllenAtlas
 ba = AllenAtlas()
@@ -34,6 +36,9 @@ fig_path = join(fig_path, 'PaperPassive', 'figure5')
 light_neurons = pd.read_csv(join(save_path, 'light_modulated_neurons.csv'))
 light_neurons['full_region'] = combine_regions(light_neurons['region'], split_thalamus=False, abbreviate=True)
 light_neurons = light_neurons[light_neurons['full_region'] != 'root']
+
+# Load in light artifact neurons
+artifact_neurons = get_artifact_neurons()
 
 # Only select neurons from sert-cre mice
 subjects = load_subjects()
@@ -70,20 +75,44 @@ for i, pid in enumerate(np.unique(light_neurons['pid'])):
         clusters = sl.merge_clusters(spikes, clusters, channels)
     except:
         continue    
+    
+    # Filter neurons that pass QC
+    if 'metrics' in clusters.keys():
+        clusters_pass = np.where(clusters['metrics']['label'] == 1)[0]
+    else:
+        print('Calculating neuron QC metrics..')
+        qc_metrics, _ = spike_sorting_metrics(spikes.times, spikes.clusters,
+                                              spikes.amps, spikes.depths,
+                                              cluster_ids=np.arange(clusters.channels.size))
+        clusters_pass = np.where(qc_metrics['label'] == 1)[0]
+
+    # Exclude artifact neurons
+    clusters_pass = np.array([i for i in clusters_pass if i not in artifact_neurons.loc[
+        artifact_neurons['pid'] == pid, 'neuron_id'].values])
+    if clusters_pass.shape[0] == 0:
+            continue
+
+    # Select QC pass neurons
+    spikes.times = spikes.times[np.isin(spikes.clusters, clusters_pass)]
+    spikes.clusters = spikes.clusters[np.isin(spikes.clusters, clusters_pass)]
+    clusters_pass = clusters_pass[np.isin(clusters_pass, np.unique(spikes.clusters))]
+
+    # Get regions from Beryl atlas
+    clusters['region'] = remap(clusters['acronym'], combine=True)
+    clusters_regions = clusters['region'][clusters_pass]
 
     # Get peri-event time histogram
-    peths, _ = calculate_peths(spikes.times, spikes.clusters,
-                               these_neurons['neuron_id'].values,
+    peths, _ = calculate_peths(spikes.times, spikes.clusters, clusters_pass,
                                opto_train_times, T_BEFORE, T_AFTER, BIN_SIZE, SMOOTHING)
     tscale = peths['tscale']
     
     # Loop over regions
     for j, reg in enumerate(REGIONS):
-        if np.sum(these_neurons['full_region'] == reg) == 0:
+        if np.sum(clusters_regions == reg) == 0:
             continue
         
-        # Log-transform population activity
-        pop_act = peths['means'][these_neurons['full_region'] == reg]  
+        # Get population activity
+        pop_act = peths['means'][clusters_regions == reg]  
         
         # Normalize and offset mean for plotting
         pop_mean = pop_act.mean(axis=0)
@@ -127,13 +156,13 @@ ax1.set(xlabel='Time (s)', ylabel='Population activity (spks/s)',
 leg = ax1.legend(frameon=True, prop={'size': 6})
 leg.get_frame().set_linewidth(0.0)
 
-ax2.add_patch(Rectangle((0, -0.3), 1, 0.6, color='royalblue', alpha=0.25, lw=0))
-sns.lineplot(x='time', y='cv_bl', data=peths_df, ax=ax2, hue='region', ci=68,
+ax2.add_patch(Rectangle((0, -2), 1, 4, color='royalblue', alpha=0.25, lw=0))
+sns.lineplot(x='time', y='var_bl', data=peths_df, ax=ax2, hue='region', ci=68,
              hue_order=REGIONS, palette=[colors[i] for i in REGIONS], legend=None)
-ax2.set(xlabel='Time (s)', ylabel='Population variance (C.V.)',
-        xticks=[-1, 0, 1, 2], ylim=[-0.3, 0.305], yticks=[-.3, -.2, -.1, 0, .1, .2, .3])
+ax2.set(xlabel='Time (s)', ylabel='Population variance (std)',
+        xticks=[-1, 0, 1, 2], ylim=[-2, 2.05])
 ax2.plot(var_table_df.loc[var_table_df['p_value'] < 0.05, 'time'],
-         np.ones(np.sum(var_table_df['p_value'] < 0.05))*0.3, color='k')
+         np.ones(np.sum(var_table_df['p_value'] < 0.05))*2, color='k')
 leg = ax2.legend(frameon=True, prop={'size': 6}, loc='lower left')
 leg.get_frame().set_linewidth(0.0)
 

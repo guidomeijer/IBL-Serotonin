@@ -25,8 +25,8 @@ OVERWRITE = True
 BINSIZE = 0.04
 MOT_KERNLEN = 0.4
 MOT_NBASES = 10
-OPTO_KERNLEN = 1
-OPTO_NBASES = 6
+OPTO_KERNLEN = 3
+OPTO_NBASES = 10
 fig_path, save_path = paths()
 
 # Query sessions
@@ -77,33 +77,30 @@ for i in rec.index.values:
 
     # Build basis functions
     motion_bases_func = mut.full_rcos(MOT_KERNLEN, MOT_NBASES, design.binf)
-    opto_bases_funcs = []
-    for j, n_bases in enumerate(OPTO_NBASES):
-        opto_bases_funcs.append(mut.full_rcos(OPTO_KERNLEN, n_bases, design.binf))
-
+    opto_bases_funcs = mut.full_rcos(OPTO_KERNLEN, OPTO_NBASES, design.binf)
+    
     # Add regressors
-    for k in range(len(opto_bases_funcs)):
-        design.add_covariate_timing(f'opto_{opto_bases_funcs[k].shape[1]}_bases', 'opto_start',
-                                    opto_bases_funcs[k], desc='Optogenetic stimulation')
-    design.add_covariate_boxcar('opto_boxcar', 'opto_start', 'opto_end', desc='Optogenetic stimulation')
-    design.add_covariate('wheel_velocity', opto_df['wheel_velocity'], motion_bases_func, offset=-MOT_KERNLEN,
-                         desc='Wheel velocity')
+    design.add_covariate_timing('opto_onset', 'opto_start', opto_bases_funcs, desc='Optogenetic stimulation')
+    #design.add_covariate_timing('opto_offset', 'opto_end', opto_bases_funcs, desc='Optogenetic stimulation')
+    design.add_covariate_boxcar('opto_boxcar', 'opto_start', 'trial_end', desc='Optogenetic stimulation')
+    #design.add_covariate('wheel_velocity', opto_df['wheel_velocity'], motion_bases_func, offset=-MOT_KERNLEN,
+    #                     desc='Wheel velocity')
     design.add_covariate('nose', opto_df['nose_tip'], motion_bases_func, offset=-MOT_KERNLEN,
                          desc='Nose tip')
     design.add_covariate('paw_l', opto_df['paw_l'], motion_bases_func, offset=-MOT_KERNLEN,
                          desc='Left paw')
-    design.add_covariate('paw_r', opto_df['paw_r'], motion_bases_func, offset=-MOT_KERNLEN,
-                         desc='Right paw')
+    #design.add_covariate('paw_r', opto_df['paw_r'], motion_bases_func, offset=-MOT_KERNLEN,
+    #                     desc='Right paw')
     design.add_covariate('tongue_end_l', opto_df['tongue_end_l'], motion_bases_func, offset=-MOT_KERNLEN,
                          desc='Left tongue')
-    design.add_covariate('tongue_end_r', opto_df['tongue_end_r'], motion_bases_func, offset=-MOT_KERNLEN,
-                         desc='Right tongue')
-    design.add_covariate('motion_energy_body', opto_df['motion_energy_body'], motion_bases_func, offset=-MOT_KERNLEN,
-                         desc='Motion energy body')
-    design.add_covariate('motion_energy_left', opto_df['motion_energy_left'], motion_bases_func, offset=-MOT_KERNLEN,
-                         desc='Motion energy left')
-    design.add_covariate('motion_energy_right', opto_df['motion_energy_right'], motion_bases_func, offset=-MOT_KERNLEN,
-                         desc='Motion energy right')
+    #design.add_covariate('tongue_end_r', opto_df['tongue_end_r'], motion_bases_func, offset=-MOT_KERNLEN,
+    #                     desc='Right tongue')
+    #design.add_covariate('motion_energy_body', opto_df['motion_energy_body'], motion_bases_func, offset=-MOT_KERNLEN,
+    #                     desc='Motion energy body')
+    #design.add_covariate('motion_energy_left', opto_df['motion_energy_left'], motion_bases_func, offset=-MOT_KERNLEN,
+    #                     desc='Motion energy left')
+    #design.add_covariate('motion_energy_right', opto_df['motion_energy_right'], motion_bases_func, offset=-MOT_KERNLEN,
+    #                     desc='Motion energy right')
     design.add_covariate('pupil_diameter', opto_df['pupil_diameter'], motion_bases_func, offset=-MOT_KERNLEN,
                          desc='Pupil diameter')
 
@@ -111,9 +108,12 @@ for i in rec.index.values:
     print('Compiled design matrix')
 
     # Load in the neural data
-    sl = SpikeSortingLoader(pid=pid, one=one, atlas=ba)
-    spikes, clusters, channels = sl.load_spike_sorting()
-    clusters = sl.merge_clusters(spikes, clusters, channels)
+    try:
+        sl = SpikeSortingLoader(pid=pid, one=one, atlas=ba)
+        spikes, clusters, channels = sl.load_spike_sorting()
+        clusters = sl.merge_clusters(spikes, clusters, channels)
+    except:
+        continue
 
     # Apply neuron QC and exclude artifact units
     print('Calculating neuron QC metrics..')
