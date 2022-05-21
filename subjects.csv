@@ -1,5 +1,5 @@
 subject,sert-cre,notes,histology,expression,include_ephys,include_behavior,date_range_blocks,date_range_half,date_range_probes
-ZFM-01802,1,,Expression in ventral part of DRN.,1,0,1,2021-02-22/2021-02-26,none,none
+ZFM-01802,1,Excluded for now because light shielding was not in place,Expression in ventral part of DRN.,0,0,1,2021-02-22/2021-02-26,none,none
 ZFM-01864,0,,No expression.,0,0,1,all,none,none
 ZFM-01507,1,Only 1 passive ephys session. ,Expression in dorsal part of DRN.,1,0,0,none,none,none
 ZFM-01867,0,"Really bad behavior during recordings, exclude",No expression.,0,0,0,all,none,none

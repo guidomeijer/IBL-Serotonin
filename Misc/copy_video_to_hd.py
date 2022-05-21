@@ -16,7 +16,7 @@ one = ONE(mode='local')
 # Settings
 FROM = '/media/guido/Data2/FlatIron/mainenlab/Subjects'
 TO = '/media/guido/IBLvideo2/5HT/VideoPassive'
-OVERWRITE = True
+OVERWRITE = False
 
 # Get sessions
 rec = query_ephys_sessions(one=one)

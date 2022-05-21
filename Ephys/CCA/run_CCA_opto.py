@@ -41,7 +41,6 @@ K_FOLD_SHUFFLE = True  # whether to use a random subset of trials for fitting an
 K_FOLD_BOOTSTRAPS = 100  # how often to repeat the random trial selection
 MIN_FR = 0.5  # minimum firing rate over the whole recording
 N_PC = 10  # number of PCs to use
-PLOT_IND = True  # plot individual region pairs
 
 # Paths
 fig_path, save_path = paths()
@@ -91,7 +90,8 @@ for i, eid in enumerate(np.unique(rec['eid'])):
             sl = SpikeSortingLoader(pid=pid, one=one, atlas=ba)
             spikes[probe], clusters[probe], channels[probe] = sl.load_spike_sorting()
             clusters[probe] = sl.merge_clusters(spikes[probe], clusters[probe], channels[probe])
-        except:
+        except Exception as err:
+            print(err)
             continue
 
         # Filter neurons that pass QC and artifact neurons
@@ -132,17 +132,17 @@ for i, eid in enumerate(np.unique(rec['eid'])):
                  psth_opto, binned_spks_opto = calculate_peths(
                      spks_region, clus_region, np.unique(clus_region), opto_train_times, pre_time=PRE_TIME,
                      post_time=POST_TIME, bin_size=WIN_SIZE, smoothing=SMOOTHING, return_fr=False)
-                 
+
                  if SUBTRACT_MEAN:
                      # Subtract mean PSTH from each opto stim
                      for tt in range(binned_spks_opto.shape[0]):
                          binned_spks_opto[tt, :, :] = binned_spks_opto[tt, :, :] - psth_opto['means']
-                 
+
                  # Perform PCA
                  pca_opto[region] = np.empty([binned_spks_opto.shape[0], N_PC, binned_spks_opto.shape[2]])
                  for tb in range(binned_spks_opto.shape[2]):
                      pca_opto[region][:, :, tb] = pca.fit_transform(binned_spks_opto[:, :, tb])
-                     
+
     # Perform CCA per region pair
     print('Starting CCA per region pair')
     all_cca_df = pd.DataFrame()
@@ -150,10 +150,12 @@ for i, eid in enumerate(np.unique(rec['eid'])):
         for r2, region_2 in enumerate(list(pca_opto.keys())[r1:]):
             if region_1 == region_2:
                 continue
-      
+
             # Run CCA per region pair
+            print(f'{region_1}-{region_2}')
             r_opto = np.empty(n_time_bins)
             r_opto_bootstrap = np.empty((K_FOLD_BOOTSTRAPS * K_FOLD, n_time_bins))
+
             for tb in range(n_time_bins):
                 opto_x = np.empty(pca_opto[region_1][:, :, tb].shape[0])
                 opto_y = np.empty(pca_opto[region_1][:, :, tb].shape[0])
@@ -171,8 +173,8 @@ for i, eid in enumerate(np.unique(rec['eid'])):
                                                  pca_opto[region_2][test_index, :, tb])
                             r_splits.append(pearsonr(x.T[0], y.T[0])[1])
                     r_opto_bootstrap[:, tb] = r_splits
-                    r_opto[tb] = np.mean(r_splits)
-                                        
+                    r_opto[tb] = np.median(r_splits)
+
                 elif CROSS_VAL == 'leave-one-out':
                     for train_index, test_index in lio.split(pca_opto[region_1][:, :, tb]):
                         cca.fit(pca_opto[region_1][train_index, :, tb],
@@ -182,7 +184,7 @@ for i, eid in enumerate(np.unique(rec['eid'])):
                         opto_x[test_index] = x.T
                         opto_y[test_index] = y.T
                     r_opto[tb], _ = pearsonr(opto_x, opto_y)
-                            
+
             # Baseline subtract
             r_baseline = r_opto - np.mean(r_opto[psth_opto['tscale'] < 0])
 
@@ -191,23 +193,6 @@ for i, eid in enumerate(np.unique(rec['eid'])):
                 'subject': subject, 'date': date, 'eid': eid, 'region_1': region_1, 'region_2': region_2,
                 'region_pair': f'{region_1}-{region_2}', 'r_opto': r_opto, 'r_baseline': r_baseline,
                 'time': psth_opto['tscale']})), ignore_index=True)
-
-            # Plot this region pair
-            if PLOT_IND:
-                colors, dpi = figure_style()
-                f, ax1 = plt.subplots(1, 1, figsize=(3, 3), dpi=dpi)
-                if CROSS_VAL == 'k-fold':
-                    ax1.errorbar(psth_opto['tscale'], r_opto_bootstrap.mean(axis=0),
-                                 yerr=r_opto_bootstrap.std(axis=0) / np.sqrt(K_FOLD_BOOTSTRAPS))
-                else:
-                    ax1.plot(psth_opto['tscale'], r_opto, lw=2)
-                ax1.plot([0, 0], ax1.get_ylim(), color='k', ls='--')
-                ax1.set(xlabel='Time (s)', ylabel='Population correlation (r)',
-                        title=f'{region_1}-{region_2}')
-                sns.despine(trim=True)
-                plt.tight_layout()
-                plt.savefig(join(fig_path, f'{region_1}-{region_2}_{subject}_{date}'), dpi=300)
-                plt.close(f)
 
         # Save results
         cca_df.to_csv(join(save_path, 'cca_results_all.csv'))

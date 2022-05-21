@@ -29,18 +29,13 @@ all_glm_df = pd.read_csv(join(save_path, 'GLM', 'GLM_passive_opto.csv'))
 for i, nickname in enumerate(np.unique(subjects['subject'])):
     all_glm_df.loc[all_glm_df['subject'] == nickname, 'sert-cre'] = subjects.loc[
         subjects['subject'] == nickname, 'sert-cre'].values[0]
-    
+
 # Add regions
 all_glm_df['region'] = remap(all_glm_df['acronym'])
 all_glm_df['full_region'] = combine_regions(all_glm_df['region'])
 
 # Drop root
 all_glm_df = all_glm_df[all_glm_df['region'] != 'root']
-
-# Set 0 regressors to NaN
-all_glm_df.loc[all_glm_df['motion_energy_left'] < 0.00001, 'motion_energy_left'] = np.nan
-all_glm_df.loc[all_glm_df['motion_energy_right'] < 0.00001, 'motion_energy_right'] = np.nan
-all_glm_df.loc[all_glm_df['motion_energy_body'] < 0.00001, 'motion_energy_body'] = np.nan
 
 # Get max motion regressor
 all_glm_df['max_motion'] = all_glm_df[MOTION_REG].max(axis=1)

@@ -116,6 +116,7 @@ def figure_style():
               'M2': sns.color_palette('Dark2')[2],
               'mPFC': sns.color_palette('Dark2')[1],
               'ORB': sns.color_palette('Dark2')[0],
+              'Amyg': sns.color_palette('Dark2')[3],
               'M2-mPFC': sns.color_palette('Dark2')[1],
               'M2-ORB': sns.color_palette('Dark2')[0],
               'PPC': sns.color_palette('tab20c')[0],
@@ -123,7 +124,6 @@ def figure_style():
               'Str': sns.color_palette('tab20c')[12],
               'SNr': sns.color_palette('tab20c')[13],
               'Thal': sns.color_palette('tab10')[3],
-              'Amyg': sns.color_palette('tab20b')[12],
               'Pir': sns.color_palette('tab20b')[9],
               'Hipp': sns.color_palette('tab20')[12]}
     screen_width = tk.Tk().winfo_screenwidth()
@@ -176,7 +176,7 @@ def query_ephys_sessions(selection='aligned', acronym=None, one=None):
         ins = []
         for i, ac in enumerate(acronym):
             ins = ins + one.alyx.rest('insertions', 'list', django=DJANGO_STR, atlas_acronym=ac)
-            
+
     # Only include subjects from subjects.csv
     incl_subjects = load_subjects()
     ins = [i for i in ins if i['session_info']['subject'] in incl_subjects['subject'].values]
@@ -273,7 +273,7 @@ def combine_regions(acronyms, split_thalamus=False, abbreviate=False):
         regions[np.in1d(acronyms, ['MRN'])] = 'MRN'
         regions[np.in1d(acronyms, ['ZI'])] = 'ZI'
         regions[np.in1d(acronyms, ['PAG'])] = 'PAG'
-        regions[np.in1d(acronyms, ['RL', 'IF', 'IPN', 'CLI', 'DR'])] = 'Raphe'        
+        regions[np.in1d(acronyms, ['RL', 'IF', 'IPN', 'CLI', 'DR'])] = 'Raphe'
         regions[np.in1d(acronyms, ['SSp-bfd'])] = 'BC'
         regions[np.in1d(acronyms, ['LGv', 'LGd'])] = 'LG'
         regions[np.in1d(acronyms, ['PIR'])] = 'Pir'
@@ -324,7 +324,7 @@ def high_level_regions(acronyms):
     regions[np.in1d(first_level_regions, ['Thal'])] = 'Thalamus'
     regions[np.in1d(first_level_regions, ['Amyg'])] = 'Amygdala'
     return regions
-    
+
 
 def remap(acronyms, source='Allen', dest='Beryl', combine=False, split_thalamus=False,
           abbreviate=True, brainregions=None):

@@ -20,7 +20,7 @@ from serotonin_functions import (paths, remap, query_ephys_sessions, load_passiv
 from one.api import ONE
 from ibllib.atlas import AllenAtlas
 ba = AllenAtlas()
-one = ONE(mode='local')
+one = ONE()
 cca = CCA(n_components=1, max_iter=1000)
 pca = PCA(n_components=10)
 
@@ -44,7 +44,8 @@ N_PC = 10  # number of PCs to use
 fig_path, save_path = paths()
 
 # Initialize some things
-REGION_PAIRS = [['M2', 'mPFC'], ['M2', 'ORB'], ['mPFC', 'Amyg'], ['ORB', 'Amyg'], ['M2', 'Amyg']]
+REGION_PAIRS = [['M2', 'mPFC'], ['M2', 'ORB'], ['mPFC', 'Amyg'], ['ORB', 'Amyg'], ['M2', 'Amyg'],
+                ['Hipp', 'PPC'], ['Hipp', 'Thal'], ['ORB', 'mPFC'], ['PPC', 'Thal']]
 np.random.seed(42)  # fix random seed for reproducibility
 n_time_bins = int((PRE_TIME + POST_TIME) / WIN_SIZE)
 lio = LeaveOneOut()
@@ -55,13 +56,13 @@ if SMOOTHING > 0:
     window /= np.sum(window)
 
 # Query sessions with frontal and amygdala
-rec = query_ephys_sessions(acronym=['MOs', 'ORB', 'ILA', 'PL', 'ACA', 'MEA', 'CEA', 'BLA', 'COAa'], one=one)
+rec = query_ephys_sessions(one=one)
 
 # Load in artifact neurons
 artifact_neurons = get_artifact_neurons()
 
-if ~OVERWRITE & isfile(join(save_path, 'jPECC_frontal.pickle')):
-    cca_df = pd.read_pickle(join(save_path, 'jPECC_frontal.pickle'))
+if ~OVERWRITE & isfile(join(save_path, 'jPECC.pickle')):
+    cca_df = pd.read_pickle(join(save_path, 'jPECC.pickle'))
 else:
     cca_df = pd.DataFrame(columns=['region_pair', 'eid'])
 
@@ -197,4 +198,4 @@ for i, eid in enumerate(np.unique(rec['eid'])):
                 'subject': subject, 'date': date, 'eid': eid, 'region_1': region_1, 'region_2': region_2,
                 'region_pair': f'{region_1}-{region_2}', 'r_opto': [r_opto],
                 'time': [psth_opto['tscale']]})))
-    cca_df.to_pickle(join(save_path, 'jPECC_frontal.pickle'))
+    cca_df.to_pickle(join(save_path, 'jPECC.pickle'))

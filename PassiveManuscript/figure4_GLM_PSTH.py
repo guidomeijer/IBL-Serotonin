@@ -18,10 +18,10 @@ pca = PCA(n_components=2, random_state=42)
 tsne = TSNE(n_components=2, random_state=42)
 
 # Settings
-""" 
+"""
 MOTION_REG = ['wheel_velocity', 'nose', 'paw_l', 'paw_r', 'tongue_end_l', 'tongue_end_r',
               'motion_energy_body', 'motion_energy_left', 'motion_energy_right', 'pupil_diameter']
-OPTO_REG = ['opto_4_bases', 'opto_6_bases', 'opto_8_bases', 'opto_10_bases', 'opto_12_bases', 
+OPTO_REG = ['opto_4_bases', 'opto_6_bases', 'opto_8_bases', 'opto_10_bases', 'opto_12_bases',
             'opto_boxcar']
 """
 MOTION_REG = ['nose', 'paw_l', 'tongue_end_l', 'pupil_diameter']
@@ -174,7 +174,7 @@ colors, dpi = figure_style()
 f = plt.figure(figsize=(4, 2), dpi=dpi)
 axs = f.subplot_mosaic('EAB\nFAC\nGAD\n', gridspec_kw={'width_ratios':[1, 2, 1]})
 sc = axs['A'].scatter(merged_df['dim_1'], merged_df['dim_2'], c=np.log10(merged_df['opto_stim']),
-                      cmap='plasma', vmin=np.log10(0.001), vmax=np.log10(0.03))
+                      cmap='plasma', vmin=np.log10(0.001), vmax=np.log10(0.1))
 #ax1.legend(frameon=False, bbox_to_anchor=(1, 0.7))
 axs['A'].axis('off')
 cbar = plt.colorbar(sc, orientation="horizontal", pad=0.05, ax=axs['A'])

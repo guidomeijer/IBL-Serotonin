@@ -31,7 +31,7 @@ for i, nickname in enumerate(np.unique(subjects['subject'])):
     cca_df.loc[cca_df['subject'] == nickname, 'sert-cre'] = subjects.loc[subjects['subject'] == nickname, 'sert-cre'].values[0]
 
 # Take slice of dataframe
-cca_df = cca_df[(cca_df['sert-cre'] == 1) & cca_df['region_pair'].isin(REGION_PAIRS)]
+cca_df = cca_df[cca_df['region_pair'].isin(REGION_PAIRS)]
 
 # Smooth traces (this is ugly I know)
 for i, eid in enumerate(cca_df['eid'].unique()):
@@ -50,6 +50,33 @@ cca_table_df = cca_table_df.reset_index()
 p_values = ttest_ind(cca_table_df['M2-mPFC'].to_numpy(), cca_table_df['M2-ORB'].to_numpy(), axis=1)[1]
 
 # %%
+
+cca_df.loc[cca_df['sert-cre'] == 1, 'sert-cre'] = 'SERT'
+cca_df.loc[cca_df['sert-cre'] == 0, 'sert-cre'] = 'WT'
+
+colors, dpi = figure_style()
+f, (ax1, ax2) = plt.subplots(1, 2, figsize=(3.5, 1.75), dpi=dpi)
+ax1.add_patch(Rectangle((0, -0.2), 1, 0.4, color='royalblue', alpha=0.25, lw=0))
+sns.lineplot(x='time', y='r_smooth', data=cca_df[cca_df['region_pair'] == 'M2-mPFC'],
+             hue_order=['WT', 'SERT'], ax=ax1, hue='sert-cre', palette=[colors['wt'], colors['sert']], ci=68)
+ax1.set(xlabel='Time (s)', ylabel='Canonical correlation (r)', xticks=[-1, 0, 1, 2, 3],
+        title='M2 vs mPFC')
+ax1.legend(title='', prop={'size': 6}, frameon=False)
+
+ax2.add_patch(Rectangle((0, -0.2), 1, 0.4, color='royalblue', alpha=0.25, lw=0))
+sns.lineplot(x='time', y='r_smooth', data=cca_df[cca_df['region_pair'] == 'M2-ORB'],
+             hue_order=['WT', 'SERT'], ax=ax2, hue='sert-cre', palette=[colors['wt'], colors['sert']],
+             ci=68, legend=None)
+ax2.set(xlabel='Time (s)', ylabel='Canonical correlation (r)', xticks=[-1, 0, 1, 2, 3],
+        title='M2 vs ORB')
+
+plt.tight_layout()
+sns.despine(trim=True)
+plt.savefig(join(fig_path, 'CCA_M2_mPFC_ORB_v2.pdf'))
+
+
+
+"""
 colors, dpi = figure_style()
 f, ax1 = plt.subplots(1, 1, figsize=(1.75, 1.75), dpi=dpi)
 ax1.add_patch(Rectangle((0, 0), 1, 0.6, color='royalblue', alpha=0.25, lw=0))
@@ -65,3 +92,4 @@ leg.get_frame().set_linewidth(0.0)
 plt.tight_layout()
 sns.despine(trim=True)
 plt.savefig(join(fig_path, 'CCA_M2_mPFC_ORB.pdf'))
+"""

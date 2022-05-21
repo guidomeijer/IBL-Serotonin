@@ -17,7 +17,7 @@ from serotonin_functions import (paths, remap, query_ephys_sessions, load_passiv
 from one.api import ONE
 from ibllib.atlas import AllenAtlas
 ba = AllenAtlas()
-one = ONE(mode='remote')
+one = ONE()
 
 # Settings
 OVERWRITE = False
@@ -64,7 +64,8 @@ for i in rec.index.values:
         sl = SpikeSortingLoader(pid=pid, one=one, atlas=ba)
         spikes, clusters, channels = sl.load_spike_sorting()
         clusters = sl.merge_clusters(spikes, clusters, channels)
-    except:
+    except Exception as err:
+        print(err)
         continue
 
     if 'acronym' not in clusters.keys():

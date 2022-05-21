@@ -39,24 +39,24 @@ SUBJECT = 'ZFM-01802'
 DATE = '2021-03-09'
 PROBE = 'probe00'
 NEURON = 349
-
+"""
 SUBJECT = 'ZFM-02600'
 DATE = '2021-08-25'
 PROBE = 'probe00'
 NEURON = 442
-
+"""
 SUBJECT = 'ZFM-01802'
 DATE = '2021-03-11'
 PROBE = 'probe00'
 NEURON = 181
-"""
+
 # good example complex modulation
 SUBJECT = 'ZFM-01802'
 DATE = '2021-03-11'
 PROBE = 'probe00'
 NEURON = 207
 
-"""
+
 # Good example thalamus
 SUBJECT = 'ZFM-01802'
 DATE = '2021-03-09'
@@ -152,7 +152,7 @@ ax.yaxis.set_major_formatter(FormatStrFormatter('%.0f'))
 ax.yaxis.set_label_coords(-.2, .75)
 
 plt.tight_layout()
-plt.savefig(join(fig_path,  f'figure4_psth_{region}_{SUBJECT}_{DATE}_{PROBE}_neuron{NEURON}.pdf'))
+plt.savefig(join(fig_path,  f'supp_figure1_psth_{region}_{SUBJECT}_{DATE}_{PROBE}_neuron{NEURON}.pdf'))
 
 p, ax_mod = plt.subplots(1, 1, figsize=(1.75, 1.75), dpi=dpi)
 ax_mod.plot(dRate['vecT'], dRate['vecRate'])
@@ -163,7 +163,7 @@ ax_mod.set(xlabel='Time from stim. onset (s)', ylabel='Inst. spiking rate (spks/
            xlim=[0, .4], ylim=[0, 80])
 sns.despine(trim=True)
 plt.tight_layout()
-plt.savefig(join(fig_path, f'figure4_inst_{region}_{SUBJECT}_{DATE}_{PROBE}_neuron{NEURON}.pdf'))
+plt.savefig(join(fig_path, f'supp_figure1_inst_{region}_{SUBJECT}_{DATE}_{PROBE}_neuron{NEURON}.pdf'))
 
 
 
