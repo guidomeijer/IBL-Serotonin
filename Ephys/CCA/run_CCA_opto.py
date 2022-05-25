@@ -9,16 +9,14 @@ import numpy as np
 from os.path import join
 import pandas as pd
 from scipy.stats import pearsonr
-from scipy.signal import convolve, gaussian
+from scipy.signal import gaussian
 from sklearn.cross_decomposition import CCA
 from sklearn.decomposition import PCA
 from sklearn.model_selection import LeaveOneOut, KFold
 from brainbox.metrics.single_units import spike_sorting_metrics
 from brainbox.io.one import SpikeSortingLoader
-import matplotlib.pyplot as plt
-import seaborn as sns
 from serotonin_functions import (paths, remap, query_ephys_sessions, load_passive_opto_times,
-                                 get_artifact_neurons, figure_style, calculate_peths)
+                                 get_artifact_neurons, calculate_peths)
 from one.api import ONE
 from ibllib.atlas import AllenAtlas
 ba = AllenAtlas()
@@ -27,6 +25,8 @@ cca = CCA(n_components=1, max_iter=1000)
 pca = PCA(n_components=10)
 
 # Settings
+REGION_PAIRS = [['M2', 'mPFC'], ['M2', 'ORB'], ['mPFC', 'Amyg'], ['ORB', 'Amyg'], ['M2', 'Amyg'],
+                ['Hipp', 'PPC'], ['Hipp', 'Thal'], ['ORB', 'mPFC'], ['PPC', 'Thal']]
 NEURON_QC = True  # whether to use neuron qc to exclude bad units
 MIN_NEURONS = 10  # minimum neurons per region
 N_PERMUT = 2  # number of times to get spontaneous population correlation for permutation testing
@@ -35,7 +35,7 @@ PRE_TIME = 1  # time before stim onset in s
 POST_TIME = 3  # time after stim onset in s
 SMOOTHING = 0.1  # smoothing of psth
 SUBTRACT_MEAN = True  # whether to subtract the mean PSTH from each trial
-CROSS_VAL = 'k-fold'  # None, k-fold or leave-one-out
+CROSS_VAL = 'odd-even'  # None, k-fold or leave-one-out
 K_FOLD = 2  # k in k-fold
 K_FOLD_SHUFFLE = True  # whether to use a random subset of trials for fitting and testing
 K_FOLD_BOOTSTRAPS = 100  # how often to repeat the random trial selection
@@ -110,7 +110,7 @@ for i, eid in enumerate(np.unique(rec['eid'])):
     # Create population activity arrays for all regions
     pca_opto = dict()
     for probe in spikes.keys():
-        for region in np.unique(clusters[probe]['region']):
+        for region in np.unique(REGION_PAIRS):
 
              # Exclude neurons with low firing rates
              clusters_in_region = np.where(clusters[probe]['region'] == region)[0]
@@ -162,7 +162,7 @@ for i, eid in enumerate(np.unique(rec['eid'])):
                 if CROSS_VAL is None:
                     opto_x, opto_y = cca.fit_transform(pca_opto[region_1][:, :, tb],
                                                        pca_opto[region_2][:, :, tb])
-                    _, r_opto[tb] = pearsonr(opto_x.T[0], opto_y.T[0])
+                    r_opto[tb], _ = pearsonr(opto_x.T[0], opto_y.T[0])
                 elif CROSS_VAL == 'k-fold':
                     r_splits = []
                     for kk in range(K_FOLD_BOOTSTRAPS):
@@ -171,9 +171,29 @@ for i, eid in enumerate(np.unique(rec['eid'])):
                                     pca_opto[region_2][train_index, :, tb])
                             x, y = cca.transform(pca_opto[region_1][test_index, :, tb],
                                                  pca_opto[region_2][test_index, :, tb])
-                            r_splits.append(pearsonr(x.T[0], y.T[0])[1])
+                            r_splits.append(pearsonr(x.T[0], y.T[0])[0])
                     r_opto_bootstrap[:, tb] = r_splits
                     r_opto[tb] = np.median(r_splits)
+                    
+                elif CROSS_VAL == 'odd-even':
+                    r_splits = []
+                    even_ind = np.arange(0, pca_opto[region_1][:, :, 0].shape[0], 2).astype(int)
+                    odd_ind = np.arange(1, pca_opto[region_1][:, :, 0].shape[0], 2).astype(int)
+                    
+                    # Fit on the even trials and correlate the odd trials
+                    cca.fit(pca_opto[region_1][even_ind, :, tb],
+                            pca_opto[region_2][even_ind, :, tb])
+                    x, y = cca.transform(pca_opto[region_1][odd_ind, :, tb],
+                                         pca_opto[region_2][odd_ind, :, tb])
+                    r_splits.append(pearsonr(x.T[0], y.T[0])[0])
+                    
+                    # Fit on the odd trials and correlate the even trials
+                    cca.fit(pca_opto[region_1][odd_ind, :, tb],
+                            pca_opto[region_2][odd_ind, :, tb])
+                    x, y = cca.transform(pca_opto[region_1][even_ind, :, tb],
+                                         pca_opto[region_2][even_ind, :, tb])
+                    r_splits.append(pearsonr(x.T[0], y.T[0])[0])
+                    r_opto[tb] = np.mean(r_splits)
 
                 elif CROSS_VAL == 'leave-one-out':
                     for train_index, test_index in lio.split(pca_opto[region_1][:, :, tb]):
@@ -195,5 +215,5 @@ for i, eid in enumerate(np.unique(rec['eid'])):
                 'time': psth_opto['tscale']})), ignore_index=True)
 
         # Save results
-        cca_df.to_csv(join(save_path, 'cca_results_all.csv'))
+        cca_df.to_csv(join(save_path, 'cca_results.csv'))
 

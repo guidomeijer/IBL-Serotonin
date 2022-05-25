@@ -18,7 +18,7 @@ fig_path, save_path = paths()
 fig_path = join(fig_path, 'Ephys', 'CCA', 'RegionPairs')
 
 # Load in data
-cca_df = pd.read_csv(join(save_path, 'cca_results_all.csv'))
+cca_df = pd.read_csv(join(save_path, 'cca_results.csv'))
 
 # Add expression
 subjects = load_subjects()
