@@ -20,7 +20,7 @@ from serotonin_functions import (paths, remap, query_ephys_sessions, load_passiv
 from one.api import ONE
 from ibllib.atlas import AllenAtlas
 ba = AllenAtlas()
-one = ONE(mode='local')
+one = ONE()
 cca = CCA(n_components=1, max_iter=1000)
 pca = PCA(n_components=10)
 
@@ -28,11 +28,12 @@ pca = PCA(n_components=10)
 OVERWRITE = True  # whether to overwrite existing runs
 NEURON_QC = True  # whether to use neuron qc to exclude bad units
 MIN_NEURONS = 10  # minimum neurons per region
-WIN_SIZE = 0.05  # window size in seconds
+WIN_SIZE = 0.01  # window size in seconds
 PRE_TIME = 1.25  # time before stim onset in s
 POST_TIME = 2.25  # time after stim onset in s
-SMOOTHING = 0.1  # smoothing of psth
-SUBTRACT_MEAN = False  # whether to subtract the mean PSTH from each trial
+SMOOTHING = 0.025  # smoothing of psth
+SUBTRACT_MEAN = True  # whether to subtract the mean PSTH from each trial
+DIV_BASELINE = False  # whether to divide over baseline + 1 spk/s
 CROSS_VAL = 'odd-even'  # None, odd-even, k-fold or leave-one-out
 K_FOLD = 2  # k in k-fold
 K_FOLD_SHUFFLE = True  # whether to use a random subset of trials for fitting and testing
@@ -111,7 +112,7 @@ for i, eid in enumerate(np.unique(rec['eid'])):
         clusters[probe]['region'] = remap(clusters[probe]['acronym'], combine=True, abbreviate=True)
 
     # Create population activity arrays for all regions
-    pca_opto = dict()
+    pca_opto, spks_opto = dict(), dict()
     for probe in spikes.keys():
         for region in np.unique(REGION_PAIRS):
 
@@ -135,11 +136,22 @@ for i, eid in enumerate(np.unique(rec['eid'])):
                 psth_opto, binned_spks_opto = calculate_peths(
                     spks_region, clus_region, np.unique(clus_region), opto_train_times, pre_time=PRE_TIME,
                     post_time=POST_TIME, bin_size=WIN_SIZE, smoothing=SMOOTHING, return_fr=False)
-
+                
+                if DIV_BASELINE:
+                    # Divide each trial over baseline + 1 spks/s
+                    for nn in range(binned_spks_opto.shape[1]):
+                        for tt in range(binned_spks_opto.shape[0]):
+                            binned_spks_opto[tt, nn, :] = (binned_spks_opto[tt, nn, :]
+                                                          / (np.median(psth_opto['means'][nn, psth_opto['tscale'] < 0])
+                                                             + (1/PRE_TIME)))
+                
                 if SUBTRACT_MEAN:
                     # Subtract mean PSTH from each opto stim
                     for tt in range(binned_spks_opto.shape[0]):
                         binned_spks_opto[tt, :, :] = binned_spks_opto[tt, :, :] - psth_opto['means']
+                
+                # Add to dict
+                spks_opto[region] = binned_spks_opto
 
                 # Perform PCA
                 pca_opto[region] = np.empty([binned_spks_opto.shape[0], N_PC, binned_spks_opto.shape[2]])
@@ -163,6 +175,7 @@ for i, eid in enumerate(np.unique(rec['eid'])):
 
             # Run CCA per combination of two timebins
             r_opto = np.empty((n_time_bins, n_time_bins))
+            p_opto = np.empty((n_time_bins, n_time_bins))
             for tb_1 in range(n_time_bins):
                 for tb_2 in range(n_time_bins):
                     opto_x = np.empty(pca_opto[region_1][:, :, 0].shape[0])
@@ -181,26 +194,28 @@ for i, eid in enumerate(np.unique(rec['eid'])):
                                 pca_opto[region_2][even_ind, :, tb_2])
                         x, y = cca.transform(pca_opto[region_1][odd_ind, :, tb_1],
                                              pca_opto[region_2][odd_ind, :, tb_2])
-                        r_splits.append(pearsonr(x.T[0], y.T[0])[1])
+                        r_splits.append(pearsonr(x.T[0], y.T[0])[0])
                         
                         # Fit on the odd trials and correlate the even trials
                         cca.fit(pca_opto[region_1][odd_ind, :, tb_1],
                                 pca_opto[region_2][odd_ind, :, tb_2])
                         x, y = cca.transform(pca_opto[region_1][even_ind, :, tb_1],
                                              pca_opto[region_2][even_ind, :, tb_2])
-                        r_splits.append(pearsonr(x.T[0], y.T[0])[1])
+                        r_splits.append(pearsonr(x.T[0], y.T[0])[0])
                         r_opto[tb_1, tb_2] = np.mean(r_splits)
                     
                     elif CROSS_VAL == 'k-fold':
-                        r_splits = []
+                        r_splits, p_splits = [], []
                         for kk in range(K_FOLD_BOOTSTRAPS):
                             for train_index, test_index in kfold.split(pca_opto[region_1][:, :, 0]):
                                 cca.fit(pca_opto[region_1][train_index, :, tb_1],
                                         pca_opto[region_2][train_index, :, tb_2])
                                 x, y = cca.transform(pca_opto[region_1][test_index, :, tb_1],
                                                      pca_opto[region_2][test_index, :, tb_2])
-                                r_splits.append(pearsonr(x.T[0], y.T[0])[1])
+                                r_splits.append(pearsonr(x.T[0], y.T[0])[0])
+                                p_splits.append(pearsonr(x.T[0], y.T[0])[1])
                         r_opto[tb_1, tb_2] = np.median(r_splits)
+                        p_opto[tb_1, tb_2] = np.median(p_splits)
 
                     elif CROSS_VAL == 'leave-one-out':
                         for train_index, test_index in lio.split(pca_opto[region_1][:, :, tb]):
@@ -211,7 +226,6 @@ for i, eid in enumerate(np.unique(rec['eid'])):
                             opto_x[test_index] = x.T
                             opto_y[test_index] = y.T
                         r_opto[tb_1, tb_2], _ = pearsonr(opto_x, opto_y)
-
             asd
             # Add to dataframe
             cca_df = pd.concat((cca_df, pd.DataFrame(index=[cca_df.shape[0]], data={
