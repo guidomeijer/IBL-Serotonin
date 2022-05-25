@@ -28,10 +28,10 @@ pca = PCA(n_components=10)
 OVERWRITE = True  # whether to overwrite existing runs
 NEURON_QC = True  # whether to use neuron qc to exclude bad units
 MIN_NEURONS = 10  # minimum neurons per region
-WIN_SIZE = 0.01  # window size in seconds
+WIN_SIZE = 0.05  # window size in seconds
 PRE_TIME = 1.25  # time before stim onset in s
 POST_TIME = 2.25  # time after stim onset in s
-SMOOTHING = 0.025  # smoothing of psth
+SMOOTHING = 0.1  # smoothing of psth
 SUBTRACT_MEAN = True  # whether to subtract the mean PSTH from each trial
 DIV_BASELINE = False  # whether to divide over baseline + 1 spk/s
 CROSS_VAL = 'odd-even'  # None, odd-even, k-fold or leave-one-out
@@ -136,7 +136,7 @@ for i, eid in enumerate(np.unique(rec['eid'])):
                 psth_opto, binned_spks_opto = calculate_peths(
                     spks_region, clus_region, np.unique(clus_region), opto_train_times, pre_time=PRE_TIME,
                     post_time=POST_TIME, bin_size=WIN_SIZE, smoothing=SMOOTHING, return_fr=False)
-                
+
                 if DIV_BASELINE:
                     # Divide each trial over baseline + 1 spks/s
                     for nn in range(binned_spks_opto.shape[1]):
@@ -144,12 +144,12 @@ for i, eid in enumerate(np.unique(rec['eid'])):
                             binned_spks_opto[tt, nn, :] = (binned_spks_opto[tt, nn, :]
                                                           / (np.median(psth_opto['means'][nn, psth_opto['tscale'] < 0])
                                                              + (1/PRE_TIME)))
-                
+
                 if SUBTRACT_MEAN:
                     # Subtract mean PSTH from each opto stim
                     for tt in range(binned_spks_opto.shape[0]):
                         binned_spks_opto[tt, :, :] = binned_spks_opto[tt, :, :] - psth_opto['means']
-                
+
                 # Add to dict
                 spks_opto[region] = binned_spks_opto
 
@@ -188,14 +188,14 @@ for i, eid in enumerate(np.unique(rec['eid'])):
                         r_splits = []
                         even_ind = np.arange(0, pca_opto[region_1][:, :, 0].shape[0], 2).astype(int)
                         odd_ind = np.arange(1, pca_opto[region_1][:, :, 0].shape[0], 2).astype(int)
-                        
+
                         # Fit on the even trials and correlate the odd trials
                         cca.fit(pca_opto[region_1][even_ind, :, tb_1],
                                 pca_opto[region_2][even_ind, :, tb_2])
                         x, y = cca.transform(pca_opto[region_1][odd_ind, :, tb_1],
                                              pca_opto[region_2][odd_ind, :, tb_2])
                         r_splits.append(pearsonr(x.T[0], y.T[0])[0])
-                        
+
                         # Fit on the odd trials and correlate the even trials
                         cca.fit(pca_opto[region_1][odd_ind, :, tb_1],
                                 pca_opto[region_2][odd_ind, :, tb_2])
@@ -203,7 +203,7 @@ for i, eid in enumerate(np.unique(rec['eid'])):
                                              pca_opto[region_2][even_ind, :, tb_2])
                         r_splits.append(pearsonr(x.T[0], y.T[0])[0])
                         r_opto[tb_1, tb_2] = np.mean(r_splits)
-                    
+
                     elif CROSS_VAL == 'k-fold':
                         r_splits, p_splits = [], []
                         for kk in range(K_FOLD_BOOTSTRAPS):
@@ -226,7 +226,7 @@ for i, eid in enumerate(np.unique(rec['eid'])):
                             opto_x[test_index] = x.T
                             opto_y[test_index] = y.T
                         r_opto[tb_1, tb_2], _ = pearsonr(opto_x, opto_y)
-            
+
             # Add to dataframe
             cca_df = pd.concat((cca_df, pd.DataFrame(index=[cca_df.shape[0]], data={
                 'subject': subject, 'date': date, 'eid': eid, 'region_1': region_1, 'region_2': region_2,
