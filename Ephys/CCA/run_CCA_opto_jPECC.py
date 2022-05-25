@@ -226,10 +226,10 @@ for i, eid in enumerate(np.unique(rec['eid'])):
                             opto_x[test_index] = x.T
                             opto_y[test_index] = y.T
                         r_opto[tb_1, tb_2], _ = pearsonr(opto_x, opto_y)
-            asd
+            
             # Add to dataframe
             cca_df = pd.concat((cca_df, pd.DataFrame(index=[cca_df.shape[0]], data={
                 'subject': subject, 'date': date, 'eid': eid, 'region_1': region_1, 'region_2': region_2,
-                'region_pair': f'{region_1}-{region_2}', 'r_opto': [r_opto],
+                'region_pair': f'{region_1}-{region_2}', 'r_opto': [r_opto], 'p_opto': [p_opto],
                 'time': [psth_opto['tscale']]})))
-    #cca_df.to_pickle(join(save_path, 'jPECC.pickle'))
+    cca_df.to_pickle(join(save_path, 'jPECC.pickle'))
