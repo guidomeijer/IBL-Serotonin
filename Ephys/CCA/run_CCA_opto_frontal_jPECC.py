@@ -20,7 +20,7 @@ from serotonin_functions import (paths, remap, query_ephys_sessions, load_passiv
 from one.api import ONE
 from ibllib.atlas import AllenAtlas
 ba = AllenAtlas()
-one = ONE(mode='local')
+one = ONE()
 cca = CCA(n_components=1, max_iter=1000)
 pca = PCA(n_components=10)
 

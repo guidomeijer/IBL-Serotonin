@@ -20,20 +20,20 @@ from serotonin_functions import (paths, remap, query_ephys_sessions, load_passiv
 from one.api import ONE
 from ibllib.atlas import AllenAtlas
 ba = AllenAtlas()
-one = ONE()
+one = ONE(mode='local')
 cca = CCA(n_components=1, max_iter=1000)
 pca = PCA(n_components=10)
 
 # Settings
-OVERWRITE = False  # whether to overwrite existing runs
+OVERWRITE = True  # whether to overwrite existing runs
 NEURON_QC = True  # whether to use neuron qc to exclude bad units
 MIN_NEURONS = 10  # minimum neurons per region
 WIN_SIZE = 0.05  # window size in seconds
 PRE_TIME = 1.25  # time before stim onset in s
 POST_TIME = 2.25  # time after stim onset in s
 SMOOTHING = 0.1  # smoothing of psth
-SUBTRACT_MEAN = True  # whether to subtract the mean PSTH from each trial
-CROSS_VAL = 'k-fold'  # None, k-fold or leave-one-out
+SUBTRACT_MEAN = False  # whether to subtract the mean PSTH from each trial
+CROSS_VAL = 'odd-even'  # None, odd-even, k-fold or leave-one-out
 K_FOLD = 2  # k in k-fold
 K_FOLD_SHUFFLE = True  # whether to use a random subset of trials for fitting and testing
 K_FOLD_BOOTSTRAPS = 50  # how often to repeat the random trial selection
@@ -171,6 +171,26 @@ for i, eid in enumerate(np.unique(rec['eid'])):
                         opto_x, opto_y = cca.fit_transform(pca_opto[region_1][:, :, tb_1],
                                                            pca_opto[region_2][:, :, tb_2])
                         _, r_opto[tb_1, tb_2] = pearsonr(opto_x.T[0], opto_y.T[0])
+                    elif CROSS_VAL == 'odd-even':
+                        r_splits = []
+                        even_ind = np.arange(0, pca_opto[region_1][:, :, 0].shape[0], 2).astype(int)
+                        odd_ind = np.arange(1, pca_opto[region_1][:, :, 0].shape[0], 2).astype(int)
+                        
+                        # Fit on the even trials and correlate the odd trials
+                        cca.fit(pca_opto[region_1][even_ind, :, tb_1],
+                                pca_opto[region_2][even_ind, :, tb_2])
+                        x, y = cca.transform(pca_opto[region_1][odd_ind, :, tb_1],
+                                             pca_opto[region_2][odd_ind, :, tb_2])
+                        r_splits.append(pearsonr(x.T[0], y.T[0])[1])
+                        
+                        # Fit on the odd trials and correlate the even trials
+                        cca.fit(pca_opto[region_1][odd_ind, :, tb_1],
+                                pca_opto[region_2][odd_ind, :, tb_2])
+                        x, y = cca.transform(pca_opto[region_1][even_ind, :, tb_1],
+                                             pca_opto[region_2][even_ind, :, tb_2])
+                        r_splits.append(pearsonr(x.T[0], y.T[0])[1])
+                        r_opto[tb_1, tb_2] = np.mean(r_splits)
+                    
                     elif CROSS_VAL == 'k-fold':
                         r_splits = []
                         for kk in range(K_FOLD_BOOTSTRAPS):
@@ -192,10 +212,10 @@ for i, eid in enumerate(np.unique(rec['eid'])):
                             opto_y[test_index] = y.T
                         r_opto[tb_1, tb_2], _ = pearsonr(opto_x, opto_y)
 
-
+            asd
             # Add to dataframe
             cca_df = pd.concat((cca_df, pd.DataFrame(index=[cca_df.shape[0]], data={
                 'subject': subject, 'date': date, 'eid': eid, 'region_1': region_1, 'region_2': region_2,
                 'region_pair': f'{region_1}-{region_2}', 'r_opto': [r_opto],
                 'time': [psth_opto['tscale']]})))
-    cca_df.to_pickle(join(save_path, 'jPECC.pickle'))
+    #cca_df.to_pickle(join(save_path, 'jPECC.pickle'))
