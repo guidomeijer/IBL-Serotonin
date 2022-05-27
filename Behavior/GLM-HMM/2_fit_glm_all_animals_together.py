@@ -25,7 +25,7 @@ if not os.path.exists(results_dir):
     os.makedirs(results_dir)
 
 # Fit GLM to all data
-animal_file = data_dir + 'all_animals_concat.npz'
+animal_file = join(data_dir, 'all_animals_concat.npz')
 inpt, y, session = load_data(animal_file)
 session_fold_lookup_table = load_session_fold_lookup(
     join(data_dir,'all_animals_concat_session_fold_lookup.npz'))

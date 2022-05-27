@@ -15,7 +15,7 @@ from serotonin_functions import paths, load_subjects, figure_style
 
 # Settings
 asy_tb = 6
-DIAGONALS = 1
+DIAGONALS = 3
 REGION_PAIRS = ['M2-mPFC', 'M2-ORB', 'mPFC-Amyg', 'ORB-Amyg']
 
 # Paths

@@ -328,7 +328,9 @@ def fit_glm_hmm(datas, inputs, masks, K, D, M, C, N_em_iters,
                        num_iters=N_em_iters,
                        initialize=False,
                        tolerance=10 ** -4)
-    return this_hmm.params, lls
+    # Save raw parameters of HMM, as well as loglikelihood during training
+    np.savez(save_title, this_hmm.params, lls)
+    return None
 
 
 def launch_glm_hmm_job(inpt, y, session, mask, session_fold_lookup_table, K, D,

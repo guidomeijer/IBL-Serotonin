@@ -20,7 +20,7 @@ one = ONE()
 # Settings
 RT_CUTOFF = 0.5
 PLOT_SINGLE_ANIMALS = True
-_, fig_path, _ = paths()
+fig_path, _ = paths()
 fig_path = join(fig_path, 'Behavior', 'Psychometrics')
 subjects = load_subjects(behavior=True)
 
