@@ -15,7 +15,7 @@ from serotonin_functions import paths, load_subjects, figure_style
 
 # Settings
 asy_tb = 6
-DIAGONALS = 3
+DIAGONALS = 1
 REGION_PAIRS = ['M2-mPFC', 'M2-ORB', 'mPFC-Amyg', 'ORB-Amyg']
 
 # Paths
@@ -35,7 +35,7 @@ jpecc_df = jpecc_df[jpecc_df['sert-cre'] == 1]
 
 # Get time axis
 time_ax = jpecc_df['time'].mean()
-time_asy = time_ax[asy_tb:-asy_tb]
+time_asy = time_ax[asy_tb:-asy_tb] + ((asy_tb / 2) * np.mean(np.diff(time_ax)))
 
 # Get 3D array of all jPECC
 jPECC, asym, diag_df = dict(), dict(), pd.DataFrame()
@@ -46,9 +46,10 @@ for i, rp in enumerate(REGION_PAIRS):
     asym[rp] = np.empty((jPECC[rp].shape[2], jPECC[rp].shape[0] - (asy_tb*2)))
     for jj in range(jPECC[rp].shape[2]):
         for ii, kk in enumerate(range(asy_tb, jPECC[rp].shape[0] - asy_tb)):
-            arr_slice = jPECC[rp][kk - asy_tb : kk + asy_tb, kk, jj]
-            asym[rp][jj, ii] = np.mean(arr_slice[:-asy_tb]) - np.mean(arr_slice[asy_tb:])
-            
+            arr_slice = jPECC[rp][kk - asy_tb : kk + asy_tb, kk - asy_tb : kk + asy_tb, jj]
+            asym[rp][jj, ii] = (np.median(arr_slice[np.triu_indices(arr_slice.shape[0], k=1)])
+                                 - np.median(arr_slice[np.tril_indices(arr_slice.shape[0], k=-1)]))
+
     # Take diagonal lines (collapse over both time axes and take average)
     # Trigger warning: this is extremely ugly code
     for jj in range(jPECC[rp].shape[2]):
@@ -167,7 +168,7 @@ ax1.fill_between(time_asy,
 leg = ax1.legend(prop={'size': 5}, frameon=True, loc='lower left')
 leg.get_frame().set_linewidth(0)
 ax1.set(ylabel='jPECC asymmetry', xlabel='Time from stim. onset (s)', title='Medial prefrontal cortex',
-        ylim=[-0.5, 0.5], xlim=[-1, 2], yticks=np.arange(-0.5, 0.51, 0.25))
+        ylim=[-0.3, 0.3], xlim=[-1, 2], yticks=np.arange(-0.3, 0.31, 0.15))
 
 ax2.add_patch(Rectangle((0, -1), 1, 3, color='royalblue', alpha=0.25, lw=0))
 ax2.plot([-1, 2], [0, 0], ls='--', color='grey')
@@ -184,7 +185,7 @@ ax2.fill_between(time_asy,
 leg = ax2.legend(prop={'size': 5}, frameon=True, loc='lower left')
 leg.get_frame().set_linewidth(0)
 ax2.set(ylabel='jPECC asymmetry', xlabel='Time from stim. onset (s)', title='Orbitofrontal cortex',
-        ylim=[-0.5, 0.5], xlim=[-1, 2], yticks=np.arange(-0.5, 0.51, 0.25))
+        ylim=[-0.3, 0.3], xlim=[-1, 2], yticks=np.arange(-0.3, 0.31, 0.15))
 
 plt.tight_layout()
 sns.despine(trim=True)

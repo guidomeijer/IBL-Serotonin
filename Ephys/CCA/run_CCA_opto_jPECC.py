@@ -28,10 +28,10 @@ pca = PCA(n_components=10)
 OVERWRITE = True  # whether to overwrite existing runs
 NEURON_QC = True  # whether to use neuron qc to exclude bad units
 MIN_NEURONS = 10  # minimum neurons per region
-WIN_SIZE = 0.05  # window size in seconds
+WIN_SIZE = 0.01  # window size in seconds
 PRE_TIME = 1.25  # time before stim onset in s
 POST_TIME = 3.25  # time after stim onset in s
-SMOOTHING = 0.1  # smoothing of psth
+SMOOTHING = 0.025  # smoothing of psth
 SUBTRACT_MEAN = True  # whether to subtract the mean PSTH from each trial
 DIV_BASELINE = False  # whether to divide over baseline + 1 spk/s
 CROSS_VAL = 'odd-even'  # None, odd-even, k-fold or leave-one-out
@@ -232,4 +232,7 @@ for i, eid in enumerate(np.unique(rec['eid'])):
                 'subject': subject, 'date': date, 'eid': eid, 'region_1': region_1, 'region_2': region_2,
                 'region_pair': f'{region_1}-{region_2}', 'r_opto': [r_opto], 'p_opto': [p_opto],
                 'time': [psth_opto['tscale']]})))
-    cca_df.to_pickle(join(save_path, 'jPECC.pickle'))
+
+# Save result
+cca_df.to_pickle(join(save_path, 'jPECC.pickle'))
+print('Results saved to disk')

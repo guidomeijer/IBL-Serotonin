@@ -46,8 +46,9 @@ for i, rp in enumerate(REGION_PAIRS):
     asym[rp] = np.empty((jPECC[rp].shape[2], jPECC[rp].shape[0] - (asy_tb*2)))
     for jj in range(jPECC[rp].shape[2]):
         for ii, kk in enumerate(range(asy_tb, jPECC[rp].shape[0] - asy_tb)):
-            arr_slice = jPECC[rp][kk - asy_tb : kk + asy_tb, kk, jj]
-            asym[rp][jj, ii] = np.median(arr_slice[:-asy_tb]) - np.median(arr_slice[asy_tb:])
+            arr_slice = jPECC[rp][kk - asy_tb : kk + asy_tb, kk - asy_tb : kk + asy_tb, jj]
+            asym[rp][jj, ii] = (np.median(arr_slice[np.triu_indices(arr_slice.shape[0], k=1)])
+                                 - np.median(arr_slice[np.tril_indices(arr_slice.shape[0], k=-1)]))
 
     # Take diagonal lines (collapse over both time axes and take average)
     # Trigger warning: this is extremely ugly code
