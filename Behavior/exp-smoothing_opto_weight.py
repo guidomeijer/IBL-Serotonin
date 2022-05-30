@@ -24,7 +24,7 @@ one = ONE()
 PRE_TRIALS = 5
 POST_TRIALS = 20
 PLOT_EXAMPLES = True
-REMOVE_OLD_FIT = False
+REMOVE_OLD_FIT = True
 POSTERIOR = 'posterior_mean'
 STIM = 'block'
 fig_path, save_path = paths()
@@ -38,7 +38,7 @@ for i, nickname in enumerate(subjects['subject']):
 
     # Query sessions
     eids = query_opto_sessions(nickname, one=one)
-    eids = behavioral_criterion(eids, one=one)
+    #eids = behavioral_criterion(eids, one=one)
     if len(eids) == 0:
         continue
     if len(eids) > 10:
@@ -60,11 +60,12 @@ for i, nickname in enumerate(subjects['subject']):
     priors_prevaction = model.compute_signal(signal='prior', act=actions, stim=stimuli, side=stim_side)['prior']
 
     # Add to df
-    results_df = results_df.append(pd.DataFrame(data={'tau_pa': [1/param_prevaction[0], 1/param_prevaction[1]],
-                                                      'weight_pa': [param_prevaction[2], param_prevaction[3]],
-                                                      'opto_stim': ['no stim', 'stim'],
-                                                      'sert-cre': subjects.loc[i, 'sert-cre'],
-                                                      'subject': nickname}))
+    results_df = pd.concat((results_df, pd.DataFrame(data={
+        'tau_pa': [1/param_prevaction[0], 1/param_prevaction[1]],
+        'weight_pa': [param_prevaction[2], param_prevaction[3]],
+        'opto_stim': ['no stim', 'stim'],
+        'sert-cre': subjects.loc[i, 'sert-cre'],
+        'subject': nickname})))
 
     # Add prior around block switches
     for k in range(len(priors_prevaction)):

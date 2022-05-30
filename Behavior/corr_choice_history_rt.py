@@ -22,7 +22,7 @@ REWARD_WIN = 10  # trials
 CHOICE_WIN = 5  # trials
 MIN_TRIALS = 5  # for estimating reward bias
 subjects = load_subjects(behavior=True)
-_, fig_path, save_path = paths()
+fig_path, save_path = paths()
 fig_path = join(fig_path, 'Behavior', 'ModelAgnostic')
 
 results_df = pd.DataFrame()
@@ -31,7 +31,7 @@ for i, nickname in enumerate(subjects['subject']):
 
     # Query sessions
     eids = query_opto_sessions(nickname, one=one)
-    eids = behavioral_criterion(eids, one=one)
+    #eids = behavioral_criterion(eids, one=one)
 
     # Get trials DataFrame
     for j, eid in enumerate(eids):
