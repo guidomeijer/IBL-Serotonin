@@ -22,7 +22,7 @@ RT_CUTOFF = 0.5
 REWARD_WIN = 10  # trials
 MIN_TRIALS = 3  # for estimating reward bias
 subjects = load_subjects(behavior=True)
-_, fig_path, save_path = paths()
+fig_path, save_path = paths()
 fig_path = join(fig_path, 'Behavior', 'ModelAgnostic')
 
 results_df = pd.DataFrame()

@@ -31,7 +31,7 @@ for i, nickname in enumerate(subjects['subject']):
 
     # Query sessions
     eids = query_opto_sessions(nickname, one=one)
-    #eids = behavioral_criterion(eids, one=one)
+    eids = behavioral_criterion(eids, one=one)
 
     # Get trials DataFrame
     for j, eid in enumerate(eids):

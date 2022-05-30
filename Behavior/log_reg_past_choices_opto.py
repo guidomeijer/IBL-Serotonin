@@ -64,6 +64,9 @@ for i, nickname in enumerate(subjects['subject']):
         # Add to trial dataframe
         all_trials = pd.concat((all_trials, trials), ignore_index=True)
 
+    if all_trials.shape[0] < 100:
+        continue
+
     # Fit logistic regression
     """
     trials_slice = all_trials.loc[~all_trials['past_choices_opto'].isnull()]

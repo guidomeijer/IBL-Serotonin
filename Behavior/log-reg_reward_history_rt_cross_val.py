@@ -20,12 +20,12 @@ one = ONE()
 log_reg = LogisticRegression(penalty='none', random_state=42)
 
 # Settings
-RT_CUTOFF = 0.4
+RT_CUTOFF = 0.5
 REWARD_WIN = 10  # trials
 MIN_TRIALS = 5  # for estimating reward bias
 K_FOLD = 5
 subjects = load_subjects(behavior=True)
-_, fig_path, save_path = paths()
+fig_path, save_path = paths()
 fig_path = join(fig_path, 'Behavior', 'ModelAgnostic')
 
 results_df = pd.DataFrame()
@@ -73,6 +73,9 @@ for i, nickname in enumerate(subjects['subject']):
 
         # Add to trial dataframe
         all_trials = all_trials.append(trials, ignore_index=True)
+
+    if all_trials.shape[0] < 100:
+        continue
 
     # Predict choices with logistic regression
     rew_bias_opto = all_trials.loc[~all_trials['rew_bias_opto'].isnull()

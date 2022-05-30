@@ -20,10 +20,10 @@ reg = LinearRegression()
 
 # Settings
 RT_CUTOFF = 0.5
-REWARD_WIN = 15  # trials
-MIN_TRIALS = 8  # for estimating reward bias
+REWARD_WIN = 10  # trials
+MIN_TRIALS = 5  # for estimating reward bias
 subjects = load_subjects(behavior=True)
-_, fig_path, save_path = paths()
+fig_path, save_path = paths()
 fig_path = join(fig_path, 'Behavior', 'ModelAgnostic')
 
 results_df = pd.DataFrame()
@@ -139,5 +139,5 @@ ax4.get_legend().remove()
 
 plt.tight_layout(pad=3)
 sns.despine(trim=True)
-plt.savefig(join(fig_path, 'linear_regression_reward_history_{REWARD_WIN}_trials'), dpi=300)
+plt.savefig(join(fig_path, f'linear_regression_reward_history_{REWARD_WIN}_trials'), dpi=300)
 

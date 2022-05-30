@@ -17,7 +17,7 @@ from one.api import ONE
 one = ONE()
 
 # Settings
-TRIALS_AFTER_SWITCH = 5
+TRIALS_AFTER_SWITCH = 6
 REWARD_WIN = 10  # trials
 CHOICE_WIN = 5  # trials
 MIN_TRIALS = 5  # for estimating reward bias
@@ -31,7 +31,7 @@ for i, nickname in enumerate(subjects['subject']):
 
     # Query sessions
     eids = query_opto_sessions(nickname, one=one)
-    #eids = behavioral_criterion(eids, one=one)
+    eids = behavioral_criterion(eids, one=one)
 
     # Get trials DataFrame
     for j, eid in enumerate(eids):
