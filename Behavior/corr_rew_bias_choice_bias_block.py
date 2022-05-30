@@ -22,7 +22,7 @@ REWARD_WIN = 10  # trials
 CHOICE_WIN = 5  # trials
 MIN_TRIALS = 5  # for estimating reward bias
 subjects = load_subjects(behavior=True)
-_, fig_path, save_path = paths()
+fig_path, save_path = paths()
 fig_path = join(fig_path, 'Behavior', 'ModelAgnostic')
 
 results_df = pd.DataFrame()
@@ -31,7 +31,7 @@ for i, nickname in enumerate(subjects['subject']):
 
     # Query sessions
     eids = query_opto_sessions(nickname, one=one)
-    eids = behavioral_criterion(eids, one=one)
+    #eids = behavioral_criterion(eids, one=one)
 
     # Get trials DataFrame
     for j, eid in enumerate(eids):
@@ -41,6 +41,10 @@ for i, nickname in enumerate(subjects['subject']):
             else:
                 trials = load_trials(eid, laser_stimulation=True, patch_old_opto=False, one=one)
         except:
+            print(f'\nError loading {eid}\n')
+            continue
+        
+        if trials.shape[0] < 100:
             continue
 
         # Make array of after block switch trials
@@ -96,11 +100,11 @@ for i, nickname in enumerate(subjects['subject']):
         r_no_opto_late = pearsonr(trials.dropna(subset=['rew_bias_no_opto', 'choice_bias_late'])['rew_bias_no_opto'],
                                   trials.dropna(subset=['rew_bias_no_opto', 'choice_bias_late'])['choice_bias_late'])[0]
 
-        results_df = results_df.append(pd.DataFrame(data={
+        results_df = pd.concat((results_df, pd.DataFrame(data={
             'subject': nickname, 'sert-cre': subjects.loc[i, 'sert-cre'],
             'date': one.get_details(eid)['date'], 'eid': eid,
             'r_early_block': [r_opto_early, r_no_opto_early], 'r_late_block': [r_opto_late, r_no_opto_late],
-            'opto': [1, 0]}), ignore_index=True)
+            'opto': [1, 0]})), ignore_index=True)
 
 # %% Plot
 

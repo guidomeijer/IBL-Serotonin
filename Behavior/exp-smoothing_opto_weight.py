@@ -53,9 +53,9 @@ for i, nickname in enumerate(subjects['subject']):
             eids, stimulated=STIM, patch_old_opto=False, one=one)
 
     # Fit model
-    model = exp_prev_action('./model_fit_results/', session_uuids, '%s_%s' % (nickname, STIM),
+    model = exp_prev_action(join('.', 'model_fit_results',''), session_uuids, '%s_%s' % (nickname, STIM),
                             actions, stimuli, stim_side, torch.from_numpy(stim_trials).to(torch.long))
-    model.load_or_train(nb_steps=2000, remove_old=REMOVE_OLD_FIT)
+    model.load_or_train(nb_steps=2, remove_old=REMOVE_OLD_FIT)
     param_prevaction = model.get_parameters(parameter_type=POSTERIOR)
     priors_prevaction = model.compute_signal(signal='prior', act=actions, stim=stimuli, side=stim_side)['prior']
 
@@ -76,13 +76,13 @@ for i, nickname in enumerate(subjects['subject']):
                     opto = 'stim'
                 elif stim_trials[k][trans] == 0:
                     opto = 'no stim'
-                block_switches = block_switches.append(pd.DataFrame(data={
+                block_switches = pd.concat((block_switches, pd.DataFrame(data={
                             'prior_prevaction': priors_prevaction[k][trans-PRE_TRIALS:trans+POST_TRIALS],
                             'trial': np.append(np.arange(-PRE_TRIALS, 0), np.arange(0, POST_TRIALS)),
                             'change_to': prob_left[k][trans],
                             'opto': opto,
                             'sert_cre': subjects.loc[i, 'sert-cre'],
-                            'subject': nickname}))
+                            'subject': nickname})))
     block_switches = block_switches.reset_index(drop=True)
 
     # Plot for this animal

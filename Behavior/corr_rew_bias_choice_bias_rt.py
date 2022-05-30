@@ -41,6 +41,7 @@ for i, nickname in enumerate(subjects['subject']):
             else:
                 trials = load_trials(eid, laser_stimulation=True, patch_old_opto=False, one=one)
         except:
+            print(f'\nError loading {nickname} {eid}\n')
             continue
 
         for t in range(trials.shape[0] - (REWARD_WIN + CHOICE_WIN)):
