@@ -23,7 +23,7 @@ Adapted from on Zoe Ashwood's code (https://github.com/zashwood/glm-hmm)
 """
 
 # Settings
-N_FOLDS = 3
+N_FOLDS = 5
 MIN_SESSIONS = 5
 
 npr.seed(42)
@@ -46,7 +46,7 @@ for i, nickname in enumerate(subjects['subject']):
 
     # Query sessions
     eids = query_opto_sessions(nickname, one=one)
-    eids = behavioral_criterion(eids, one=one)
+    #eids = behavioral_criterion(eids, one=one)
 
     # animal_eid_dict is a dict with subjects as keys and a list of eids per subject
     animal_eid_dict[nickname] = eids
@@ -73,8 +73,7 @@ for z, animal in enumerate(animal_list):
         animal, unnormalized_inpt, y, session, num_viols_50, rewarded = \
             get_all_unnormalized_data_this_session(
                 eid, one)
-        if num_viols_50 < 10:  # only include session if number of viols
-            # in 50-50 block is less than 10
+        if num_viols_50 < 10:  # only include session if number of viols is less than 10
             if sess_counter == 0:
                 animal_unnormalized_inpt = np.copy(unnormalized_inpt)
                 animal_y = np.copy(y)

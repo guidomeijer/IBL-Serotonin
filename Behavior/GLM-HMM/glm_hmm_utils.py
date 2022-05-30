@@ -167,8 +167,8 @@ def create_train_test_sessions(session, num_folds=3):
     unshuffled_folds = np.repeat(np.arange(num_folds),
                                  np.ceil(num_sessions / num_folds))
     shuffled_folds = npr.permutation(unshuffled_folds)[:num_sessions]
-    assert len(np.unique(shuffled_folds)) == num_folds, "require at least one session per fold for " \
-                                                                    "each animal!"
+    #assert len(np.unique(shuffled_folds)) == num_folds, "require at least one session per fold for " \
+    #                                                                "each animal!"
     # Look up table of shuffle-folds:
     sess_id = np.array(np.unique(session), dtype='str')
     shuffled_folds = np.array(shuffled_folds, dtype='O')
