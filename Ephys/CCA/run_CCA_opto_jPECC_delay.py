@@ -28,10 +28,10 @@ pca = PCA(n_components=10)
 OVERWRITE = True  # whether to overwrite existing runs
 NEURON_QC = True  # whether to use neuron qc to exclude bad units
 MIN_NEURONS = 10  # minimum neurons per region
-WIN_SIZE = 0.01  # window size in seconds
+WIN_SIZE = 0.025  # window size in seconds
 PRE_TIME = 1.25  # time before stim onset in s
 POST_TIME = 3.25  # time after stim onset in s
-SMOOTHING = 0.025  # smoothing of psth
+SMOOTHING = 0.05  # smoothing of psth
 MAX_DELAY = 0.2  # max delay shift
 SUBTRACT_MEAN = True  # whether to subtract the mean PSTH from each trial
 DIV_BASELINE = False  # whether to divide over baseline + 1 spk/s
@@ -171,15 +171,15 @@ for i, eid in enumerate(np.unique(rec['eid'])):
             # Run CCA per combination of two timebins
             r_opto = np.empty((n_time_bins - int(MAX_DELAY/WIN_SIZE)*2, (int(MAX_DELAY/WIN_SIZE) * 2)+1))
             delta_time = np.arange(-MAX_DELAY, MAX_DELAY + WIN_SIZE, WIN_SIZE)
-            
+
             for it_1, time_1 in enumerate(psth_opto['tscale'][int(MAX_DELAY/WIN_SIZE) : -int(MAX_DELAY/WIN_SIZE)]):
                 for it_2, time_2 in enumerate(psth_opto['tscale'][(psth_opto['tscale'] >= time_1 - MAX_DELAY - (WIN_SIZE/2))
                                                                   & (psth_opto['tscale'] <= time_1 + MAX_DELAY + (WIN_SIZE/2))]):
-                    
+
                     # Get timebin index
                     tb_1 = np.where(psth_opto['tscale'] == time_1)[0][0]
                     tb_2 = np.where(psth_opto['tscale'] == time_2)[0][0]
-                    
+
                     # Create indices for odd and even trials
                     even_ind = np.arange(0, pca_opto[region_1][:, :, 0].shape[0], 2).astype(int)
                     odd_ind = np.arange(1, pca_opto[region_1][:, :, 0].shape[0], 2).astype(int)
@@ -199,7 +199,7 @@ for i, eid in enumerate(np.unique(rec['eid'])):
                                          pca_opto[region_2][even_ind, :, tb_2])
                     r_splits.append(pearsonr(x.T[0], y.T[0])[0])
                     r_opto[it_1, it_2] = np.mean(r_splits)
-            
+
             # Add to dataframe
             cca_df = pd.concat((cca_df, pd.DataFrame(index=[cca_df.shape[0]], data={
                 'subject': subject, 'date': date, 'eid': eid, 'region_1': region_1, 'region_2': region_2,

@@ -24,7 +24,7 @@ one = ONE()
 PRE_TRIALS = 5
 POST_TRIALS = 20
 PLOT_EXAMPLES = True
-REMOVE_OLD_FIT = True
+REMOVE_OLD_FIT = False
 POSTERIOR = 'posterior_mean'
 STIM = 'block'
 fig_path, save_path = paths()
@@ -38,7 +38,7 @@ for i, nickname in enumerate(subjects['subject']):
 
     # Query sessions
     eids = query_opto_sessions(nickname, one=one)
-    #eids = behavioral_criterion(eids, one=one)
+    eids = behavioral_criterion(eids, one=one)
     if len(eids) == 0:
         continue
     if len(eids) > 10:
