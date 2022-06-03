@@ -62,7 +62,7 @@ sess_to_plot = ["30d70f60-553b-4325-ae83-a35f23271c02", "56fc65b3-8e8b-4e65-a935
 
 cols = ['#ff7f00', '#4daf4a', '#377eb8', '#f781bf', '#a65628', '#984ea3',
         '#999999', '#e41a1c', '#dede00']
-fig = plt.figure(figsize=(6, 4), dpi=500)
+fig = plt.figure(figsize=(6, 4), dpi=400)
 plt.subplots_adjust(wspace=0.2, hspace=0.9)
 for i, sess in enumerate(sess_to_plot):
     plt.subplot(2, 3, i + 4)

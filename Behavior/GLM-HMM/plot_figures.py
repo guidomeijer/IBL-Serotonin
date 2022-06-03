@@ -17,7 +17,7 @@ from plotting_utils import load_glmhmm_data, load_cv_arr, load_data, \
 
 # Settings
 animal = 'ZFM-02600'
-K = 3
+K = 4
 
 # Paths
 figure_path, data_path = paths()
@@ -42,7 +42,7 @@ pred_acc_arr_for_plotting = pred_acc_arr.copy()
 
 
 # %% ========== FIG 2c ==========
-fig = plt.figure(figsize=(2, 1.6), dpi=500)
+fig = plt.figure(figsize=(2, 1.6), dpi=300)
 plt.subplots_adjust(left=0.3, bottom=0.3, right=0.9, top=0.9)
 plt.plot(np.arange(pred_acc_arr_for_plotting.shape[0]) + 1,
          np.mean(pred_acc_arr_for_plotting, axis=1),
@@ -67,7 +67,7 @@ hmm_params, lls = load_glmhmm_data(raw_file)
 
 transition_matrix = np.exp(hmm_params[1][0])
 
-fig = plt.figure(figsize=(1.6, 1.6), dpi=500)
+fig = plt.figure(figsize=(1.6, 1.6), dpi=300)
 plt.subplots_adjust(left=0.3, bottom=0.3, right=0.95, top=0.95)
 plt.imshow(transition_matrix, vmin=-0.8, vmax=1, cmap='bone')
 for i in range(transition_matrix.shape[0]):
@@ -99,7 +99,7 @@ cols = [
     '#ff7f00', '#4daf4a', '#377eb8', '#f781bf', '#a65628', '#984ea3',
     '#999999', '#e41a1c', '#dede00'
 ]
-fig = plt.figure(figsize=(2.7, 2.5), dpi=500)
+fig = plt.figure(figsize=(2.7, 2.5), dpi=300)
 plt.subplots_adjust(left=0.3, bottom=0.4, right=0.8, top=0.9)
 M = weight_vectors.shape[2] - 1
 for k in range(K):
@@ -126,7 +126,7 @@ fig.savefig(join(figure_dir, f'weights_{animal}.pdf'))
 alpha_val = 2
 sigma_val = 2
 
-fig = plt.figure(figsize=(4.6, 2), facecolor='w', edgecolor='k', dpi=500)
+fig = plt.figure(figsize=(4.6, 2), facecolor='w', edgecolor='k', dpi=300)
 plt.subplots_adjust(left=0.13, bottom=0.23, right=0.9, top=0.8)
 
 inpt, y, session = load_data(join(data_dir, animal + '_processed.npz'))
@@ -161,7 +161,7 @@ cols = [
     '#999999', '#e41a1c', '#dede00'
 ]
 for k in range(K):
-    plt.subplot(1, 3, k+1)
+    plt.subplot(1, K, k+1)
     # USE GLM WEIGHTS TO GET PROB RIGHT
     stim_vals, prob_right_max = get_prob_right(-weight_vectors, inpt, k, 1,
                                                1)

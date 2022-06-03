@@ -72,15 +72,14 @@ cca_df = cca_df.reset_index()
 
 # %% Plot
 colors, dpi = figure_style()
-f, (ax1, ax2, ax3, ax_cb) = plt.subplots(1, 4, figsize=(5, 1.75),
+f, (ax1, ax2, ax3, ax_cb) = plt.subplots(1, 4, figsize=(4, 1.75),
                                     gridspec_kw={'width_ratios': [1, 1, 1, 0.2]}, dpi=dpi)
 ax1.imshow(np.flipud(np.mean(jPECC['M2-mPFC'], axis=2)), vmin=-0.5, vmax=0.5, cmap='icefire',
            interpolation='nearest', aspect='auto',
            extent=[time_asy[0], time_asy[-1],
                    time_ax[0] - np.mean(np.diff(time_ax))/2, time_ax[-1] + np.mean(np.diff(time_ax))/2])
-ax1.invert_xaxis()
 ax1.plot([0, 0], [-1, 3], color='white', ls='--', lw=0.5)
-ax1.set(ylabel='Time from stimulation onset (s)', xlabel='Delay (s)',
+ax1.set(ylabel='Time from stim. onset (s)', xlabel='Delay (s)',
         title='M2 vs mPFC', ylim=[-1, 3],
         xticks=[time_asy[0], 0, time_asy[-1]])
 
@@ -88,23 +87,21 @@ ax2.imshow(np.flipud(np.mean(jPECC['M2-ORB'], axis=2)), vmin=-0.5, vmax=0.5, cma
            interpolation='nearest', aspect='auto',
            extent=[time_asy[0], time_asy[-1],
                    time_ax[0] - np.mean(np.diff(time_ax))/2, time_ax[-1] + np.mean(np.diff(time_ax))/2])
-ax2.invert_xaxis()
 ax2.plot([0, 0], [-1, 3], color='white', ls='--', lw=0.5)
-ax2.set(ylabel='Time from stimulation onset (s)', xlabel='Delay (s)', title='M2 vs ORB', ylim=[-1, 3],
+ax2.set(xlabel='Delay (s)', title='M2 vs ORB', ylim=[-1, 3],
         xticks=[time_asy[0], 0, time_asy[-1]])
 
 ax3.imshow(np.flipud(np.mean(jPECC['ORB-mPFC'], axis=2)), vmin=-0.5, vmax=0.5, cmap='icefire',
            interpolation='nearest', aspect='auto',
            extent=[time_asy[0], time_asy[-1],
                    time_ax[0] - np.mean(np.diff(time_ax))/2, time_ax[-1] + np.mean(np.diff(time_ax))/2])
-ax3.invert_xaxis()
 ax3.plot([0, 0], [-1, 3], color='white', ls='--', lw=0.5)
-ax3.set(ylabel='Time from stimulation onset (s)', xlabel='Delay (s)', title='ORB vs mPFC', ylim=[-1, 3],
+ax3.set(xlabel='Delay (s)', title='ORB vs mPFC', ylim=[-1, 3],
         xticks=[time_asy[0], 0, time_asy[-1]])
 
 ax_cb.axis('off')
 plt.tight_layout()
-cb_ax = f.add_axes([0.88, 0.3, 0.01, 0.5])
+cb_ax = f.add_axes([0.86, 0.3, 0.01, 0.5])
 cbar = f.colorbar(mappable=ax2.images[0], cax=cb_ax)
 cbar.ax.set_ylabel('Population correlation (r)', rotation=270, labelpad=10)
 
@@ -128,7 +125,7 @@ ax1.set(xlabel='Time (s)', ylabel='Canonical correlation \n over baseline (r)', 
 leg_handles, _ = ax1.get_legend_handles_labels()
 leg_labels = [f'M2-mPFC (n={cca_df[cca_df["region_pair"] == "M2-mPFC"]["subject"].unique().size})',
               f'M2-ORB (n={cca_df[cca_df["region_pair"] == "M2-ORB"]["subject"].unique().size})']
-leg = ax1.legend(leg_handles, leg_labels, prop={'size': 5}, loc='lower left')
+leg = ax1.legend(leg_handles, leg_labels, prop={'size': 5}, bbox_to_anchor=(0.4, 0.82))
 leg.get_frame().set_linewidth(0)
 
 ax2.plot([-1, 3], [0, 0], ls='--', color='grey')
@@ -186,6 +183,6 @@ leg.get_frame().set_linewidth(0)
 plt.tight_layout()
 sns.despine(trim=True)
 
-plt.savefig(join(fig_path, 'asymmetry_CCA_Front_Amyg.pdf'))
+plt.savefig(join(fig_path, 'jPECC_asymmetry_M2_mPFC_ORB.pdf'))
 
 

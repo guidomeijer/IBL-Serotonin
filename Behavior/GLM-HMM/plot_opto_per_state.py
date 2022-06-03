@@ -56,7 +56,13 @@ states_max_posterior = np.argmax(posterior_probs, axis=1)
 # Loop over sessions
 trials = pd.DataFrame()
 for i, eid in enumerate(np.unique(session)):
-    these_trials = load_trials(eid, laser_stimulation=True, one=one)
+    try:
+        these_trials = load_trials(eid, laser_stimulation=True,
+                                   patch_old_opto=False, one=one)
+    except:
+        continue
+    if np.where(session == eid)[0].shape[0] != these_trials.shape[0]:
+        continue
     these_trials['state'] = states_max_posterior[np.where(session == eid)[0]]
     trials = pd.concat((trials, these_trials), ignore_index=True)
 
