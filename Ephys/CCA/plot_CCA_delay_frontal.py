@@ -18,7 +18,7 @@ from serotonin_functions import paths, load_subjects, figure_style
 REGION_PAIRS = ['M2-mPFC', 'M2-ORB', 'ORB-mPFC']
 PER_SUBJECT = False
 ASYM_TIME = 0.1
-CCA_TIME = 0.25
+CCA_TIME = 0
 BIN_SIZE = 0.05
 
 # Paths
@@ -56,8 +56,8 @@ for i, rp in enumerate(REGION_PAIRS):
                      - np.median(jPECC[rp][:, (time_asy <= ASYM_TIME), jj], axis=1))
 
         # Get CCA
-        this_cca = np.squeeze(np.max(jPECC[rp][:, (time_asy >= -CCA_TIME)
-                                                  & (time_asy <= CCA_TIME), jj], axis=1))
+        this_cca = np.squeeze(np.median(jPECC[rp][:, (time_asy >= -CCA_TIME)
+                                                      & (time_asy <= CCA_TIME), jj], axis=1))
 
         # Add to dataframe
         cca_df = pd.concat((cca_df, pd.DataFrame(data={

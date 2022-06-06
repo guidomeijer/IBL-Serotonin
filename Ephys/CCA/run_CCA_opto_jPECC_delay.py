@@ -28,11 +28,11 @@ pca = PCA(n_components=10)
 OVERWRITE = True  # whether to overwrite existing runs
 NEURON_QC = True  # whether to use neuron qc to exclude bad units
 MIN_NEURONS = 10  # minimum neurons per region
-WIN_SIZE = 0.01  # window size in seconds
-PRE_TIME = 1.25  # time before stim onset in s
-POST_TIME = 3.25  # time after stim onset in s
-SMOOTHING = 0.02  # smoothing of psth
-MAX_DELAY = 0.2  # max delay shift
+WIN_SIZE = 0.05  # window size in seconds
+PRE_TIME = 1.5  # time before stim onset in s
+POST_TIME = 3.5  # time after stim onset in s
+SMOOTHING = 0.1  # smoothing of psth
+MAX_DELAY = 0.5  # max delay shift
 SUBTRACT_MEAN = True  # whether to subtract the mean PSTH from each trial
 DIV_BASELINE = False  # whether to divide over baseline + 1 spk/s
 MIN_FR = 0.5  # minimum firing rate over the whole recording
@@ -43,7 +43,9 @@ fig_path, save_path = paths()
 
 # Initialize some things
 REGION_PAIRS = [['M2', 'mPFC'], ['M2', 'ORB'], ['mPFC', 'Amyg'], ['ORB', 'Amyg'], ['M2', 'Amyg'],
-                ['Hipp', 'PPC'], ['Hipp', 'Thal'], ['ORB', 'mPFC'], ['PPC', 'Thal']]
+                ['Hipp', 'PPC'], ['Hipp', 'Thal'], ['ORB', 'mPFC'], ['PPC', 'Thal'], ['MRN', 'SC'],
+                ['RSP', 'SC'], ['BC', 'Str'], ['MRN', 'RSP'], ['MRN', 'SN'], ['Pir', 'Str'],
+                ['SC', 'SN']]
 np.random.seed(42)  # fix random seed for reproducibility
 n_time_bins = int((PRE_TIME + POST_TIME) / WIN_SIZE)
 if SMOOTHING > 0:
@@ -57,8 +59,8 @@ rec = query_ephys_sessions(one=one)
 # Load in artifact neurons
 artifact_neurons = get_artifact_neurons()
 
-if ~OVERWRITE & isfile(join(save_path, 'jPECC.pickle')):
-    cca_df = pd.read_pickle(join(save_path, 'jPECC.pickle'))
+if ~OVERWRITE & isfile(join(save_path, f'jPECC_delay_{WIN_SIZE}_binsize.pickle')):
+    cca_df = pd.read_pickle(join(save_path, f'jPECC_delay_{WIN_SIZE}_binsize.pickle'))
 else:
     cca_df = pd.DataFrame(columns=['region_pair', 'eid'])
 
@@ -206,3 +208,5 @@ for i, eid in enumerate(np.unique(rec['eid'])):
                 'region_pair': f'{region_1}-{region_2}', 'r_opto': [r_opto], 'delta_time': [delta_time],
                 'time': [psth_opto['tscale'][int(MAX_DELAY/WIN_SIZE) : -int(MAX_DELAY/WIN_SIZE)]]})))
     cca_df.to_pickle(join(save_path, f'jPECC_delay_{WIN_SIZE}_binsize.pickle'))
+
+cca_df.to_pickle(join(save_path, f'jPECC_delay_{WIN_SIZE}_binsize.pickle'))

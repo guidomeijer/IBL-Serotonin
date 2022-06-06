@@ -8,7 +8,7 @@ By: Guido Meijer
 import numpy as np
 from brainbox.io.one import SpikeSortingLoader
 import pandas as pd
-from serotonin_functions import query_ephys_sessions, remap
+from serotonin_functions import query_ephys_sessions, remap, load_subjects
 from one.api import ONE
 from ibllib.atlas import AllenAtlas
 ba = AllenAtlas()
@@ -46,4 +46,21 @@ for i, eid in enumerate(np.unique(rec['eid'])):
         for m, region_2 in enumerate(regions[k:]):
             if region_1 != region_2:
                 region_pairs.append(f'{region_1}-{region_2}')
-    region_pairs = np.concatenate(region_pairs)
+
+    # Add to df
+    region_pair_df = pd.concat((region_pair_df, pd.DataFrame(data={
+        'eid': eid, 'subject': subject, 'date': date,
+        'region_pair': region_pairs})))
+
+# %% Results
+
+# Add expression
+subjects = load_subjects()
+for i, nickname in enumerate(np.unique(subjects['subject'])):
+    region_pair_df.loc[region_pair_df['subject'] == nickname, 'sert-cre'] = subjects.loc[subjects['subject'] == nickname, 'sert-cre'].values[0]
+
+# Select sert mice and regions of interest
+region_pair_df = region_pair_df[region_pair_df['sert-cre'] == 1]
+
+
+grouped_df = region_pair_df.groupby('region_pair').size()

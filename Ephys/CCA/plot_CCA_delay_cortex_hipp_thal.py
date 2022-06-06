@@ -20,7 +20,7 @@ from serotonin_functions import paths, load_subjects, figure_style
 REGION_PAIRS = ['Hipp-PPC', 'Hipp-Thal', 'PPC-Thal']
 PER_SUBJECT = False
 ASYM_TIME = 0.1
-CCA_TIME = 0.25
+CCA_TIME = 0
 BIN_SIZE = 0.05
 
 # Paths
@@ -58,7 +58,7 @@ for i, rp in enumerate(REGION_PAIRS):
                      - np.median(jPECC[rp][:, (time_asy <= ASYM_TIME), jj], axis=1))
 
         # Get CCA
-        this_cca = np.squeeze(np.max(jPECC[rp][:, (time_asy >= -CCA_TIME)
+        this_cca = np.squeeze(np.median(jPECC[rp][:, (time_asy >= -CCA_TIME)
                                                   & (time_asy <= CCA_TIME), jj], axis=1))
 
         # Add to dataframe
@@ -124,9 +124,9 @@ else:
 ax1.set(xlabel='Time (s)', ylabel='Canonical correlation \n over baseline (r)', xlim=[-1, 3], ylim=[-0.4, 0.4],
         yticks=np.arange(-0.4, 0.41, 0.1), xticks=[-1, 0, 1, 2, 3])
 leg_handles, _ = ax1.get_legend_handles_labels()
-leg_labels = [f'Thalamus-cortex (n={cca_df[cca_df["region_pair"] == "PPC-Thal"]["subject"].unique().size})',
-              f'Thalamus-hipp. (n={cca_df[cca_df["region_pair"] == "Hipp-Thal"]["subject"].unique().size})']
-leg = ax1.legend(leg_handles, leg_labels, prop={'size': 5}, loc='lower left')
+leg_labels = [f'Thal.-cortex (n={cca_df[cca_df["region_pair"] == "PPC-Thal"]["subject"].unique().size})',
+              f'Thal.-hipp. (n={cca_df[cca_df["region_pair"] == "Hipp-Thal"]["subject"].unique().size})']
+leg = ax1.legend(leg_handles, leg_labels, prop={'size': 5}, bbox_to_anchor=(0.3, 0.8))
 leg.get_frame().set_linewidth(0)
 
 ax2.plot([-1, 3], [0, 0], ls='--', color='grey')
@@ -142,7 +142,7 @@ ax2.set(xlabel='Time (s)', ylabel='Canonical correlation \n over baseline (r)', 
         yticks=np.arange(-0.4, 0.41, 0.1), xticks=[-1, 0, 1, 2, 3])
 leg_handles, _ = ax2.get_legend_handles_labels()
 leg_labels = [f'Hipp-PPC (n={cca_df[cca_df["region_pair"] == "Hipp-PPC"]["subject"].unique().size})']
-leg = ax2.legend(leg_handles, leg_labels, prop={'size': 5}, loc='lower left')
+leg = ax2.legend(leg_handles, leg_labels, prop={'size': 5}, loc='upper right')
 leg.get_frame().set_linewidth(0)
 
 plt.tight_layout()

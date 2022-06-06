@@ -16,8 +16,8 @@ from serotonin_functions import paths, load_subjects, figure_style
 
 # Settings
 REGION_PAIRS = ['M2-Amyg', 'mPFC-Amyg', 'ORB-Amyg']
-ASYM_TIME = 0.2
-CCA_TIME = 0.25
+ASYM_TIME = 0.1
+CCA_TIME = 0.1
 BIN_SIZE = 0.05
 PER_SUBJECT = False
 
@@ -119,15 +119,15 @@ ax1.add_patch(Rectangle((0, -0.4), 1, 0.8, color='royalblue', alpha=0.25, lw=0))
 if PER_SUBJECT:
     sns.lineplot(x='time', y='value', data=cca_long_df[cca_long_df['variable'] == 'cca_bl'], hue='region_pair', ax=ax1,
                  estimator=None, units='subject',
-                 hue_order=['PPC-Thal', 'Hipp-Thal'], palette=[colors['PPC'], colors['Thal']])
+                 hue_order=['mPFC-Amyg', 'ORB-Amyg'], palette=[colors['mPFC'], colors['ORB']])
 else:
     sns.lineplot(x='time', y='value', data=cca_long_df[cca_long_df['variable'] == 'cca_bl'], hue='region_pair', ax=ax1, ci=68,
-                 hue_order=['PPC-Thal', 'Hipp-Thal'], palette=[colors['PPC'], colors['Thal']])
+                 hue_order=['mPFC-Amyg', 'ORB-Amyg'], palette=[colors['mPFC'], colors['ORB']])
 ax1.set(xlabel='Time (s)', ylabel='Canonical correlation \n over baseline (r)', xlim=[-1, 3], ylim=[-0.4, 0.4],
         yticks=np.arange(-0.4, 0.41, 0.1), xticks=[-1, 0, 1, 2, 3])
 leg_handles, _ = ax1.get_legend_handles_labels()
-leg_labels = [f'Thalamus-cortex (n={cca_df[cca_df["region_pair"] == "PPC-Thal"]["subject"].unique().size})',
-              f'Thalamus-hipp. (n={cca_df[cca_df["region_pair"] == "Hipp-Thal"]["subject"].unique().size})']
+leg_labels = [f'mPFC-Amyg (n={cca_df[cca_df["region_pair"] == "mPFC-Amyg"]["subject"].unique().size})',
+              f'ORB-Amyg (n={cca_df[cca_df["region_pair"] == "ORB-Amyg"]["subject"].unique().size})']
 leg = ax1.legend(leg_handles, leg_labels, prop={'size': 5}, loc='lower left')
 leg.get_frame().set_linewidth(0)
 
@@ -136,10 +136,10 @@ ax2.add_patch(Rectangle((0, -0.4), 1, 0.8, color='royalblue', alpha=0.25, lw=0))
 if PER_SUBJECT:
     sns.lineplot(x='time', y='value', data=cca_long_df[cca_long_df['variable'] == 'cca_bl'], hue='region_pair', ax=ax2,
                  estimator=None, units='subject',
-                 hue_order=['M2-Amyg'], palette=[colors['Hipp']])
+                 hue_order=['M2-Amyg'], palette=[colors['M2']])
 else:
     sns.lineplot(x='time', y='value', data=cca_long_df[cca_long_df['variable'] == 'cca_bl'], hue='region_pair', ax=ax2, ci=68,
-                 hue_order=['M2-Amyg'], palette=[colors['Hipp']])
+                 hue_order=['M2-Amyg'], palette=[colors['M2']])
 ax2.set(xlabel='Time (s)', ylabel='Canonical correlation \n over baseline (r)', xlim=[-1, 3], ylim=[-0.4, 0.4],
         yticks=np.arange(-0.4, 0.41, 0.1), xticks=[-1, 0, 1, 2, 3])
 leg_handles, _ = ax2.get_legend_handles_labels()
