@@ -165,9 +165,9 @@ plt_hndl = ax1.imshow(spks_residuals['M2'][:,:,tb_1], cmap='viridis')
 cbar = plt.colorbar(plt_hndl, ax=ax1, shrink=0.5)
 cbar.set_label('spks/s', rotation=270)
 cbar.ax.get_yaxis().labelpad = 8
-ax1.set(title=f'M2, mean subtracted firing rates \n t = {time_1} s after stim onset', ylabel='Trials',
-        yticks=[1, spks_residuals['M2'].shape[0]], xticks=[1, spks_residuals['M2'].shape[1]])
-ax1.set_xlabel('Neurons', labelpad=0)
+ax1.set(title=f'Secondary motor cortex \n Mean subtracted firing rates \n t = {time_1} s after stim onset',
+        ylabel='Trials', yticks=[1, spks_residuals['M2'].shape[0]], xticks=[1, spks_residuals['M2'].shape[1]])
+ax1.set_xlabel('Neurons', labelpad=-5)
 
 plt_hndl = ax2.imshow(pca_opto['M2'][:,:,tb_1], cmap='coolwarm', vmin=-50, vmax=50)
 plt.colorbar(plt_hndl, ax=ax2, shrink=0.5)
@@ -178,9 +178,9 @@ plt_hndl = ax3.imshow(spks_residuals['ORB'][:,:,tb_1], cmap='viridis')
 cbar = plt.colorbar(plt_hndl, ax=ax3, shrink=0.5)
 cbar.set_label('spks/s', rotation=270)
 cbar.ax.get_yaxis().labelpad = 8
-ax3.set(title=f'ORB, mean subtracted firing rates \n t = {time_2} s after stim onset', ylabel='Trials',
-        yticks=[1, spks_residuals['ORB'].shape[0]], xticks=[1, spks_residuals['ORB'].shape[1]])
-ax3.set_xlabel('Neurons', labelpad=0)
+ax3.set(title=f'Orbitofrontal cortex \n Mean subtracted firing rates \n t = {time_2} s after stim onset',
+        ylabel='Trials', yticks=[1, spks_residuals['ORB'].shape[0]], xticks=[1, spks_residuals['ORB'].shape[1]])
+ax3.set_xlabel('Neurons', labelpad=-5)
 
 plt_hndl = ax4.imshow(pca_opto['ORB'][:,:,tb_1], cmap='coolwarm', vmin=-50, vmax=50)
 plt.colorbar(plt_hndl, ax=ax4, shrink=0.5)

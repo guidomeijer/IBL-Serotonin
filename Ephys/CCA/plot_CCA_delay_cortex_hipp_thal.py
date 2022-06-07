@@ -122,7 +122,7 @@ else:
     sns.lineplot(x='time', y='value', data=cca_long_df[cca_long_df['variable'] == 'cca_bl'], hue='region_pair', ax=ax1, ci=68,
                  hue_order=['PPC-Thal', 'Hipp-Thal'], palette=[colors['PPC'], colors['Thal']])
 ax1.set(xlabel='Time (s)', ylabel='Canonical correlation \n over baseline (r)', xlim=[-1, 3], ylim=[-0.4, 0.4],
-        yticks=np.arange(-0.4, 0.41, 0.1), xticks=[-1, 0, 1, 2, 3])
+        yticks=np.arange(-0.4, 0.41, 0.2), xticks=[-1, 0, 1, 2, 3])
 leg_handles, _ = ax1.get_legend_handles_labels()
 leg_labels = [f'Thal.-cortex (n={cca_df[cca_df["region_pair"] == "PPC-Thal"]["subject"].unique().size})',
               f'Thal.-hipp. (n={cca_df[cca_df["region_pair"] == "Hipp-Thal"]["subject"].unique().size})']
@@ -139,7 +139,7 @@ else:
     sns.lineplot(x='time', y='value', data=cca_long_df[cca_long_df['variable'] == 'cca_bl'], hue='region_pair', ax=ax2, ci=68,
                  hue_order=['Hipp-PPC'], palette=[colors['Hipp']])
 ax2.set(xlabel='Time (s)', ylabel='Canonical correlation \n over baseline (r)', xlim=[-1, 3], ylim=[-0.4, 0.4],
-        yticks=np.arange(-0.4, 0.41, 0.1), xticks=[-1, 0, 1, 2, 3])
+        yticks=np.arange(-0.4, 0.41, 0.2), xticks=[-1, 0, 1, 2, 3])
 leg_handles, _ = ax2.get_legend_handles_labels()
 leg_labels = [f'Hipp-PPC (n={cca_df[cca_df["region_pair"] == "Hipp-PPC"]["subject"].unique().size})']
 leg = ax2.legend(leg_handles, leg_labels, prop={'size': 5}, loc='upper right')
@@ -164,7 +164,7 @@ else:
     sns.lineplot(x='time', y='value', data=cca_long_df[cca_long_df['variable'] == 'asym'], hue='region_pair', ax=ax1, ci=68,
                  hue_order=['PPC-Thal', 'Hipp-Thal'], palette=[colors['PPC'], colors['Thal']])
 ax1.set(xlabel='Time (s)', ylabel='Asymmetry', xlim=[-1, 3], ylim=[-YLIM, YLIM],
-        yticks=np.arange(-YLIM, YLIM+0.01, 0.1), xticks=[-1, 0, 1, 2, 3])
+        yticks=np.arange(-YLIM, YLIM+0.01, 0.2), xticks=[-1, 0, 1, 2, 3])
 leg_handles, _ = ax1.get_legend_handles_labels()
 leg_labels = ['Thalamus-cortex', 'Thalamus-hipp.']
 leg = ax1.legend(leg_handles, leg_labels, prop={'size': 5}, loc='upper left')
@@ -175,7 +175,7 @@ ax2.add_patch(Rectangle((0, -YLIM), 1, YLIM*2, color='royalblue', alpha=0.25, lw
 sns.lineplot(x='time', y='value', data=cca_long_df[cca_long_df['variable'] == 'asym'], hue='region_pair', ax=ax2, ci=68,
              hue_order=['Hipp-PPC'], palette=[colors['Hipp']])
 ax2.set(xlabel='Time (s)', ylabel='Asymmetry', xlim=[-1, 3], ylim=[-YLIM, YLIM],
-        yticks=np.arange(-YLIM, YLIM+0.01, 0.1), xticks=[-1, 0, 1, 2, 3])
+        yticks=np.arange(-YLIM, YLIM+0.01, 0.2), xticks=[-1, 0, 1, 2, 3])
 leg_handles, _ = ax2.get_legend_handles_labels()
 leg_labels = ['Hippocampus-cortex']
 leg = ax2.legend(leg_handles, leg_labels, prop={'size': 5}, loc='lower left')

@@ -156,8 +156,7 @@ def partition_data_by_session(inpt, y, mask, session):
     Partition inpt, y, mask by session
     :param inpt: arr of size TxM
     :param y:  arr of size T x D
-    :param mask: Boolean arr of size T indicating if element is violation or
-    not
+    :param mask: Boolean arr of size T indicating if element is violation or not
     :param session: list of size T containing session ids
     :return: list of inpt arrays, data arrays and mask arrays, where the
     number of elements in list = number of sessions and each array size is
