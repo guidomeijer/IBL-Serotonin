@@ -27,6 +27,8 @@ pca = PCA(n_components=10)
 # Settings
 OVERWRITE = True  # whether to overwrite existing runs
 NEURON_QC = True  # whether to use neuron qc to exclude bad units
+PCA = False  # whether to use PCA on neural activity before CCA
+N_PC = 10  # number of PCs to use
 MIN_NEURONS = 10  # minimum neurons per region
 WIN_SIZE = 0.05  # window size in seconds
 PRE_TIME = 1.5  # time before stim onset in s
@@ -36,7 +38,7 @@ MAX_DELAY = 0.5  # max delay shift
 SUBTRACT_MEAN = True  # whether to subtract the mean PSTH from each trial
 DIV_BASELINE = False  # whether to divide over baseline + 1 spk/s
 MIN_FR = 0.5  # minimum firing rate over the whole recording
-N_PC = 10  # number of PCs to use
+
 
 # Paths
 fig_path, save_path = paths()
@@ -59,8 +61,13 @@ rec = query_ephys_sessions(one=one)
 # Load in artifact neurons
 artifact_neurons = get_artifact_neurons()
 
-if ~OVERWRITE & isfile(join(save_path, f'jPECC_delay_{WIN_SIZE}_binsize.pickle')):
-    cca_df = pd.read_pickle(join(save_path, f'jPECC_delay_{WIN_SIZE}_binsize.pickle'))
+if PCA:
+    file_name = f'jPECC_delay_{WIN_SIZE}_binsize.pickle'
+else:
+    file_name = f'jPECC_delay_{WIN_SIZE}_binsize_no_PCA.pickle'
+
+if ~OVERWRITE & isfile(join(save_path, file_name)):
+    cca_df = pd.read_pickle(join(save_path, file_name))
 else:
     cca_df = pd.DataFrame(columns=['region_pair', 'eid'])
 
@@ -155,6 +162,7 @@ for i, eid in enumerate(np.unique(rec['eid'])):
                 for tb in range(binned_spks_opto.shape[2]):
                     pca_opto[region][:, :, tb] = pca.fit_transform(binned_spks_opto[:, :, tb])
 
+
     # Perform CCA per region pair
     print('Starting CCA per region pair')
     all_cca_df = pd.DataFrame()
@@ -182,23 +190,29 @@ for i, eid in enumerate(np.unique(rec['eid'])):
                     tb_1 = np.where(psth_opto['tscale'] == time_1)[0][0]
                     tb_2 = np.where(psth_opto['tscale'] == time_2)[0][0]
 
+                    # Get activity matrix
+                    if PCA:
+                        act_mat = pca_opto
+                    else:
+                        act_mat = spks_opto
+
                     # Create indices for odd and even trials
-                    even_ind = np.arange(0, pca_opto[region_1][:, :, 0].shape[0], 2).astype(int)
-                    odd_ind = np.arange(1, pca_opto[region_1][:, :, 0].shape[0], 2).astype(int)
+                    even_ind = np.arange(0, act_mat[region_1][:, :, 0].shape[0], 2).astype(int)
+                    odd_ind = np.arange(1, act_mat[region_1][:, :, 0].shape[0], 2).astype(int)
 
                     # Fit on the even trials and correlate the odd trials
-                    cca.fit(pca_opto[region_1][even_ind, :, tb_1],
-                            pca_opto[region_2][even_ind, :, tb_2])
-                    x, y = cca.transform(pca_opto[region_1][odd_ind, :, tb_1],
-                                         pca_opto[region_2][odd_ind, :, tb_2])
+                    cca.fit(act_mat[region_1][even_ind, :, tb_1],
+                            act_mat[region_2][even_ind, :, tb_2])
+                    x, y = cca.transform(act_mat[region_1][odd_ind, :, tb_1],
+                                         act_mat[region_2][odd_ind, :, tb_2])
                     r_splits = []
                     r_splits.append(pearsonr(x.T[0], y.T[0])[0])
 
                     # Fit on the odd trials and correlate the even trials
-                    cca.fit(pca_opto[region_1][odd_ind, :, tb_1],
-                            pca_opto[region_2][odd_ind, :, tb_2])
-                    x, y = cca.transform(pca_opto[region_1][even_ind, :, tb_1],
-                                         pca_opto[region_2][even_ind, :, tb_2])
+                    cca.fit(act_mat[region_1][odd_ind, :, tb_1],
+                            act_mat[region_2][odd_ind, :, tb_2])
+                    x, y = cca.transform(act_mat[region_1][even_ind, :, tb_1],
+                                         act_mat[region_2][even_ind, :, tb_2])
                     r_splits.append(pearsonr(x.T[0], y.T[0])[0])
                     r_opto[it_1, it_2] = np.mean(r_splits)
 
@@ -207,6 +221,6 @@ for i, eid in enumerate(np.unique(rec['eid'])):
                 'subject': subject, 'date': date, 'eid': eid, 'region_1': region_1, 'region_2': region_2,
                 'region_pair': f'{region_1}-{region_2}', 'r_opto': [r_opto], 'delta_time': [delta_time],
                 'time': [psth_opto['tscale'][int(MAX_DELAY/WIN_SIZE) : -int(MAX_DELAY/WIN_SIZE)]]})))
-    cca_df.to_pickle(join(save_path, f'jPECC_delay_{WIN_SIZE}_binsize.pickle'))
+    cca_df.to_pickle(join(save_path, file_name))
 
-cca_df.to_pickle(join(save_path, f'jPECC_delay_{WIN_SIZE}_binsize.pickle'))
+cca_df.to_pickle(join(save_path, file_name))

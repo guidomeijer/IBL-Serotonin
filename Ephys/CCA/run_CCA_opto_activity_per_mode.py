@@ -22,11 +22,9 @@ ba = AllenAtlas()
 one = ONE()
 
 # Settings
-REGION_PAIRS = [['M2', 'mPFC'], ['M2', 'ORB'], ['mPFC', 'Amyg'], ['ORB', 'Amyg'], ['M2', 'Amyg'],
-                ['Hipp', 'PPC'], ['Hipp', 'Thal'], ['ORB', 'mPFC'], ['PPC', 'Thal'], ['MRN', 'SC'],
-                ['RSP', 'SC'], ['BC', 'Str'], ['MRN', 'RSP'], ['MRN', 'SN'], ['Pir', 'Str'],
-                ['SC', 'SN']]
-N_MODES = 10
+REGION_PAIRS = [['M2', 'mPFC'], ['M2', 'ORB']]
+FIT_TIME = 1.2  # timewindow relative to opto stim to use to fit CCA axes
+N_MODES = 5  # number of CCA modes to calculate
 NEURON_QC = True  # whether to use neuron qc to exclude bad units
 MIN_NEURONS = 10  # minimum neurons per region
 WIN_SIZE = 0.05  # window size in seconds
@@ -150,48 +148,40 @@ for i, eid in enumerate(np.unique(rec['eid'])):
 
             # Run CCA per region pair
             print(f'{region_1}-{region_2}')
-            r_opto = np.empty((N_MODES, n_time_bins))
+            act_modes = np.empty((N_MODES, n_time_bins))
+
+            # Fit CCA axis to the specified timebin
+            fit_tb = np.argmin(np.abs(FIT_TIME - psth_opto['tscale']))
+            cca.fit(pca_opto[region_1][:, :, fit_tb], pca_opto[region_2][:, :, fit_tb])
 
             for tb in range(n_time_bins):
-                opto_x = np.empty(pca_opto[region_1][:, :, tb].shape[0])
-                opto_y = np.empty(pca_opto[region_1][:, :, tb].shape[0])
-                r_splits = np.empty((2, N_MODES))
-                act_splits = np.empty((2, N_MODES))
-                even_ind = np.arange(0, pca_opto[region_1][:, :, 0].shape[0], 2).astype(int)
-                odd_ind = np.arange(1, pca_opto[region_1][:, :, 0].shape[0], 2).astype(int)
 
-                # Fit on the even trials and correlate the odd trials
-                cca.fit(pca_opto[region_1][even_ind, :, tb], pca_opto[region_2][even_ind, :, tb])
-                x, y = cca.transform(pca_opto[region_1][odd_ind, :, tb],
-                                     pca_opto[region_2][odd_ind, :, tb])
+                # Project data to fitted CCA axis
+                x, y = cca.transform(pca_opto[region_1][:, :, tb], pca_opto[region_2][:, :, tb])
 
-                # Get correlation and activity per mode
+                # Inverse projected CCA scores back to PCA space and then back to neural activity space
                 for mm in range(N_MODES):
-                    r_splits[0, mm] = pearsonr(x[:, mm], y[:, mm])[0]  # correlate
-                    #act_splits[0, mm] = pca_fit[region_1][tb].transform(x[:, mm])
+                    inverse_pca_proj = np.outer(x[:, mm], cca.x_weights_[:, mm])
+                    neural_act = pca_fit[region_1][tb].inverse_transform(inverse_pca_proj)
 
-                # Fit on the odd trials and correlate the even trials
-                cca.fit(pca_opto[region_1][odd_ind, :, tb], pca_opto[region_2][odd_ind, :, tb])
-                x, y = cca.transform(pca_opto[region_1][even_ind, :, tb],
-                                     pca_opto[region_2][even_ind, :, tb])
-
-                # Correlate per mode
-                for mm in range(N_MODES):
-                    r_splits[1, mm] = pearsonr(x[:, mm], y[:, mm])[0]
-
-                r_opto[:, tb] = np.mean(r_splits, axis=0).T
+                    # Normalize activity of each neuron and get mean
+                    norm_act = neural_act.copy()
+                    for nn in range(neural_act.shape[1]):
+                        norm_act[:, nn] = neural_act[:, nn] + np.abs(neural_act[:, nn].min())
+                        norm_act[:, nn] = norm_act[:, nn] / norm_act[:, nn].max()
+                    act_modes[mm, tb] = np.nanmean(norm_act)
 
             # Baseline subtract
-            r_baseline = r_opto.copy()
+            act_baseline = act_modes.copy()
             for mm in range(N_MODES):
-                r_baseline[mm, :] = r_opto[mm, :] - np.mean(r_opto[mm, psth_opto['tscale'] < 0])
+                act_baseline[mm, :] = act_modes[mm, :] - np.mean(act_modes[mm, psth_opto['tscale'] < 0])
 
             # Add to dataframe
             cca_df = pd.concat((cca_df, pd.DataFrame(index=[cca_df.shape[0]+1], data={
                 'subject': subject, 'date': date, 'eid': eid, 'region_1': region_1, 'region_2': region_2,
-                'region_pair': f'{region_1}-{region_2}', 'r_opto': [r_opto], 'r_baseline': [r_baseline],
+                'region_pair': f'{region_1}-{region_2}', 'r_opto': [act_modes], 'r_baseline': [act_baseline],
                 'time': [psth_opto['tscale']]})), ignore_index=True)
 
         # Save results
-        cca_df.to_pickle(join(save_path, 'cca_results.pkl'))
+        cca_df.to_pickle(join(save_path, 'cca_activity_per_mode_opto.pkl'))
 

@@ -88,7 +88,7 @@ ax2.imshow(np.flipud(np.mean(jPECC['M2-ORB'], axis=2)), vmin=-0.5, vmax=0.5, cma
            extent=[time_asy[0], time_asy[-1],
                    time_ax[0] - np.mean(np.diff(time_ax))/2, time_ax[-1] + np.mean(np.diff(time_ax))/2])
 ax2.plot([0, 0], [-1, 3], color='white', ls='--', lw=0.5)
-ax2.set(xlabel='Delay (s)', title='M2 vs ORB', ylim=[-1, 3],
+ax2.set(xlabel='Delay (s)', title='M2 vs OFC', ylim=[-1, 3],
         xticks=[time_asy[0], 0, time_asy[-1]])
 
 ax3.imshow(np.flipud(np.mean(jPECC['ORB-mPFC'], axis=2)), vmin=-0.5, vmax=0.5, cmap='icefire',
@@ -96,7 +96,7 @@ ax3.imshow(np.flipud(np.mean(jPECC['ORB-mPFC'], axis=2)), vmin=-0.5, vmax=0.5, c
            extent=[time_asy[0], time_asy[-1],
                    time_ax[0] - np.mean(np.diff(time_ax))/2, time_ax[-1] + np.mean(np.diff(time_ax))/2])
 ax3.plot([0, 0], [-1, 3], color='white', ls='--', lw=0.5)
-ax3.set(xlabel='Delay (s)', title='ORB vs mPFC', ylim=[-1, 3],
+ax3.set(xlabel='Delay (s)', title='OFC vs mPFC', ylim=[-1, 3],
         xticks=[time_asy[0], 0, time_asy[-1]])
 
 ax_cb.axis('off')
@@ -115,7 +115,7 @@ ax1.plot([-1, 3], [0, 0], ls='--', color='grey')
 ax1.add_patch(Rectangle((0, -0.4), 1, 0.8, color='royalblue', alpha=0.25, lw=0))
 if PER_SUBJECT:
     sns.lineplot(x='time', y='value', data=cca_long_df[cca_long_df['variable'] == 'cca_bl'], hue='region_pair', ax=ax1,
-                 estimator=None, units='subject',
+                 estimator=None, units='subject', style='subject',
                  hue_order=['M2-mPFC', 'M2-ORB'], palette=[colors['mPFC'], colors['ORB']])
 else:
     sns.lineplot(x='time', y='value', data=cca_long_df[cca_long_df['variable'] == 'cca_bl'], hue='region_pair', ax=ax1, ci=68,
@@ -124,7 +124,7 @@ ax1.set(xlabel='Time (s)', ylabel='Canonical correlation \n over baseline (r)', 
         yticks=np.arange(-0.4, 0.41, 0.2), xticks=[-1, 0, 1, 2, 3])
 leg_handles, _ = ax1.get_legend_handles_labels()
 leg_labels = [f'M2-mPFC (n={cca_df[cca_df["region_pair"] == "M2-mPFC"]["subject"].unique().size})',
-              f'M2-ORB (n={cca_df[cca_df["region_pair"] == "M2-ORB"]["subject"].unique().size})']
+              f'M2-OFC (n={cca_df[cca_df["region_pair"] == "M2-ORB"]["subject"].unique().size})']
 leg = ax1.legend(leg_handles, leg_labels, prop={'size': 5}, bbox_to_anchor=(0.4, 0.82))
 leg.get_frame().set_linewidth(0)
 
@@ -140,7 +140,7 @@ else:
 ax2.set(xlabel='Time (s)', ylabel='Canonical correlation \n over baseline (r)', xlim=[-1, 3], ylim=[-0.4, 0.4],
         yticks=np.arange(-0.4, 0.41, 0.2), xticks=[-1, 0, 1, 2, 3])
 leg_handles, _ = ax2.get_legend_handles_labels()
-leg_labels = [f'ORB-mPFC (n={cca_df[cca_df["region_pair"] == "ORB-mPFC"]["subject"].unique().size})']
+leg_labels = [f'OFC-mPFC (n={cca_df[cca_df["region_pair"] == "ORB-mPFC"]["subject"].unique().size})']
 leg = ax2.legend(leg_handles, leg_labels, prop={'size': 5}, loc='lower left')
 leg.get_frame().set_linewidth(0)
 
@@ -157,15 +157,15 @@ ax1.plot([-1, 3], [0, 0], ls='--', color='grey')
 ax1.add_patch(Rectangle((0, -YLIM), 1, YLIM*2, color='royalblue', alpha=0.25, lw=0))
 if PER_SUBJECT:
     sns.lineplot(x='time', y='value', data=cca_long_df[cca_long_df['variable'] == 'asym'], hue='region_pair', ax=ax1,
-                 estimator=None, units='subject',
-                 hue_order=['M2-mPFC', 'M2-ORB'], palette=[colors['M2'], colors['Amyg']])
+                 estimator=None, units='subject', style='subject',
+                 hue_order=['M2-mPFC', 'M2-ORB'], palette=[colors['mPFC'], colors['ORB']])
 else:
     sns.lineplot(x='time', y='value', data=cca_long_df[cca_long_df['variable'] == 'asym'], hue='region_pair', ax=ax1, ci=68,
                  hue_order=['M2-mPFC', 'M2-ORB'], palette=[colors['mPFC'], colors['ORB']])
 ax1.set(xlabel='Time (s)', ylabel='Asymmetry', xlim=[-1, 3], ylim=[-YLIM, YLIM],
         yticks=np.arange(-YLIM, YLIM+0.01, 0.2), xticks=[-1, 0, 1, 2, 3])
 leg_handles, _ = ax1.get_legend_handles_labels()
-leg_labels = ['M2-mPFC', 'M2-ORB']
+leg_labels = ['M2-mPFC', 'M2-OFC']
 leg = ax1.legend(leg_handles, leg_labels, prop={'size': 5}, loc='lower left')
 leg.get_frame().set_linewidth(0)
 
@@ -176,7 +176,7 @@ sns.lineplot(x='time', y='value', data=cca_long_df[cca_long_df['variable'] == 'a
 ax2.set(xlabel='Time (s)', ylabel='Asymmetry', xlim=[-1, 3], ylim=[-YLIM, YLIM],
         yticks=np.arange(-YLIM, YLIM+0.01, 0.2), xticks=[-1, 0, 1, 2, 3])
 leg_handles, _ = ax2.get_legend_handles_labels()
-leg_labels = ['ORB-mPFC']
+leg_labels = ['OFC-mPFC']
 leg = ax2.legend(leg_handles, leg_labels, prop={'size': 5}, loc='lower left')
 leg.get_frame().set_linewidth(0)
 
