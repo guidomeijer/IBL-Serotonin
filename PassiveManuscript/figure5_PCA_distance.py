@@ -16,7 +16,7 @@ from serotonin_functions import paths, load_subjects, figure_style
 from dlc_functions import smooth_interpolate_signal_sg
 
 # Settings
-REGIONS = ['M2', 'ORB', 'mPFC']
+REGIONS = ['M2', 'OFC', 'mPFC']
 
 # Paths
 fig_path, save_path = paths(dropbox=True)
@@ -25,6 +25,7 @@ fig_path = join(fig_path, 'PaperPassive', 'figure5')
 # Load in data
 pca_df = pd.read_csv(join(save_path, 'pca_regions.csv'))
 pca_dist_df = pd.read_csv(join(save_path, 'pca_dist_regions.csv'))
+pca_dist_df.loc[pca_dist_df['region'] == 'ORB', 'region'] = 'OFC'
 
 # Add expression
 subjects = load_subjects()
@@ -51,7 +52,7 @@ pca_table_df = pca_dist_df.pivot(index='time', columns=['region', 'subject'], va
 pca_table_df = pca_table_df.reset_index()
 for i in pca_table_df.index.values:
     pca_table_df.loc[i, 'p_value'] = kruskal(pca_table_df.loc[i, 'M2'], pca_table_df.loc[i, 'mPFC'],
-                                             pca_table_df.loc[i, 'ORB'])[1]
+                                             pca_table_df.loc[i, 'OFC'])[1]
 
 # %% Plot
 colors, dpi = figure_style()

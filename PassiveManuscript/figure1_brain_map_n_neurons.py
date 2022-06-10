@@ -26,6 +26,8 @@ fig_path = join(fig_path, 'PaperPassive', 'figure1')
 
 # Load in results
 all_neurons = pd.read_csv(join(save_path, 'light_modulated_neurons.csv'))
+all_neurons = all_neurons[all_neurons['region'] != 'root']
+all_neurons = all_neurons[all_neurons['region'] != 'void']
 
 # Add genotype
 subjects = load_subjects()

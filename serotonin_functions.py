@@ -115,7 +115,7 @@ def figure_style():
               'PAG': sns.color_palette('tab20c')[6],
               'M2': sns.color_palette('Dark2')[2],
               'mPFC': sns.color_palette('Dark2')[1],
-              'ORB': sns.color_palette('Dark2')[0],
+              'OFC': sns.color_palette('Dark2')[0],
               'Amyg': sns.color_palette('Dark2')[3],
               'M2-mPFC': sns.color_palette('Dark2')[1],
               'M2-ORB': sns.color_palette('Dark2')[0],
@@ -258,7 +258,7 @@ def combine_regions(acronyms, split_thalamus=False, abbreviate=False):
     if abbreviate:
         regions[np.in1d(acronyms, ['ILA', 'PL', 'ACAd', 'ACAv'])] = 'mPFC'
         regions[np.in1d(acronyms, ['MOs'])] = 'M2'
-        regions[np.in1d(acronyms, ['ORBl', 'ORBm'])] = 'ORB'
+        regions[np.in1d(acronyms, ['ORBl', 'ORBm'])] = 'OFC'
         if split_thalamus:
             regions[np.in1d(acronyms, ['PO'])] = 'PO'
             regions[np.in1d(acronyms, ['LP'])] = 'LP'
