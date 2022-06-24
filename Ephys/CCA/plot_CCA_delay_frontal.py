@@ -116,10 +116,10 @@ ax1.add_patch(Rectangle((0, -0.4), 1, 0.8, color='royalblue', alpha=0.25, lw=0))
 if PER_SUBJECT:
     sns.lineplot(x='time', y='value', data=cca_long_df[cca_long_df['variable'] == 'cca_bl'], hue='region_pair', ax=ax1,
                  estimator=None, units='subject', style='subject',
-                 hue_order=['M2-mPFC', 'M2-ORB'], palette=[colors['mPFC'], colors['ORB']])
+                 hue_order=['M2-mPFC', 'M2-ORB'], palette=[colors['mPFC'], colors['OFC']])
 else:
     sns.lineplot(x='time', y='value', data=cca_long_df[cca_long_df['variable'] == 'cca_bl'], hue='region_pair', ax=ax1, ci=68,
-                 hue_order=['M2-mPFC', 'M2-ORB'], palette=[colors['mPFC'], colors['ORB']])
+                 hue_order=['M2-mPFC', 'M2-ORB'], palette=[colors['mPFC'], colors['OFC']])
 ax1.set(xlabel='Time (s)', ylabel='Canonical correlation \n over baseline (r)', xlim=[-1, 3], ylim=[-0.4, 0.4],
         yticks=np.arange(-0.4, 0.41, 0.2), xticks=[-1, 0, 1, 2, 3])
 leg_handles, _ = ax1.get_legend_handles_labels()
@@ -149,6 +149,28 @@ sns.despine(trim=True)
 
 plt.savefig(join(fig_path, 'jPECC_CCA_M2_mPFC_ORB.pdf'))
 
+# %% Per mouse
+mice = cca_long_df['subject'].unique()
+f, axs = plt.subplots(1, mice.shape[0], figsize=(1.75*mice.shape[0], 1.75), dpi=dpi)
+for i, mouse in enumerate(mice):
+    cca_slice_df = cca_long_df[(cca_long_df['subject'] == mouse)  & (cca_long_df['variable'] == 'cca_bl')]
+    axs[i].plot([-1, 3], [0, 0], ls='--', color='grey')
+    axs[i].add_patch(Rectangle((0, -0.4), 1, 0.8, color='royalblue', alpha=0.25, lw=0))
+    sns.lineplot(x='time', y='value', data=cca_slice_df, hue='region_pair', ax=axs[i],
+                 palette=[colors['mPFC'], colors['OFC']], hue_order=['M2-mPFC', 'M2-ORB'],
+                 legend=None)
+    axs[i].set(xlabel='Time (s)', xlim=[-1, 3], ylim=[-0.4, 0.4], yticks=np.arange(-0.4, 0.41, 0.2),
+               xticks=[-1, 0, 1, 2, 3], title=f'{mouse}')
+    if i == 0:
+        axs[i].set(ylabel='Canonical correlation \n over baseline (r)')
+    else:
+        axs[i].set(ylabel='')
+
+plt.tight_layout()
+sns.despine(trim=True)
+
+plt.savefig(join(fig_path, 'jPECC_CCA_M2_mPFC_OFC_per_mouse.pdf'))
+
 # %%
 YLIM = 0.4
 colors, dpi = figure_style()
@@ -158,11 +180,11 @@ ax1.add_patch(Rectangle((0, -YLIM), 1, YLIM*2, color='royalblue', alpha=0.25, lw
 if PER_SUBJECT:
     sns.lineplot(x='time', y='value', data=cca_long_df[cca_long_df['variable'] == 'asym'], hue='region_pair', ax=ax1,
                  estimator=None, units='subject', style='subject',
-                 hue_order=['M2-mPFC', 'M2-ORB'], palette=[colors['mPFC'], colors['ORB']])
+                 hue_order=['M2-mPFC', 'M2-ORB'], palette=[colors['mPFC'], colors['OFC']])
 else:
     sns.lineplot(x='time', y='value', data=cca_long_df[cca_long_df['variable'] == 'asym'], hue='region_pair', ax=ax1, ci=68,
-                 hue_order=['M2-mPFC', 'M2-ORB'], palette=[colors['mPFC'], colors['ORB']])
-ax1.set(xlabel='Time (s)', ylabel='Asymmetry', xlim=[-1, 3], ylim=[-YLIM, YLIM],
+                 hue_order=['M2-mPFC', 'M2-ORB'], palette=[colors['mPFC'], colors['OFC']])
+ax1.set(xlabel='Time (s)', ylabel=r'Asymmetry ($\bigtriangleup$r)', xlim=[-1, 3], ylim=[-YLIM, YLIM],
         yticks=np.arange(-YLIM, YLIM+0.01, 0.2), xticks=[-1, 0, 1, 2, 3])
 leg_handles, _ = ax1.get_legend_handles_labels()
 leg_labels = ['M2-mPFC', 'M2-OFC']
@@ -183,6 +205,27 @@ leg.get_frame().set_linewidth(0)
 plt.tight_layout()
 sns.despine(trim=True)
 
-plt.savefig(join(fig_path, 'jPECC_asymmetry_M2_mPFC_ORB.pdf'))
+plt.savefig(join(fig_path, 'jPECC_asymmetry_M2_mPFC_OFC.pdf'))
 
+# %%
+colors, dpi = figure_style()
+mice = cca_long_df['subject'].unique()
+f, axs = plt.subplots(1, mice.shape[0], figsize=(1.75*mice.shape[0], 1.75), dpi=dpi)
+for i, mouse in enumerate(mice):
+    cca_slice_df = cca_long_df[(cca_long_df['subject'] == mouse)  & (cca_long_df['variable'] == 'asym')]
+    axs[i].plot([-1, 3], [0, 0], ls='--', color='grey')
+    axs[i].add_patch(Rectangle((0, -0.4), 1, 0.8, color='royalblue', alpha=0.25, lw=0))
+    sns.lineplot(x='time', y='value', data=cca_slice_df, hue='region_pair', ax=axs[i],
+                 palette=[colors['mPFC'], colors['OFC']], hue_order=['M2-mPFC', 'M2-ORB'],
+                 legend=None)
+    axs[i].set(xlabel='Time (s)', xlim=[-1, 3], ylim=[-0.4, 0.4], yticks=np.arange(-0.4, 0.41, 0.2),
+               xticks=[-1, 0, 1, 2, 3], title=f'{mouse}')
+    if i == 0:
+        axs[i].set(ylabel=r'Asymmetry ($\bigtriangleup$r)')
+    else:
+        axs[i].set(ylabel='')
 
+plt.tight_layout()
+sns.despine(trim=True)
+
+plt.savefig(join(fig_path, 'jPECC_asymmetry_M2_mPFC_OFC_per_mouse.pdf'))

@@ -23,7 +23,7 @@ NEURON = 559
 T_BEFORE = 1  # for plotting
 T_AFTER = 2
 BIN_SIZE = 0.05
-_, fig_path, save_path = paths()
+fig_path, save_path = paths()
 
 # Query session
 eid = one.search(subject=SUBJECT, date_range=DATE)[0]

@@ -150,6 +150,28 @@ sns.despine(trim=True)
 
 plt.savefig(join(fig_path, 'jPECC_CCA_PPC_Hipp_Thal.pdf'))
 
+# %% Per mouse
+mice = cca_long_df['subject'].unique()
+f, axs = plt.subplots(1, mice.shape[0], figsize=(1.75*mice.shape[0], 1.75), dpi=dpi)
+for i, mouse in enumerate(mice):
+    cca_slice_df = cca_long_df[(cca_long_df['subject'] == mouse)  & (cca_long_df['variable'] == 'cca_bl')]
+    axs[i].plot([-1, 3], [0, 0], ls='--', color='grey')
+    axs[i].add_patch(Rectangle((0, -0.5), 1, 1, color='royalblue', alpha=0.25, lw=0))
+    sns.lineplot(x='time', y='value', data=cca_slice_df, hue='region_pair', ax=axs[i],
+                 palette=[colors['PPC'], colors['Thal']], hue_order=['PPC-Thal', 'Hipp-Thal'],
+                 legend=None)
+    axs[i].set(xlabel='Time (s)', xlim=[-1, 3], ylim=[-0.5, 0.5], yticks=np.arange(-0.5, 0.51, 0.2),
+               xticks=[-1, 0, 1, 2, 3], title=f'{mouse}')
+    if i == 0:
+        axs[i].set(ylabel='Canonical correlation \n over baseline (r)')
+    else:
+        axs[i].set(ylabel='')
+
+plt.tight_layout()
+sns.despine(trim=True)
+
+plt.savefig(join(fig_path, 'jPECC_CCA_PPC_Hipp_Thal_per_mouse.pdf'))
+
 # %%
 YLIM = 0.4
 colors, dpi = figure_style()
@@ -186,5 +208,25 @@ sns.despine(trim=True)
 
 plt.savefig(join(fig_path, 'asymmetry_CCA_PPC_Hipp_Thal.pdf'))
 
+# %% Per mouse
+mice = cca_long_df['subject'].unique()
+f, axs = plt.subplots(1, mice.shape[0], figsize=(1.75*mice.shape[0], 1.75), dpi=dpi)
+for i, mouse in enumerate(mice):
+    cca_slice_df = cca_long_df[(cca_long_df['subject'] == mouse)  & (cca_long_df['variable'] == 'asym')]
+    axs[i].plot([-1, 3], [0, 0], ls='--', color='grey')
+    axs[i].add_patch(Rectangle((0, -0.4), 1, 0.8, color='royalblue', alpha=0.25, lw=0))
+    sns.lineplot(x='time', y='value', data=cca_slice_df, hue='region_pair', ax=axs[i],
+                 palette=[colors['PPC'], colors['Thal']], hue_order=['PPC-Thal', 'Hipp-Thal'],
+                 legend=None)
+    axs[i].set(xlabel='Time (s)', xlim=[-1, 3], ylim=[-0.4, 0.4], yticks=np.arange(-0.4, 0.41, 0.2),
+               xticks=[-1, 0, 1, 2, 3], title=f'{mouse}')
+    if i == 0:
+        axs[i].set(ylabel=r'Asymmetry ($\bigtriangleup$r)')
+    else:
+        axs[i].set(ylabel='')
 
+plt.tight_layout()
+sns.despine(trim=True)
+
+plt.savefig(join(fig_path, 'jPECC_asymmetry_PPC_Hipp_Thal_per_mouse.pdf'))
 

@@ -11,7 +11,7 @@ one = ONE(base_url='https://alyx.internationalbrainlab.org')
 
 # Days to input Citric Acid water, including today (for the weekend on Friday input 3 days)
 DAYS = 2
-USER = 'guido'
+USER = 'laura.silva'
 
 # Get vector of dates
 dates = []
