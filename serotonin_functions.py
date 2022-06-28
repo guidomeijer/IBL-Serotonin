@@ -195,15 +195,12 @@ def query_ephys_sessions(selection='aligned', acronym=None, one=None):
 def load_trials(eid, laser_stimulation=False, invert_choice=False, invert_stimside=False,
                 patch_old_opto=True, one=None):
     one = one or ONE()
-    data, _ = one.load_datasets(eid, datasets=[
-        '_ibl_trials.stimOn_times.npy', '_ibl_trials.feedback_times.npy',
-        '_ibl_trials.goCue_times.npy', '_ibl_trials.probabilityLeft.npy',
-        '_ibl_trials.contrastLeft.npy', '_ibl_trials.contrastRight.npy',
-        '_ibl_trials.feedbackType.npy', '_ibl_trials.choice.npy',
-        '_ibl_trials.firstMovement_times.npy'])
-    trials = pd.DataFrame(data=np.vstack(data).T, columns=[
+
+    data = one.load_object(eid, 'trials')
+    data = {your_key: data[your_key] for your_key in [
         'stimOn_times', 'feedback_times', 'goCue_times', 'probabilityLeft', 'contrastLeft',
-        'contrastRight', 'feedbackType', 'choice', 'firstMovement_times'])
+        'contrastRight', 'feedbackType', 'choice', 'firstMovement_times']}
+    trials = pd.DataFrame(data=data)
     if trials.shape[0] == 0:
         return
     trials['signed_contrast'] = trials['contrastRight']
