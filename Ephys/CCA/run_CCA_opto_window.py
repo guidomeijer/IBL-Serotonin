@@ -25,7 +25,7 @@ pca = PCA(n_components=10)
 
 # Settings
 OVERWRITE = True  # whether to overwrite existing runs
-NEURON_QC = False  # whether to use neuron qc to exclude bad units
+NEURON_QC = True  # whether to use neuron qc to exclude bad units
 PCA = True  # whether to use PCA on neural activity before CCA
 N_PC = 10  # number of PCs to use
 MIN_NEURONS = 10  # minimum neurons per region
@@ -33,7 +33,7 @@ WIN_SIZE = 0.05  # window size in seconds
 PRE_TIME = 1.5  # time before stim onset in s
 POST_TIME = 3.5  # time after stim onset in s
 SMOOTHING = 0.1  # smoothing of psth
-FIT_WIN = [0, 2]  # window to fit axis (rel to opto onset)
+FIT_WIN = [0.5, 1]  # window to fit axis (rel to opto onset)
 MIN_FR = 0.5  # minimum firing rate over the whole recording
 N_MODES = 10
 
@@ -41,8 +41,8 @@ N_MODES = 10
 fig_path, save_path = paths()
 
 # Initialize some things
-REGION_PAIRS = [['M2', 'mPFC'], ['M2', 'ORB'], ['mPFC', 'Amyg'], ['ORB', 'Amyg'], ['M2', 'Amyg'],
-                ['Hipp', 'PPC'], ['Hipp', 'Thal'], ['ORB', 'mPFC'], ['PPC', 'Thal'], ['MRN', 'SC'],
+REGION_PAIRS = [['M2', 'mPFC'], ['M2', 'OFC'], ['mPFC', 'Amyg'], ['OFC', 'Amyg'], ['M2', 'Amyg'],
+                ['Hipp', 'PPC'], ['Hipp', 'Thal'], ['OFC', 'mPFC'], ['PPC', 'Thal'], ['MRN', 'SC'],
                 ['RSP', 'SC'], ['BC', 'Str'], ['MRN', 'RSP'], ['MRN', 'SN'], ['Pir', 'Str'],
                 ['SC', 'SN']]
 cca = CCA(n_components=N_MODES, max_iter=1000)
@@ -88,13 +88,10 @@ for i, eid in enumerate(np.unique(rec['eid'])):
     spikes, clusters, channels, clusters_pass = dict(), dict(), dict(), dict()
     for (pid, probe) in zip(rec.loc[rec['eid'] == eid, 'pid'].values, rec.loc[rec['eid'] == eid, 'probe'].values):
 
-        try:
-            sl = SpikeSortingLoader(eid=eid, pname=probe, one=one, atlas=ba)
-            spikes[probe], clusters[probe], channels[probe] = sl.load_spike_sorting()
-            clusters[probe] = sl.merge_clusters(spikes[probe], clusters[probe], channels[probe])
-        except Exception as err:
-            print(err)
-            continue
+        # Load in spikes
+        sl = SpikeSortingLoader(eid=eid, pname=probe, one=one, atlas=ba)
+        spikes[probe], clusters[probe], channels[probe] = sl.load_spike_sorting()
+        clusters[probe] = sl.merge_clusters(spikes[probe], clusters[probe], channels[probe])
 
         # Filter neurons that pass QC and artifact neurons
         if NEURON_QC:
@@ -102,7 +99,7 @@ for i, eid in enumerate(np.unique(rec['eid'])):
             qc_metrics, _ = spike_sorting_metrics(spikes[probe].times, spikes[probe].clusters,
                                                   spikes[probe].amps, spikes[probe].depths,
                                                   cluster_ids=np.arange(clusters[probe].channels.size))
-            clusters_pass[probe] = np.where(qc_metrics['label'] > 0.5)[0]
+            clusters_pass[probe] = np.where(qc_metrics['label'] == 1)[0]
         else:
             clusters_pass[probe] = np.unique(spikes[probe].clusters)
         clusters_pass[probe] = clusters_pass[probe][~np.isin(clusters_pass[probe], artifact_neurons.loc[
@@ -193,6 +190,5 @@ for i, eid in enumerate(np.unique(rec['eid'])):
                 'subject': subject, 'date': date, 'eid': eid, 'region_1': region_1, 'region_2': region_2,
                 'region_pair': f'{region_1}-{region_2}', 'r_opto': [r_opto],
                 'n_modes': N_MODES, 'time': [psth_opto['tscale']], 'fit_window': [FIT_WIN]})))
-    cca_df.to_pickle(join(save_path, file_name))
 
 cca_df.to_pickle(join(save_path, file_name))

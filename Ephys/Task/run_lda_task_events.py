@@ -32,7 +32,7 @@ lda = LinearDiscriminantAnalysis()
 NEURON_QC = False
 PLOT = True
 MIN_FR = 0.5  # minimum firing rate over the whole recording
-T_BEFORE = 0 
+T_BEFORE = 0
 T_AFTER = 0.3
 MIN_NEURONS = 10
 _, save_path = paths()
@@ -58,6 +58,10 @@ for i in rec.index.values:
         print('Could not load trials')
         continue
     if trials.shape[0] < 200:
+        print('Too few trials')
+        continue
+    if np.sum(np.isnan(trials['feedback_times'])) > 10:
+        print('NaNs in feedback times')
         continue
 
     # Load in spikes
@@ -88,13 +92,13 @@ for i in rec.index.values:
         for nn, neuron_id in enumerate(clusters_in_region):
             fr[nn] = np.sum(spikes.clusters == neuron_id) / spikes.clusters[-1]
         clusters_in_region = clusters_in_region[fr >= MIN_FR]
-        
+
         # Get spikes and clusters
         spks_region = spikes.times[np.isin(spikes.clusters, clusters_in_region) & np.isin(spikes.clusters, clusters_pass)]
         clus_region = spikes.clusters[np.isin(spikes.clusters, clusters_in_region) & np.isin(spikes.clusters, clusters_pass)]
         if np.unique(clus_region).shape[0] < MIN_NEURONS:
-            continue      
-         
+            continue
+
         # Trial start
         times = np.column_stack(((trials['goCue_times'] - T_BEFORE), (trials['goCue_times'] + T_AFTER)))
         spike_counts, cluster_ids = get_spike_counts_in_bins(spks_region, clus_region, times)
@@ -102,7 +106,7 @@ for i in rec.index.values:
         lda_projection = lda.fit_transform(spike_counts, trials['laser_stimulation'])
         lda_trial_start = (np.abs(np.nanmean(lda_projection[trials['laser_stimulation'] == 0]))
                            + np.abs(np.nanmean(lda_projection[trials['laser_stimulation'] == 1])))
-        
+
         # Reward
         trials_slice = trials[trials['feedbackType'] == 1]
         times = np.column_stack(((trials_slice['feedback_times'] - T_BEFORE), (trials_slice['feedback_times'] + T_AFTER)))
@@ -111,7 +115,7 @@ for i in rec.index.values:
         lda_projection = lda.fit_transform(spike_counts, trials_slice['laser_stimulation'])
         lda_reward = (np.abs(np.nanmean(lda_projection[trials_slice['laser_stimulation'] == 0]))
                       + np.abs(np.nanmean(lda_projection[trials_slice['laser_stimulation'] == 1])))
-        
+
         # Ommission
         trials_slice = trials[trials['feedbackType'] == -1]
         times = np.column_stack(((trials_slice['feedback_times'] - T_BEFORE), (trials_slice['feedback_times'] + T_AFTER)))
@@ -120,7 +124,7 @@ for i in rec.index.values:
         lda_projection = lda.fit_transform(spike_counts, trials_slice['laser_stimulation'])
         lda_ommission = (np.abs(np.nanmean(lda_projection[trials_slice['laser_stimulation'] == 0]))
                          + np.abs(np.nanmean(lda_projection[trials_slice['laser_stimulation'] == 1])))
-        
+
         # ITI
         times = np.column_stack((((trials['goCue_times'] - T_BEFORE) - 0.5),
                                  ((trials['goCue_times'] + T_AFTER) - 0.5)))
@@ -129,7 +133,7 @@ for i in rec.index.values:
         lda_projection = lda.fit_transform(spike_counts, trials['laser_stimulation'])
         lda_iti = (np.abs(np.nanmean(lda_projection[trials['laser_stimulation'] == 0]))
                    + np.abs(np.nanmean(lda_projection[trials['laser_stimulation'] == 1])))
-        
+
         # Add results to df
         lda_opto_df = pd.concat((lda_opto_df, pd.DataFrame(index=[lda_opto_df.shape[0]+1], data={
             'subject': subject, 'date': date, 'eid': eid, 'probe': probe,

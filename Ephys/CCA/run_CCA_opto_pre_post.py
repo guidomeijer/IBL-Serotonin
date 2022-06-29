@@ -33,8 +33,8 @@ WIN_SIZE = 0.05  # window size in seconds
 PRE_TIME = 1.5  # time before stim onset in s
 POST_TIME = 3.5  # time after stim onset in s
 SMOOTHING = 0.1  # smoothing of psth
-PRE_WIN = [1, 0]  # window to fit pre axis (rel to opto onset)
-POST_WIN = [0, 1]  # window to fit post axis (rel to opto onset)
+PRE_WIN = [0.5, 0]  # window to fit pre axis (rel to opto onset)
+POST_WIN = [0.5, 1]  # window to fit post axis (rel to opto onset)
 MIN_FR = 0.5  # minimum firing rate over the whole recording
 N_MODES = 10
 
@@ -42,8 +42,8 @@ N_MODES = 10
 fig_path, save_path = paths()
 
 # Initialize some things
-REGION_PAIRS = [['M2', 'mPFC'], ['M2', 'ORB'], ['mPFC', 'Amyg'], ['ORB', 'Amyg'], ['M2', 'Amyg'],
-                ['Hipp', 'PPC'], ['Hipp', 'Thal'], ['ORB', 'mPFC'], ['PPC', 'Thal'], ['MRN', 'SC'],
+REGION_PAIRS = [['M2', 'mPFC'], ['M2', 'OFC'], ['mPFC', 'Amyg'], ['OFC', 'Amyg'], ['M2', 'Amyg'],
+                ['Hipp', 'PPC'], ['Hipp', 'Thal'], ['OFC', 'mPFC'], ['PPC', 'Thal'], ['MRN', 'SC'],
                 ['RSP', 'SC'], ['BC', 'Str'], ['MRN', 'RSP'], ['MRN', 'SN'], ['Pir', 'Str'],
                 ['SC', 'SN']]
 cca = CCA(n_components=N_MODES, max_iter=1000)

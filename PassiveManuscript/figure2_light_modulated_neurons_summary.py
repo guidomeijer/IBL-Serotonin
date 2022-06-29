@@ -34,9 +34,9 @@ for i, nickname in enumerate(np.unique(subjects['subject'])):
 sert_neurons = all_neurons[all_neurons['sert-cre'] == 1]
 wt_neurons = all_neurons[all_neurons['sert-cre'] == 0]
 
-all_mice = (sert_neurons.groupby('subject').sum()['modulated'] / sert_neurons.groupby('subject').size() * 100).to_frame()
+all_mice = (sert_neurons.groupby('subject').sum()['modulated'] / sert_neurons.groupby('subject').size() * 100).to_frame().reset_index()
 all_mice['sert-cre'] = 1
-wt_mice = (wt_neurons.groupby('subject').sum()['modulated'] / wt_neurons.groupby('subject').size() * 100).to_frame()
+wt_mice = (wt_neurons.groupby('subject').sum()['modulated'] / wt_neurons.groupby('subject').size() * 100).to_frame().reset_index()
 wt_mice['sert-cre'] = 0
 all_mice = pd.concat((all_mice, wt_mice), ignore_index=True)
 all_mice = all_mice.rename({0: 'perc_mod'}, axis=1)

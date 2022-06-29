@@ -108,7 +108,7 @@ for i, eid in enumerate(np.unique(rec['eid'])):
             qc_metrics, _ = spike_sorting_metrics(spikes[probe].times, spikes[probe].clusters,
                                                   spikes[probe].amps, spikes[probe].depths,
                                                   cluster_ids=np.arange(clusters[probe].channels.size))
-            clusters_pass[probe] = np.where(qc_metrics['label'] > 0.5)[0]
+            clusters_pass[probe] = np.where(qc_metrics['label'] == 1)[0]
         else:
             clusters_pass[probe] = np.unique(spikes.clusters)
         clusters_pass[probe] = clusters_pass[probe][~np.isin(clusters_pass[probe], artifact_neurons.loc[
