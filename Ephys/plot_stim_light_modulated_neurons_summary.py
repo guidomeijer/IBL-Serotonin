@@ -15,8 +15,7 @@ from serotonin_functions import paths, figure_style, get_full_region_name, load_
 
 # Settings
 N_BINS = 50
-ARTIFACT_CUTOFF = 0.6
-AXIS_LIM = 0.8
+AXIS_LIM = 1
 
 # Paths
 fig_path, save_path = paths()

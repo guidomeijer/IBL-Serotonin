@@ -98,6 +98,20 @@ for i, eid in enumerate(eids):
 
         # Loop over regions
         for r, region in enumerate(np.unique(clusters_regions)):
+            
+            # Exclude neurons with low firing rates
+            clusters_in_region = np.where(clusters['region'] == region)[0]
+            fr = np.empty(clusters_in_region.shape[0])
+            for nn, neuron_id in enumerate(clusters_in_region):
+                fr[nn] = np.sum(spikes.clusters == neuron_id) / spikes.clusters[-1]
+            clusters_in_region = clusters_in_region[fr >= MIN_FR]
+            
+            # Get spikes and clusters
+            spks_region = spikes.times[np.isin(spikes.clusters, clusters_in_region) & np.isin(spikes.clusters, clusters_pass)]
+            clus_region = spikes.clusters[np.isin(spikes.clusters, clusters_in_region) & np.isin(spikes.clusters, clusters_pass)]
+            if np.unique(clus_region).shape[0] < MIN_NEURONS:
+                continue        
+            
 
             # Select spikes and clusters in this brain region
             clusters_in_region = clusters_pass[clusters_regions == region]
