@@ -110,22 +110,39 @@ def figure_style():
               'block': sns.color_palette('colorblind')[6],
               'RS': sns.color_palette('Set2')[0],
               'FS': sns.color_palette('Set2')[1],
-              'SC': sns.color_palette('tab20c')[4],
-              'MRN': sns.color_palette('tab20c')[5],
-              'PAG': sns.color_palette('tab20c')[6],
-              'M2': sns.color_palette('Dark2')[2],
-              'mPFC': sns.color_palette('Dark2')[1],
               'OFC': sns.color_palette('Dark2')[0],
+              'mPFC': sns.color_palette('Dark2')[1],
+              'M2': sns.color_palette('Dark2')[2],
               'Amyg': sns.color_palette('Dark2')[3],
+              'Hipp': sns.color_palette('Dark2')[4],
+              'PPC': sns.color_palette('Dark2')[5],
+              'Pir': sns.color_palette('Dark2')[6],
+              'SC': sns.color_palette('Dark2')[7],
+              'Thal': sns.color_palette('tab10')[9],
+              'PAG': sns.color_palette('Set1')[7],
+              'BC': sns.color_palette('Accent')[0],
+              'Str': sns.color_palette('Accent')[1],
+              'MRN': sns.color_palette('Accent')[2],
+              'SNr': [0.75, 0.75, 0.75],
+              'Orbitofrontal cortex': sns.color_palette('Dark2')[0],
+              'Medial prefrontal cortex': sns.color_palette('Dark2')[1],
+              'Secondary motor cortex': sns.color_palette('Dark2')[2],
+              'Amygdala': sns.color_palette('Dark2')[3],
+              'Hippocampus': sns.color_palette('Dark2')[4],
+              'Posterior parietal cortex': sns.color_palette('Dark2')[5],
+              'Piriform': sns.color_palette('Dark2')[6],
+              'Superior colliculus': sns.color_palette('Dark2')[7],
+              'Periaqueductal gray': sns.color_palette('Set1')[7],
+              'Barrel cortex': sns.color_palette('Set2')[0],
+              'Thalamus': sns.color_palette('tab10')[9],
+              'Tail of the striatum': sns.color_palette('Set2')[1],
+              'Midbrain reticular nucleus': sns.color_palette('Accent')[2],
+              'Substantia nigra': [0.75, 0.75, 0.75],
+              'Frontal': sns.color_palette('Dark2')[2],
+              'Sensory': sns.color_palette('Dark2')[5],
+              'Midbrain': sns.color_palette('Set1')[7],
               'M2-mPFC': sns.color_palette('Dark2')[1],
-              'M2-ORB': sns.color_palette('Dark2')[0],
-              'PPC': sns.color_palette('tab20c')[0],
-              'BC': sns.color_palette('tab20c')[1],
-              'Str': sns.color_palette('tab20c')[12],
-              'SNr': sns.color_palette('tab20c')[13],
-              'Thal': sns.color_palette('tab10')[3],
-              'Pir': sns.color_palette('tab20b')[9],
-              'Hipp': sns.color_palette('tab20')[12]}
+              'M2-ORB': sns.color_palette('Dark2')[0]}
     screen_width = tk.Tk().winfo_screenwidth()
     dpi = screen_width / 10
     return colors, dpi
@@ -311,11 +328,11 @@ def combine_regions(acronyms, split_thalamus=False, abbreviate=False):
     return regions
 
 
-def high_level_regions(acronyms):
+def high_level_regions(acronyms, abbreviate=False):
     first_level_regions = combine_regions(acronyms, abbreviate=True)
     regions = np.array(['root'] * len(first_level_regions), dtype=object)
-    regions[np.in1d(first_level_regions, ['mPFC', 'ORB'])] = 'Frontal cortex'
-    regions[np.in1d(first_level_regions, ['PIR', 'BC', 'PPC'])] = 'Sensory cortex'
+    regions[np.in1d(first_level_regions, ['mPFC', 'OFC'])] = 'Frontal'
+    regions[np.in1d(first_level_regions, ['Pir', 'BC', 'PPC'])] = 'Sensory'
     regions[np.in1d(first_level_regions, ['Raphe', 'MRN', 'SN', 'PAG', 'SC'])] = 'Midbrain'
     regions[np.in1d(first_level_regions, ['Hipp'])] = 'Hippocampus'
     regions[np.in1d(first_level_regions, ['Thal'])] = 'Thalamus'

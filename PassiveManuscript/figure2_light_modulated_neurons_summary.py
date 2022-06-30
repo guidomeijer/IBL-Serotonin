@@ -13,7 +13,6 @@ from os.path import join
 from serotonin_functions import paths, figure_style, load_subjects
 
 # Settings
-HISTOLOGY = True
 N_BINS = 30
 MIN_NEURONS = 10
 AP = [2, -1.5, -3.5]
@@ -34,6 +33,7 @@ for i, nickname in enumerate(np.unique(subjects['subject'])):
 sert_neurons = all_neurons[all_neurons['sert-cre'] == 1]
 wt_neurons = all_neurons[all_neurons['sert-cre'] == 0]
 
+# Calculate percentage modulated neurons
 all_mice = (sert_neurons.groupby('subject').sum()['modulated'] / sert_neurons.groupby('subject').size() * 100).to_frame().reset_index()
 all_mice['sert-cre'] = 1
 wt_mice = (wt_neurons.groupby('subject').sum()['modulated'] / wt_neurons.groupby('subject').size() * 100).to_frame().reset_index()
@@ -41,8 +41,7 @@ wt_mice['sert-cre'] = 0
 all_mice = pd.concat((all_mice, wt_mice), ignore_index=True)
 all_mice = all_mice.rename({0: 'perc_mod'}, axis=1)
 
-# %%
-
+# %% Plot percentage mod neurons
 colors, dpi = figure_style()
 f, ax1 = plt.subplots(1, 1, figsize=(1.5, 1.75), dpi=dpi)
 
@@ -55,3 +54,8 @@ plt.tight_layout()
 
 plt.savefig(join(fig_path, 'light_mod_summary.pdf'))
 plt.savefig(join(fig_path, 'light_mod_summary.jpg'), dpi=300)
+
+
+
+
+
