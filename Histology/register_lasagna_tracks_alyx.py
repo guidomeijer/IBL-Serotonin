@@ -26,7 +26,7 @@ from ibllib.pipes import histology
 # ======== EDIT FOR USERS ====
 
 # Edit so as to reflect the directory containing your electrode tracks
-path_tracks = "/home/guido/Histology/ZFM-02601/tracks"
+path_tracks = "E:\\Histology\\ZFM-03320\\tracks"
 
 EXAMPLE_OVERWRITE = False  # Put to False when wanting to run the script on your data
 
