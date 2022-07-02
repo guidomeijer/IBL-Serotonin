@@ -20,10 +20,12 @@ import statsmodels.api as sm
 from brainbox.core import TimeSeries
 from brainbox.processing import sync
 from sklearn.model_selection import KFold
-from os.path import join, realpath, dirname
+from os.path import join, realpath, dirname, isfile
 from glob import glob
 from datetime import datetime
 from brainbox.io.spikeglx import spikeglx
+from brainbox.metrics.single_units import spike_sorting_metrics
+from brainbox.io.one import SpikeSortingLoader
 from iblutil.numerical import ismember
 from ibllib.atlas import BrainRegions
 from ibllib.atlas import AllenAtlas
@@ -489,49 +491,103 @@ def load_exp_smoothing_trials(eids, stimulated=None, rt_cutoff=0.2, after_probe_
         return actions, stimuli, stim_side, prob_left, session_uuids
 
 
-def load_passive_opto_times(eid, return_off_times=False, one=None):
+def load_passive_opto_times(eid, one=None):
     """
     Load in the time stamps of the optogenetic stimulation at the end of the recording, after the
-    taks and the spontaneous activity.
+    taks and the spontaneous activity. Or when it's a long stimulation session with different
+    frequencies, only return those stimulation bouts of 25 Hz.
 
     Returns
     opto_train_times : 1D array
         Timestamps of the start of each pulse train
     opto_pulse_times : 1D array
         Timestamps of all individual pulses
-    opto_off_times : 1D array
-        Timestamps of when the light pulse goes off
     """
 
     if one is None:
         one = ONE()
 
-    # Load in laser pulses
-    try:
-        one.load_datasets(eid, datasets=[
-            '_spikeglx_ephysData_g*_t0.nidq.cbin', '_spikeglx_ephysData_g*_t0.nidq.meta',
-            '_spikeglx_ephysData_g*_t0.nidq.ch'], download_only=True)
-    except:
-        print('Error loading opto trace')
-        return [], []
-    session_path = one.eid2path(eid)
-    nidq_file = glob(str(session_path.joinpath('raw_ephys_data/_spikeglx_ephysData_g*_t0.nidq.cbin')))[0]
-    sr = spikeglx.Reader(nidq_file)
-    offset = int((sr.shape[0] / sr.fs - 720) * sr.fs)
-    opto_trace = sr.read_sync_analog(slice(offset, sr.shape[0]))[:, 1]
-    opto_times = np.arange(offset, sr.shape[0]) / sr.fs
-
-    # Get start times of pulse trains
-    opto_on_times = opto_times[np.concatenate((np.diff(opto_trace), [0])) > 1]
-    opto_off_times = opto_times[np.concatenate((np.diff(opto_trace), [0])) < -1]
-
-    if len(opto_on_times) == 0:
-        print(f'No pulses found for {eid}')
-        return [], []
+    # Load in pulses from disk if already extracted
+    session_path = one.eid2path(eid)        
+    if isfile(join(session_path, 'opto_train_times.npy')):
+        opto_train_times = np.load(join(session_path, 'opto_train_times.npy'))
+        opto_on_times = np.load(join(session_path, 'opto_on_times.npy'))
+        return opto_train_times, opto_on_times
     else:
-        # Find the opto pulses after the spontaneous activity (after a long break, here 100s)
+        # Load in laser pulses
+        try:
+            one.load_datasets(eid, datasets=[
+                '_spikeglx_ephysData_g*_t0.nidq.cbin', '_spikeglx_ephysData_g*_t0.nidq.meta',
+                '_spikeglx_ephysData_g*_t0.nidq.ch'], download_only=True)
+        except:
+            print('Error loading opto trace')
+            return [], []
+        nidq_file = glob(str(session_path.joinpath('raw_ephys_data/_spikeglx_ephysData_g*_t0.nidq.cbin')))[0]
+        sr = spikeglx.Reader(nidq_file)
+        offset = int((sr.shape[0] / sr.fs - 720) * sr.fs)
+        opto_trace = sr.read_sync_analog(slice(offset, sr.shape[0]))[:, 1]
+        opto_times = np.arange(offset, sr.shape[0]) / sr.fs
+    
+        # Get start times of pulse trains
+        opto_on_times = opto_times[np.concatenate((np.diff(opto_trace), [0])) > 1]
+        if len(opto_on_times) == 0:
+            print(f'No pulses found for {eid}')
+            return [], []
+       
+        # Get the times of the onset of each pulse train
         opto_train_times = opto_on_times[np.concatenate(([True], np.diff(opto_on_times) > 1))]
-
+        
+        # Get the stimulation frequencies 
+        opto_freqs = np.empty(opto_train_times.shape)
+        for i, t_time in enumerate(opto_train_times):
+            opto_freqs[i] = opto_on_times[(opto_on_times >= t_time) & (opto_on_times <= t_time + 1)].shape[0]
+        opto_freqs = opto_freqs - opto_freqs % 5  # round to 5
+        opto_freqs[opto_freqs == 0] = 1
+        
+        # If there are different stimulation frequencies than 25 Hz it's a long stim session 
+        if np.any(np.isin([1, 5, 10], opto_freqs)):
+            print('Long opto stim session detected, extracting 25 Hz pulse trains..')
+            
+            # Load in the trace in chunks and only extract the 25Hz trains
+            opto_train_times = []
+            opto_on_times = []
+            chunk_edges = np.arange(0, sr.shape[0], 500 * sr.fs).astype(int)
+            for j in range(len(chunk_edges[:-1])):
+                
+                # Load in chunk of trace
+                trace_chunk = sr.read_sync_analog(slice(chunk_edges[j], chunk_edges[j+1]))[:, 1]
+                times_chunk = np.arange(chunk_edges[j], chunk_edges[j+1]) / sr.fs
+                
+                # Get start times of pulse trains
+                these_on_times = times_chunk[np.concatenate((np.diff(trace_chunk), [0])) > 1]
+                
+                # Get the times of the onset of each pulse train
+                these_train_times = these_on_times[np.concatenate(([True], np.diff(these_on_times) > 1))]
+                
+                # Get the stimulation frequencies 
+                these_freqs = np.empty(these_train_times.shape)
+                for i, t_time in enumerate(these_train_times):
+                    these_freqs[i] = these_on_times[(these_on_times >= t_time) & (these_on_times <= t_time + 1)].shape[0]
+                these_freqs = these_freqs - these_freqs % 5  # round to 5
+                these_freqs[these_freqs == 0] = 1
+                
+                # Add to array
+                opto_train_times.append(these_train_times[these_freqs == 25])
+                for kk, this_train_time in enumerate(these_train_times[these_freqs == 25]):
+                    opto_on_times.append(these_on_times[(these_on_times >= this_train_time)
+                                                        & (these_on_times <= this_train_time + 1)])
+                
+            # Convert to arrays
+            opto_train_times = np.concatenate(opto_train_times)
+            opto_on_times = np.concatenate(opto_on_times)
+            
+            # Save extracted pulses to disk
+            np.save(join(session_path, 'opto_train_times.npy'), opto_train_times)
+            np.save(join(session_path, 'opto_on_times.npy'), opto_on_times)
+            
+            return opto_train_times, opto_on_times            
+        
+        # Find the opto pulses after the spontaneous activity (after a long break, here 100s)
         if np.sum(np.diff(opto_train_times) > 100) > 0:
             first_pulse = np.where(np.diff(opto_train_times) > 100)[0][0]+1
         elif opto_train_times[0] - opto_times[0] > 100:
@@ -541,40 +597,38 @@ def load_passive_opto_times(eid, return_off_times=False, one=None):
             return [], []
         opto_train_times = opto_train_times[first_pulse:]
         opto_on_times = opto_on_times[first_pulse:]
-        opto_off_times = opto_off_times[first_pulse:]
-        if return_off_times:
-            return opto_train_times, opto_on_times, opto_off_times
-        else:
-            return opto_train_times, opto_on_times
+        
+        # Save extracted pulses to disk
+        np.save(join(session_path, 'opto_train_times.npy'), opto_train_times)
+        np.save(join(session_path, 'opto_on_times.npy'), opto_on_times)
+       
+        return opto_train_times, opto_on_times
 
 
-def load_opto_pulse_times(eid, part='begin', time_slice=400, one=None):
-        if one is None:
-            one = ONE()
-
-        # Load in laser pulses
-        one.load_datasets(eid, datasets=[
-            '_spikeglx_ephysData_g*_t0.nidq.cbin', '_spikeglx_ephysData_g*_t0.nidq.meta',
-            '_spikeglx_ephysData_g*_t0.nidq.ch'], download_only=True)
-        session_path = one.eid2path(eid)
-        nidq_file = glob(str(session_path.joinpath('raw_ephys_data/_spikeglx_ephysData_g*_t0.nidq.cbin')))[0]
-        sr = spikeglx.Reader(nidq_file)
-        if part == 'begin':
-            opto_trace = sr.read_sync_analog(slice(0, int(time_slice * sr.fs)))[:, 1]
-            opto_times = np.arange(0, int(time_slice * sr.fs)) / sr.fs
-        elif part == 'end':
-            offset = int((sr.shape[0] / sr.fs - time_slice) * sr.fs)
-            opto_trace = sr.read_sync_analog(slice(offset, offset + int(time_slice * sr.fs)))[:, 1]
-            opto_times = np.arange(offset, offset + len(opto_trace)) / sr.fs
-
-        # Get all pulse times
-        opto_high_times = opto_times[opto_trace > 1]
-        if len(opto_high_times) == 0:
-            print(f'No pulses found for {eid}')
-            return []
-        else:
-            opto_pulses = opto_high_times[np.concatenate(([True], np.diff(opto_high_times) > 0.01))]
-            return opto_pulses
+def get_neuron_qc(pid, one=None, ba=None, force_rerun=False):
+    one = one or ONE()
+    ba = ba or AllenAtlas()
+    
+    # Check if QC is already computed
+    eid, probe = one.pid2eid(pid)
+    session_path = one.eid2path(eid)
+    if isfile(join(session_path, 'alf', probe, 'neuron_qc_metrics.csv')) & ~force_rerun:
+        print('Neuron QC metrics loaded from disk')
+        qc_metrics = pd.read_csv(join(session_path, 'alf', probe, 'neuron_qc_metrics.csv'))
+        return qc_metrics
+    
+    # Load in spikes
+    sl = SpikeSortingLoader(pid=pid, one=one, atlas=ba)
+    spikes, clusters, channels = sl.load_spike_sorting()
+    clusters = sl.merge_clusters(spikes, clusters, channels)
+    
+    # Calculate QC metrics
+    print('Calculating neuron QC metrics')
+    qc_metrics, _ = spike_sorting_metrics(spikes.times, spikes.clusters,
+                                          spikes.amps, spikes.depths,
+                                          cluster_ids=np.arange(clusters.channels.size))
+    qc_metrics.to_csv(join(session_path, 'alf', probe, 'neuron_qc_metrics.csv'))
+    return qc_metrics
 
 
 def load_lfp(eid, probe, time_start, time_end, relative_to='begin', destriped=False, one=None):

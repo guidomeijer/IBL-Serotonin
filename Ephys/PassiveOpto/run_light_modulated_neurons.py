@@ -13,7 +13,7 @@ from zetapy import getZeta
 from brainbox.metrics.single_units import spike_sorting_metrics
 from brainbox.io.one import SpikeSortingLoader
 from serotonin_functions import (paths, remap, query_ephys_sessions, load_passive_opto_times,
-                                 remove_artifact_neurons)
+                                 remove_artifact_neurons, get_neuron_qc)
 from one.api import ONE
 from ibllib.atlas import AllenAtlas
 ba = AllenAtlas()
@@ -74,10 +74,7 @@ for i in rec.index.values:
 
     # Filter neurons that pass QC
     if NEURON_QC:
-        print('Calculating neuron QC metrics..')
-        qc_metrics, _ = spike_sorting_metrics(spikes.times, spikes.clusters,
-                                              spikes.amps, spikes.depths,
-                                              cluster_ids=np.arange(clusters.channels.size))
+        qc_metrics = get_neuron_qc(pid, one=one, ba=ba)
         clusters_pass = np.where(qc_metrics['label'] == 1)[0]
     else:
         clusters_pass = np.unique(spikes.clusters)
@@ -86,19 +83,16 @@ for i in rec.index.values:
     if len(spikes.clusters) == 0:
         continue
 
-    # Select spikes of passive period
-    start_passive = opto_train_times[0] - 360
-    spikes.clusters = spikes.clusters[spikes.times > start_passive]
-    spikes.times = spikes.times[spikes.times > start_passive]
-
     # Determine significant neurons
-    print('Performing ZETA tests')
+    print('Performing ZETA tests..')
     p_values = np.empty(np.unique(spikes.clusters).shape)
     latency_zeta = np.empty(np.unique(spikes.clusters).shape)
     latency_peak = np.empty(np.unique(spikes.clusters).shape)
     latency_peak_hw = np.empty(np.unique(spikes.clusters).shape)
     firing_rates = np.empty(np.unique(spikes.clusters).shape)
     for n, neuron_id in enumerate(np.unique(spikes.clusters)):
+        if np.mod(n, 20) == 0:
+            print(f'Neuron {n} of {np.unique(spikes.clusters).shape[0]}')
         p_values[n], arr_latency = getZeta(spikes.times[spikes.clusters == neuron_id],
                                            opto_train_times, intLatencyPeaks=4,
                                            tplRestrictRange=(0, 1))
@@ -106,7 +100,8 @@ for i in rec.index.values:
         latency_peak[n] = arr_latency[2]
         latency_peak_hw[n] = arr_latency[3]
         firing_rates[n] = (np.sum(spikes.times[spikes.clusters == neuron_id].shape[0])
-                           / (spikes.times[-1] - start_passive))
+                           / (spikes.times[-1]))
+    print(f'Found {np.sum(p_values < 0.05)} opto modulated neurons')
 
     # Exclude low firing rate units
     p_values[firing_rates < MIN_FR] = 1
@@ -133,6 +128,9 @@ for i in rec.index.values:
         'modulated': p_values < 0.05, 'p_value': p_values,
         'latency_zeta': latency_zeta, 'latency_peak': latency_peak,
         'latency_peak_hw': latency_peak_hw})))
+        
+    # Save output for this insertion
+    light_neurons.to_csv(join(save_path, 'light_modulated_neurons.csv'), index=False)
 
 # Remove artifact neurons
 light_neurons = remove_artifact_neurons(light_neurons)
