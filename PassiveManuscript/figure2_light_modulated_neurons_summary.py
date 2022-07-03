@@ -43,11 +43,11 @@ all_mice = all_mice.rename({0: 'perc_mod'}, axis=1)
 
 # %% Plot percentage mod neurons
 colors, dpi = figure_style()
-f, ax1 = plt.subplots(1, 1, figsize=(1.5, 1.75), dpi=dpi)
+f, ax1 = plt.subplots(1, 1, figsize=(1.2, 1.75), dpi=dpi)
 
-sns.swarmplot(x='sert-cre', y='perc_mod', data=all_mice, order=[1, 0],
+sns.stripplot(x='sert-cre', y='perc_mod', data=all_mice, order=[1, 0], size=3,
               palette=[colors['sert'], colors['wt']], ax=ax1)
-ax1.set(xticklabels=['SERT', 'WT'], ylabel='Modulated neurons (%)', ylim=[0, 80], xlabel='')
+ax1.set(xticklabels=['SERT', 'WT'], ylabel='Sig. modulated neurons (%)', ylim=[0, 60], xlabel='')
 
 sns.despine(trim=True)
 plt.tight_layout()

@@ -111,7 +111,7 @@ sns.barplot(x='perc_mod', y='full_region', data=per_mouse_df, order=ordered_regi
             color=colors['sert'], ax=ax1, ci=None)
 sns.swarmplot(x='perc_mod', y='full_region', data=per_mouse_df, order=ordered_regions_pm['full_region'],
               color=colors['grey'], ax=ax1, size=2)
-ax1.set(xlabel='Modulated neurons (%)', ylabel='', xlim=[0, 102], xticks=np.arange(0, 101, 25))
+ax1.set(xlabel='Modulated neurons (%)', ylabel='', xlim=[0, 75], xticks=np.arange(0, 76, 25))
 ax1.legend(frameon=False, bbox_to_anchor=(0.5, 0.3))
 #ax1.plot([-1, ax1.get_xlim()[1]], [5, 5], ls='--', color='grey')
 #plt.xticks(rotation=90)
@@ -150,7 +150,7 @@ plt.savefig(join(fig_path, 'light_modulation_per_region.pdf'))
 colors, dpi = figure_style()
 f, ax1 = plt.subplots(1, 1, figsize=(3, 2), dpi=dpi)
 sns.stripplot(x='mod_index_late', y='full_region', ax=ax1, data=mod_neurons,
-              order=ordered_regions.loc[ordered_regions['full_region'].isin(mod_neurons['full_region']), 'full_region'],
+              order=ordered_regions_pm.loc[ordered_regions_pm['full_region'].isin(mod_neurons['full_region']), 'full_region'],
               size=2, palette=colors) 
 ax1.plot([0, 0], ax1.get_ylim(), ls='--', color=colors['grey'])
 ax1.set(ylabel='', xlabel='Modulation index', xlim=[-1.05, 1.05], xticklabels=[-1, -0.5, 0, 0.5, 1])

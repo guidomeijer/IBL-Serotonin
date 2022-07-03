@@ -61,8 +61,8 @@ ax1.add_patch(Rectangle((0, 0), 1, 4, color='royalblue', alpha=0.25, lw=0))
 sns.lineplot(x='time', y='pca_dist_smooth', ax=ax1, legend='brief', hue='region', ci=68,
              data=pca_dist_df, units='subject', estimator=None,
              hue_order=REGIONS, palette=[colors[i] for i in REGIONS])
-ax1.plot(pca_table_df.loc[(pca_table_df['p_value'] < 0.05) & (pca_table_df['time'] < 1), 'time'], 
-         np.ones(pca_table_df[(pca_table_df['p_value'] < 0.05) & (pca_table_df['time'] < 1)].shape[0])*4, color='k')
+#ax1.plot(pca_table_df.loc[(pca_table_df['p_value'] < 0.05) & (pca_table_df['time'] < 1), 'time'], 
+#         np.ones(pca_table_df[(pca_table_df['p_value'] < 0.05) & (pca_table_df['time'] < 1)].shape[0])*4, color='k')
 ax1.set(xlim=[-1, 2], xlabel='Time (s)', ylabel='PCA traj. displacement (a.u.)',
         xticks=[-1, 0, 1, 2], ylim=[0, 4.05])
 leg = ax1.legend(title='', frameon=True, bbox_to_anchor=(0.45, 0.6), prop={'size': 5.5})

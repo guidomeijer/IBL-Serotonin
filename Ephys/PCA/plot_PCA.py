@@ -15,7 +15,7 @@ from serotonin_functions import paths, load_subjects, figure_style
 from dlc_functions import smooth_interpolate_signal_sg
 
 # Settings
-REGIONS_1 = ['M2', 'mPFC', 'ORB']
+REGIONS_1 = ['M2', 'mPFC', 'OFC']
 REGIONS_2 = ['Thal', 'PPC', 'Hipp']
 
 # Paths
@@ -47,7 +47,7 @@ ax1.add_patch(Rectangle((0, 0), 1, 3, color='royalblue', alpha=0.25, lw=0))
 #ax.add_patch(Rectangle((0, 0), 1, -100, color='royalblue', alpha=0.25, lw=0))
 sns.lineplot(x='time', y='pca_dist_smooth', ax=ax1, legend='brief', hue='region', ci=68,
              data=pca_dist_df[(pca_dist_df['sert-cre'] == 1) & (pca_dist_df['region'].isin(REGIONS_1))],
-             hue_order=REGIONS_1, palette='Dark2')
+             hue_order=REGIONS_1, palette=colors)
 ax1.set(xlim=[-0.5, 1.5], xlabel='Time (s)', ylabel='PCA traj. displacement (a.u.)', xticks=[-0.5, 0, 0.5, 1, 1.5],
         ylim=[0, 3])
 ax1.legend(title='', frameon=False, bbox_to_anchor=(0.55, 0.6))
@@ -56,7 +56,7 @@ ax2.add_patch(Rectangle((0, 0), 1, 3, color='royalblue', alpha=0.25, lw=0))
 #ax.add_patch(Rectangle((0, 0), 1, -100, color='royalblue', alpha=0.25, lw=0))
 sns.lineplot(x='time', y='pca_dist_smooth', ax=ax2, legend='brief', hue='region', ci=68,
              data=pca_dist_df[(pca_dist_df['sert-cre'] == 1) & (pca_dist_df['region'].isin(REGIONS_2))],
-             hue_order=REGIONS_2, palette='Dark2')
+             hue_order=REGIONS_2, palette=colors)
 ax2.set(xlim=[-0.5, 1.5], xlabel='Time (s)', ylabel='PCA traj. displacement (a.u.)', xticks=[-0.5, 0, 0.5, 1, 1.5],
         ylim=[0, 3])
 ax2.legend(title='', frameon=False, bbox_to_anchor=(0.55, 0.6))

@@ -16,7 +16,7 @@ from sklearn.model_selection import LeaveOneOut, KFold
 from brainbox.metrics.single_units import spike_sorting_metrics
 from brainbox.io.one import SpikeSortingLoader
 from serotonin_functions import (paths, remap, query_ephys_sessions, load_passive_opto_times,
-                                 get_artifact_neurons, calculate_peths)
+                                 get_artifact_neurons, calculate_peths, get_neuron_qc)
 from one.api import ONE
 from ibllib.atlas import AllenAtlas
 ba = AllenAtlas()
@@ -44,10 +44,13 @@ MIN_FR = 0.5  # minimum firing rate over the whole recording
 fig_path, save_path = paths()
 
 # Initialize some things
+"""
 REGION_PAIRS = [['M2', 'mPFC'], ['M2', 'ORB'], ['mPFC', 'Amyg'], ['ORB', 'Amyg'], ['M2', 'Amyg'],
                 ['Hipp', 'PPC'], ['Hipp', 'Thal'], ['ORB', 'mPFC'], ['PPC', 'Thal'], ['MRN', 'SC'],
                 ['RSP', 'SC'], ['BC', 'Str'], ['MRN', 'RSP'], ['MRN', 'SN'], ['Pir', 'Str'],
                 ['SC', 'SN']]
+"""
+REGION_PAIRS = [['M2', 'mPFC'], ['M2', 'OFC'], ['mPFC', 'OFC']]
 np.random.seed(42)  # fix random seed for reproducibility
 n_time_bins = int((PRE_TIME + POST_TIME) / WIN_SIZE)
 if SMOOTHING > 0:
@@ -104,10 +107,7 @@ for i, eid in enumerate(np.unique(rec['eid'])):
 
         # Filter neurons that pass QC and artifact neurons
         if NEURON_QC:
-            print('Calculating neuron QC metrics..')
-            qc_metrics, _ = spike_sorting_metrics(spikes[probe].times, spikes[probe].clusters,
-                                                  spikes[probe].amps, spikes[probe].depths,
-                                                  cluster_ids=np.arange(clusters[probe].channels.size))
+            qc_metrics = get_neuron_qc(pid, one=one, ba=ba)
             clusters_pass[probe] = np.where(qc_metrics['label'] == 1)[0]
         else:
             clusters_pass[probe] = np.unique(spikes.clusters)

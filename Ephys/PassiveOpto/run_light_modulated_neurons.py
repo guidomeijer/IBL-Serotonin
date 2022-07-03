@@ -10,7 +10,6 @@ from os.path import join
 import pandas as pd
 from brainbox.task.closed_loop import roc_single_event
 from zetapy import getZeta
-from brainbox.metrics.single_units import spike_sorting_metrics
 from brainbox.io.one import SpikeSortingLoader
 from serotonin_functions import (paths, remap, query_ephys_sessions, load_passive_opto_times,
                                  remove_artifact_neurons, get_neuron_qc)
@@ -45,7 +44,7 @@ for i in rec.index.values:
     pid, eid, probe = rec.loc[i, 'pid'], rec.loc[i, 'eid'], rec.loc[i, 'probe']
     subject, date = rec.loc[i, 'subject'], rec.loc[i, 'date']
 
-    print(f'Starting {subject}, {date}')
+    print(f'\nStarting {subject}, {date}')
 
     # Load in laser pulse times
     try:
@@ -95,19 +94,19 @@ for i in rec.index.values:
             print(f'Neuron {n} of {np.unique(spikes.clusters).shape[0]}')
         p_values[n], arr_latency = getZeta(spikes.times[spikes.clusters == neuron_id],
                                            opto_train_times, intLatencyPeaks=4,
-                                           tplRestrictRange=(0, 1))
+                                           tplRestrictRange=(0, 1), dblUseMaxDur=6)
         latency_zeta[n] = np.min(arr_latency[:2])
         latency_peak[n] = arr_latency[2]
         latency_peak_hw[n] = arr_latency[3]
         firing_rates[n] = (np.sum(spikes.times[spikes.clusters == neuron_id].shape[0])
                            / (spikes.times[-1]))
-    print(f'Found {np.sum(p_values < 0.05)} opto modulated neurons')
 
     # Exclude low firing rate units
     p_values[firing_rates < MIN_FR] = 1
     latency_zeta[firing_rates < MIN_FR] = np.nan
     latency_peak[firing_rates < MIN_FR] = np.nan
     latency_peak_hw[firing_rates < MIN_FR] = np.nan
+    print(f'Found {np.sum(p_values < 0.05)} opto modulated neurons')
 
     # Calculate modulation index
     roc_auc, cluster_ids = roc_single_event(spikes.times, spikes.clusters,
@@ -131,6 +130,7 @@ for i in rec.index.values:
         
     # Save output for this insertion
     light_neurons.to_csv(join(save_path, 'light_modulated_neurons.csv'), index=False)
+    print('Saved output to disk')
 
 # Remove artifact neurons
 light_neurons = remove_artifact_neurons(light_neurons)

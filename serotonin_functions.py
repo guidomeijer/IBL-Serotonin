@@ -125,6 +125,7 @@ def figure_style():
               'BC': sns.color_palette('Accent')[0],
               'Str': sns.color_palette('Accent')[1],
               'MRN': sns.color_palette('Accent')[2],
+              'RSP': 'r',
               'SNr': [0.75, 0.75, 0.75],
               'Orbitofrontal cortex': sns.color_palette('Dark2')[0],
               'Medial prefrontal cortex': sns.color_palette('Dark2')[1],
@@ -140,6 +141,7 @@ def figure_style():
               'Tail of the striatum': sns.color_palette('Set2')[1],
               'Midbrain reticular nucleus': sns.color_palette('Accent')[2],
               'Substantia nigra': [0.75, 0.75, 0.75],
+              'Retrosplenial cortex': 'r',
               'Frontal': sns.color_palette('Dark2')[2],
               'Sensory': sns.color_palette('Dark2')[5],
               'Midbrain': sns.color_palette('Set1')[7],
@@ -312,7 +314,7 @@ def combine_regions(acronyms, split_thalamus=False, abbreviate=False):
         else:
             regions[np.in1d(acronyms, ['PO', 'LP', 'LD', 'RT', 'VAL'])] = 'Thalamus'
         regions[np.in1d(acronyms, ['SCm', 'SCs', 'SCig', 'SCsg', 'SCdg'])] = 'Superior colliculus'
-        regions[np.in1d(acronyms, ['RSPv', 'RSPd'])] = 'Retrosplenial'
+        regions[np.in1d(acronyms, ['RSPv', 'RSPd'])] = 'Retrosplenial cortex'
         regions[np.in1d(acronyms, ['GPi', 'GPe'])] = 'Globus pallidus'
         regions[np.in1d(acronyms, ['MRN'])] = 'Midbrain reticular nucleus'
         regions[np.in1d(acronyms, ['AON'])] = 'Anterior olfactory nucleus'
@@ -517,12 +519,13 @@ def load_passive_opto_times(eid, one=None):
         # Load in laser pulses
         try:
             one.load_datasets(eid, datasets=[
-                '_spikeglx_ephysData_g*_t0.nidq.cbin', '_spikeglx_ephysData_g*_t0.nidq.meta',
-                '_spikeglx_ephysData_g*_t0.nidq.ch'], download_only=True)
+                '_spikeglx_ephysData_g0_t0.nidq.cbin', '_spikeglx_ephysData_g0_t0.nidq.meta',
+                '_spikeglx_ephysData_g0_t0.nidq.ch'], download_only=True)
         except:
-            print('Error loading opto trace')
-            return [], []
-        nidq_file = glob(str(session_path.joinpath('raw_ephys_data/_spikeglx_ephysData_g*_t0.nidq.cbin')))[0]
+            one.load_datasets(eid, datasets=[
+                '_spikeglx_ephysData_g1_t0.nidq.cbin', '_spikeglx_ephysData_g1_t0.nidq.meta',
+                '_spikeglx_ephysData_g1_t0.nidq.ch'], download_only=True)
+        nidq_file = glob(str(session_path.joinpath('raw_ephys_data/_spikeglx_ephysData_g*_t0.nidq.cbin')))[-1]
         sr = spikeglx.Reader(nidq_file)
         offset = int((sr.shape[0] / sr.fs - 720) * sr.fs)
         opto_trace = sr.read_sync_analog(slice(offset, sr.shape[0]))[:, 1]
@@ -533,7 +536,7 @@ def load_passive_opto_times(eid, one=None):
         if len(opto_on_times) == 0:
             print(f'No pulses found for {eid}')
             return [], []
-       
+               
         # Get the times of the onset of each pulse train
         opto_train_times = opto_on_times[np.concatenate(([True], np.diff(opto_on_times) > 1))]
         
@@ -590,7 +593,7 @@ def load_passive_opto_times(eid, one=None):
         # Find the opto pulses after the spontaneous activity (after a long break, here 100s)
         if np.sum(np.diff(opto_train_times) > 100) > 0:
             first_pulse = np.where(np.diff(opto_train_times) > 100)[0][0]+1
-        elif opto_train_times[0] - opto_times[0] > 100:
+        elif opto_train_times[0] - opto_times[0] > 50:
             first_pulse = 0
         else:
             print('Could not find passive laser pulses')

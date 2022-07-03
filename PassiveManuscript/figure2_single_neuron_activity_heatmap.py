@@ -177,13 +177,6 @@ ax_th.set_title('Thalamus', fontsize=title_font)
 ax_th.plot([0, 0], [-1, 1], ls='--', color='k')
 ax_th.xaxis.set_tick_params(which='both', labelbottom=True)
 
-these_peths = peths_df[peths_df['region'] == 'Tail of the striatum']
-img = ax_str.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=sns.diverging_palette(220, 20, as_cmap=True),
-                 vmin=VMIN, vmax=VMAX, extent=[-T_BEFORE, T_AFTER, -1, 1], interpolation='none')
-ax_str.set(yticks=[1], yticklabels=[these_peths.shape[0]], xlabel='Time (s)', xticks=[-1, 0, 1, 2])
-ax_str.set_title('Tail of the striatum', fontsize=title_font)
-ax_str.plot([0, 0], [-1, 1], ls='--', color='k')
-
 these_peths = peths_df[peths_df['region'] == 'Secondary motor cortex']
 img = ax_m2.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=sns.diverging_palette(220, 20, as_cmap=True),
                  vmin=VMIN, vmax=VMAX, extent=[-T_BEFORE, T_AFTER, -1, 1], interpolation='none')
@@ -212,7 +205,22 @@ img = ax_sc.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=sns.diverg
 ax_sc.set(yticks=[1], yticklabels=[these_peths.shape[0]], xticks=[-1, 0, 1, 2])
 ax_sc.set_title('Superior colliculus', fontsize=title_font)
 ax_sc.plot([0, 0], [-1, 1], ls='--', color='k')
+
+these_peths = peths_df[peths_df['region'] == 'Midbrain reticular nucleus']
+img = ax_str.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=sns.diverging_palette(220, 20, as_cmap=True),
+                 vmin=VMIN, vmax=VMAX, extent=[-T_BEFORE, T_AFTER, -1, 1], interpolation='none')
+ax_str.set(yticks=[1], yticklabels=[these_peths.shape[0]], xlabel='Time (s)', xticks=[-1, 0, 1, 2])
+ax_str.set_title('Midbrain reticular nucl.', fontsize=title_font)
+ax_str.plot([0, 0], [-1, 1], ls='--', color='k')
+
 """
+these_peths = peths_df[peths_df['region'] == 'Tail of the striatum']
+img = ax_str.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=sns.diverging_palette(220, 20, as_cmap=True),
+                 vmin=VMIN, vmax=VMAX, extent=[-T_BEFORE, T_AFTER, -1, 1], interpolation='none')
+ax_str.set(yticks=[1], yticklabels=[these_peths.shape[0]], xlabel='Time (s)', xticks=[-1, 0, 1, 2])
+ax_str.set_title('Tail of the striatum', fontsize=title_font)
+ax_str.plot([0, 0], [-1, 1], ls='--', color='k')
+
 these_peths = peths_df[peths_df['region'] == 'Substantia nigra']
 img = ax_snr.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=sns.diverging_palette(220, 20, as_cmap=True),
                  vmin=VMIN, vmax=VMAX, extent=[-T_BEFORE, T_AFTER, -1, 1], interpolation='none')
@@ -230,7 +238,6 @@ ax_cb.axis('off')
 
 #plt.tight_layout()
 plt.subplots_adjust(left=0.06, bottom=0.1, right=0.98, top=0.9, wspace=0.4, hspace=0)
-
 
 cb_ax = f.add_axes([0.51, 0.13, 0.01, 0.2])
 cbar = f.colorbar(mappable=ax_mpfc.images[0], cax=cb_ax)

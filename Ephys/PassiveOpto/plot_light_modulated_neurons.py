@@ -68,19 +68,22 @@ for i, pid in enumerate(np.unique(all_neurons['pid'])):
                                     f'{subject}_{date}_{probe}_neuron{neuron_id}_{region}.jpg')):
             continue
 
-        # Plot PSTH
+        # Plot PSTH        
         colors, dpi = figure_style()
         p, ax = plt.subplots(1, 1, figsize=(2, 2), dpi=dpi)
         ax.add_patch(Rectangle((0, 0), 1, 100, color='royalblue', alpha=0.25, lw=0))
         ax.add_patch(Rectangle((0, 0), 1, -100, color='royalblue', alpha=0.25, lw=0))
-        peri_event_time_histogram(spikes.times, spikes.clusters, opto_train_times,
-                                  neuron_id, t_before=T_BEFORE, t_after=T_AFTER, smoothing=SMOOTHING,
-                                  bin_size=BIN_SIZE, include_raster=True, error_bars='sem', ax=ax,
-                                  pethline_kwargs={'color': 'black', 'lw': 1},
-                                  errbar_kwargs={'color': 'black', 'alpha': 0.3},
-                                  raster_kwargs={'color': 'black', 'lw': 0.3},
-                                  eventline_kwargs={'lw': 0})
-
+        try:
+            peri_event_time_histogram(spikes.times, spikes.clusters, opto_train_times,
+                                      neuron_id, t_before=T_BEFORE, t_after=T_AFTER, smoothing=SMOOTHING,
+                                      bin_size=BIN_SIZE, include_raster=True, error_bars='sem', ax=ax,
+                                      pethline_kwargs={'color': 'black', 'lw': 1},
+                                      errbar_kwargs={'color': 'black', 'alpha': 0.3},
+                                      raster_kwargs={'color': 'black', 'lw': 0.3},
+                                      eventline_kwargs={'lw': 0})
+        except Exception as err:
+            print(err)
+            continue
         ax.set(ylabel='Firing rate (spks/s)', xlabel='Time (s)',
                yticks=[np.round(ax.get_ylim()[1])],
                ylim=[ax.get_ylim()[0], np.round(ax.get_ylim()[1])])

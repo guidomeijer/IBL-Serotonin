@@ -18,7 +18,7 @@ from brainbox.io.one import SpikeSortingLoader
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 from serotonin_functions import (paths, remap, query_ephys_sessions, load_passive_opto_times,
-                                 get_artifact_neurons)
+                                 get_artifact_neurons, get_neuron_qc)
 from one.api import ONE
 from ibllib.atlas import AllenAtlas
 one = ONE()
@@ -66,27 +66,13 @@ for i in rec.index.values:
         print(f'Found {len(opto_train_times)} passive laser pulses')
 
     # Load in spikes
-    try:
-        sl = SpikeSortingLoader(pid=pid, one=one, atlas=ba)
-        spikes, clusters, channels = sl.load_spike_sorting()
-        clusters = sl.merge_clusters(spikes, clusters, channels)
-    except:
-        continue
+    sl = SpikeSortingLoader(pid=pid, one=one, atlas=ba)
+    spikes, clusters, channels = sl.load_spike_sorting()
+    clusters = sl.merge_clusters(spikes, clusters, channels)
 
     # Filter neurons that pass QC
-    if 'metrics' in clusters.keys():
-        clusters_pass = np.where(clusters['metrics']['label'] > 0.5)[0]
-    else:
-        print('Calculating neuron QC metrics..')
-        qc_metrics, _ = spike_sorting_metrics(spikes.times, spikes.clusters,
-                                              spikes.amps, spikes.depths,
-                                              cluster_ids=np.arange(clusters.channels.size))
-        clusters_pass = np.where(qc_metrics['label'] > 0.5)[0]
-
-    # Select spikes of passive period
-    start_passive = opto_train_times[0] - 360
-    spikes.clusters = spikes.clusters[spikes.times > start_passive]
-    spikes.times = spikes.times[spikes.times > start_passive]
+    qc_metrics = get_neuron_qc(pid, one=one, ba=ba)
+    clusters_pass = np.where(qc_metrics['label'] == 1)[0]
 
     # Exclude artifact neurons
     clusters_pass = np.array([i for i in clusters_pass if i not in artifact_neurons.loc[
