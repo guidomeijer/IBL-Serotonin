@@ -12,6 +12,9 @@ import matplotlib.pyplot as plt
 from os.path import join
 from serotonin_functions import paths, figure_style, load_subjects
 
+# Settings
+MIN_NEURONS = 30
+
 # Paths
 fig_path, save_path = paths(dropbox=True)
 fig_path = join(fig_path, 'PaperPassive', 'figure3')
@@ -47,6 +50,14 @@ summary_df['perc_supp'] =  (summary_df['suppressed_late'] / summary_df['n_neuron
 summary_df['ratio'] = summary_df['perc_enh'] - summary_df['perc_supp']
 summary_df['perc_supp'] = summary_df['perc_supp']
 
+# Summary statistics per mouse
+per_mouse_df = merged_df[merged_df['sert-cre'] == 1].groupby(['type', 'subject']).sum()
+per_mouse_df['n_neurons'] = merged_df[merged_df['sert-cre'] == 1].groupby(['type', 'subject']).size()
+per_mouse_df['perc_mod'] = (per_mouse_df['modulated'] / per_mouse_df['n_neurons']) * 100
+per_mouse_df['perc_enh'] = (per_mouse_df['enhanced_late'] / per_mouse_df['n_neurons']) * 100
+per_mouse_df['perc_supp'] = (per_mouse_df['suppressed_late'] / per_mouse_df['n_neurons']) * 100
+per_mouse_df = per_mouse_df.reset_index()
+
 
 # %% Plot
 colors, dpi = figure_style()
@@ -78,3 +89,13 @@ ax1.legend(frameon=False, bbox_to_anchor=(0.25, 0.8))
 plt.tight_layout()
 sns.despine(trim=False)
 plt.savefig(join(fig_path, 'light_modulated_neurons_per_type.pdf'))
+
+# %%
+
+f, ax1 = plt.subplots(1, 1, figsize=(1.75, 1.75), dpi=dpi)
+for i, subject in enumerate(np.unique(per_mouse_df['subject'])):
+    ax1.plot([1, 2], 
+             [per_mouse_df.loc[(per_mouse_df['subject'] == subject) & (per_mouse_df['type'] == 'RS'), 'perc_mod'],
+              per_mouse_df.loc[(per_mouse_df['subject'] == subject) & (per_mouse_df['type'] == 'FS'), 'perc_mod']],
+             color='k')
+    

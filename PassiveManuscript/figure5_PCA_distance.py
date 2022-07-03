@@ -45,7 +45,7 @@ for i, subject in enumerate(pca_dist_df['subject'].unique()):
         if pca_dist_df.loc[(pca_dist_df['subject'] == subject) & (pca_dist_df['region'] == region)].shape[0] > 0:
             pca_dist_df.loc[(pca_dist_df['subject'] == subject) & (pca_dist_df['region'] == region), 'pca_dist_smooth'] = (
                 smooth_interpolate_signal_sg(pca_dist_df.loc[(pca_dist_df['subject'] == subject)
-                                                             & (pca_dist_df['region'] == region), 'pca_dist'], window=11))
+                                                             & (pca_dist_df['region'] == region), 'pca_dist'], window=15))
     
 # Do statistics
 pca_table_df = pca_dist_df.pivot(index='time', columns=['region', 'subject'], values='pca_dist')
@@ -66,6 +66,26 @@ sns.lineplot(x='time', y='pca_dist_smooth', ax=ax1, legend='brief', hue='region'
 ax1.set(xlim=[-1, 2], xlabel='Time (s)', ylabel='PCA traj. displacement (a.u.)',
         xticks=[-1, 0, 1, 2], ylim=[0, 4.05])
 leg = ax1.legend(title='', frameon=True, bbox_to_anchor=(0.45, 0.6), prop={'size': 5.5})
+leg.get_frame().set_linewidth(0.0)
+
+plt.tight_layout()
+sns.despine(trim=True)
+plt.savefig(join(fig_path, 'PCA_traj_distance_per_subject.pdf'))
+
+# %%
+f, ax1 = plt.subplots(1, 1, figsize=(1.75, 1.75), dpi=dpi)
+ax1.add_patch(Rectangle((0, 0), 1, 4, color='royalblue', alpha=0.25, lw=0))
+sns.lineplot(x='time', y='pca_dist_smooth', ax=ax1, legend='brief', hue='region', ci=68,
+             data=pca_dist_df, hue_order=REGIONS, palette=[colors[i] for i in REGIONS])
+#ax1.plot(pca_table_df.loc[(pca_table_df['p_value'] < 0.05) & (pca_table_df['time'] < 1), 'time'], 
+#         np.ones(pca_table_df[(pca_table_df['p_value'] < 0.05) & (pca_table_df['time'] < 1)].shape[0])*4, color='k')
+ax1.set(xlim=[-1, 2], xlabel='Time (s)', ylabel='PCA traj. displacement (a.u.)',
+        xticks=[-1, 0, 1, 2], ylim=[0.5, 2.5])
+leg_handles, _ = ax1.get_legend_handles_labels()
+leg_labels = [f'M2 (n={pca_dist_df[pca_dist_df["region"] == "M2"]["subject"].unique().size})',
+              f'OFC (n={pca_dist_df[pca_dist_df["region"] == "OFC"]["subject"].unique().size})',
+              f'mPFC (n={pca_dist_df[pca_dist_df["region"] == "mPFC"]["subject"].unique().size})']
+leg = ax1.legend(leg_handles, leg_labels, prop={'size': 4}, loc='upper right')
 leg.get_frame().set_linewidth(0.0)
 
 plt.tight_layout()
