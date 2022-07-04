@@ -20,6 +20,7 @@ from matplotlib.patches import Rectangle
 from serotonin_functions import figure_style
 from brainbox.io.one import SpikeSortingLoader
 from brainbox.singlecell import calculate_peths
+from scipy.stats import ttest_rel
 from zetapy import getZeta
 from brainbox.plot import peri_event_time_histogram
 from serotonin_functions import paths, remap,  load_passive_opto_times
@@ -117,7 +118,7 @@ roc_auc, cluster_ids = roc_single_event(spikes.times, spikes.clusters,
 mod_index = 2 * (roc_auc - 0.5)
 
 # Get region
-region = remap(clusters.atlas_id[NEURON])[0]
+region = remap(clusters.acronym[NEURON])[0]
 
 # Calculate mean spike rate
 stim_intervals = np.vstack((opto_train_times, opto_train_times + 1)).T
@@ -130,6 +131,7 @@ bl_rate = spike_rate[neuron_ids == NEURON, :][0]
 print(f'Area under ROC curve: {roc_auc[cluster_ids == NEURON][0]:.2f}')
 print(f'Modulation index: {mod_index[cluster_ids == NEURON][0]:.2f}')
 print(f'ZETA p-value: {p_value}')
+print(f'Paired t-test: {ttest_rel(stim_rate, bl_rate)[1]}')
 
 # %% Plot PSTH
 colors, dpi = figure_style()

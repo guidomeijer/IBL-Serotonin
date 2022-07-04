@@ -23,7 +23,7 @@ ba = atlas.AllenAtlas(25)
 one = ONE()
 
 # Set colormap
-CMAP = 'tab10'
+CMAP = 'tab20'
 
 # Paths
 fig_path, _ = paths(dropbox=True)
@@ -48,7 +48,7 @@ for i, pid in enumerate(rec['pid']):
                           theta=ins_q[0]['theta'], depth=ins_q[0]['depth'] / 1000000)
     mlapdv = ba.xyz2ccf(ins.xyz)
     mlab.plot3d(mlapdv[:, 1], mlapdv[:, 2], mlapdv[:, 0],
-                line_width=1, tube_radius=50,
+                line_width=1, tube_radius=40,
                 color=colors[np.where(subjects == rec.loc[i, 'subject'])[0][0]])
 
 # Add fiber to plot
@@ -59,9 +59,9 @@ mlab.plot3d(mlapdv[:, 1], mlapdv[:, 2], mlapdv[:, 0],
 
 # %%
 colors, dpi = figure_style()
-f, ax = plt.subplots(1, 1, figsize=(0.1, 0.55), dpi=dpi)
+f, ax = plt.subplots(1, 1, figsize=(1.5, 1), dpi=dpi)
 sns.heatmap([np.arange(len(subjects))], cmap=CMAP, cbar=False, ax=ax)
-ax.set(yticks=[], xticklabels=np.arange(len(subjects)) + 1)
+ax.set(yticks=[], xticks=np.arange(len(subjects))+0.5, xticklabels=np.arange(len(subjects)) + 1)
 ax.set_xlabel('Mice', labelpad=2)
 plt.tight_layout()
 plt.savefig(join(fig_path, 'colorbar.pdf'))

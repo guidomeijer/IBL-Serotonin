@@ -29,40 +29,10 @@ ba = AllenAtlas()
 one = ONE()
 
 # Settings
-"""
-SUBJECT = 'ZFM-01802'
-DATE = '2021-03-11'
+SUBJECT = 'ZFM-03330'
+DATE = '2022-02-17'
 PROBE = 'probe00'
-NEURON = 235
-
-SUBJECT = 'ZFM-01802'
-DATE = '2021-03-09'
-PROBE = 'probe00'
-NEURON = 349
-"""
-SUBJECT = 'ZFM-02600'
-DATE = '2021-08-25'
-PROBE = 'probe00'
-NEURON = 442
-"""
-SUBJECT = 'ZFM-01802'
-DATE = '2021-03-11'
-PROBE = 'probe00'
-NEURON = 181
-
-# good example complex modulation
-SUBJECT = 'ZFM-01802'
-DATE = '2021-03-11'
-PROBE = 'probe00'
-NEURON = 207
-
-
-# Good example thalamus
-SUBJECT = 'ZFM-01802'
-DATE = '2021-03-09'
-PROBE = 'probe00'
-NEURON = 47
-"""
+NEURON = 138
 
 T_BEFORE = 1  # for plotting
 T_AFTER = 2
@@ -72,7 +42,7 @@ POST_TIME = [0, 1]
 BIN_SIZE = 0.05
 SMOOTHING = 0.025
 fig_path, save_path = paths(dropbox=True)
-fig_path = join(fig_path, 'PaperPassive')
+fig_path = join(fig_path, 'PaperPassive', 'figure3')
 
 # Get session details
 ins = one.alyx.rest('insertions', 'list', date=DATE, subject=SUBJECT, name=PROBE)
@@ -152,18 +122,18 @@ ax.yaxis.set_major_formatter(FormatStrFormatter('%.0f'))
 ax.yaxis.set_label_coords(-.2, .75)
 
 plt.tight_layout()
-plt.savefig(join(fig_path,  f'supp_figure1_psth_{region}_{SUBJECT}_{DATE}_{PROBE}_neuron{NEURON}.pdf'))
+plt.savefig(join(fig_path,  f'psth_{region}_{SUBJECT}_{DATE}_{PROBE}_neuron{NEURON}.pdf'))
 
 p, ax_mod = plt.subplots(1, 1, figsize=(1.75, 1.75), dpi=dpi)
-ax_mod.plot(dRate['vecT'], dRate['vecRate'])
-ax_mod.plot(latency, dRate['vecRate'][np.argmin(np.abs(dRate['vecT'] - latency))],
+ax_mod.plot(dRate['vecT']*1000, dRate['vecRate'])
+ax_mod.plot(latency*1000, dRate['vecRate'][np.argmin(np.abs(dRate['vecT'] - latency))],
             'x', color='red', lw=3, markersize=5)
-ax_mod.text(0.1, 50, f'{latency*1000:.1f} ms', color='red', fontweight='bold')
-ax_mod.set(xlabel='Time from stim. onset (s)', ylabel='Inst. spiking rate (spks/s)',
-           xlim=[0, .4], ylim=[0, 80])
+ax_mod.text(120, 17, f'{latency*1000:.1f} ms', color='red', fontweight='bold')
+ax_mod.set(xlabel='Time from light onset (ms)', ylabel='Inst. spiking rate (spks/s)',
+           xlim=[0, 400], ylim=[0, 20])
 sns.despine(trim=True)
 plt.tight_layout()
-plt.savefig(join(fig_path, f'supp_figure1_inst_{region}_{SUBJECT}_{DATE}_{PROBE}_neuron{NEURON}.pdf'))
+plt.savefig(join(fig_path, f'inst_{region}_{SUBJECT}_{DATE}_{PROBE}_neuron{NEURON}.pdf'))
 
 
 

@@ -17,7 +17,8 @@ from serotonin_functions import paths, combine_regions, load_subjects, figure_st
 MIN_NEURONS = 20
 
 # Load in results
-fig_path, save_path = paths()
+fig_path, save_path = paths(dropbox=True)
+fig_path = join(fig_path, 'PaperPassive', 'figure3')
 mod_idx_df = pd.read_pickle(join(save_path, 'mod_over_time.pickle'))
 #mod_idx_df['full_region'] = combine_regions(mod_idx_df['region'], abbreviate=True)
 mod_idx_df['full_region'] = high_level_regions(mod_idx_df['region'])
@@ -46,10 +47,11 @@ f, ax1 = plt.subplots(1, 1, figsize=(2, 1.75), dpi=dpi)
 ax1.add_patch(Rectangle((0, 0), 1, 1, color='royalblue', alpha=0.25, lw=0))
 sns.lineplot(x='time', y='abs_mod_idx', data=mod_long_df, hue='region', ci=68, ax=ax1,
              palette=colors)
-ax1.set(xlim=[-1, 4], ylim=[0.05, 0.26], ylabel='Absolute modulation index', xlabel='Time (s)')
+ax1.set(xlim=[-1, 4], ylim=[0.05, 0.25], ylabel='Absolute modulation index', xlabel='Time (s)')
 leg = ax1.legend(title='', bbox_to_anchor=(0.9, 0.45, 0.2, 0.4), prop={'size': 5})
 leg.get_frame().set_linewidth(0.0)
 
 sns.despine(trim=True)
 plt.tight_layout()
+plt.savefig(join(fig_path, 'modulation_index_over_time.pdf'))
 

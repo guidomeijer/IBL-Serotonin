@@ -19,7 +19,7 @@ MIN_PERC = 8
 
 # Paths
 fig_path, save_path = paths(dropbox=True)
-fig_path = join(fig_path, 'PaperPassive')
+fig_path = join(fig_path, 'PaperPassive', 'figure3')
 
 # Load in results
 all_neurons = pd.read_csv(join(save_path, 'light_modulated_neurons.csv'))
@@ -34,7 +34,7 @@ for i, nickname in enumerate(np.unique(subjects['subject'])):
 sert_neurons = all_neurons[all_neurons['sert-cre'] == 1]
 
 # Transform to ms
-sert_neurons['latency'] = sert_neurons['latency_peak_hw'] 
+sert_neurons['latency'] = sert_neurons['latency_peak_hw']
 
 # Get percentage modulated per region
 reg_neurons = sert_neurons.groupby('full_region').median()['latency'].to_frame()
@@ -78,5 +78,5 @@ for i, region in enumerate(ordered_regions['full_region']):
     ax1.text(0.1, i+0.25, f'{this_lat:.0f} ms', fontsize=5)
 plt.tight_layout()
 sns.despine(trim=True, offset=3)
-plt.savefig(join(fig_path, 'figure4_modulation_latency_per_region.pdf'))
+plt.savefig(join(fig_path, 'modulation_latency_per_region.pdf'))
 

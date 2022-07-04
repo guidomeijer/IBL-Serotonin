@@ -48,7 +48,7 @@ for i in rec.index.values:
 
     # Load in laser pulse times
     try:
-        opto_train_times, _ = load_passive_opto_times(eid, one=one)
+        opto_train_times, _ = load_passive_opto_times(eid, one=one, force_rerun=True)
     except:
         print('Session does not have passive laser pulses')
         continue
@@ -127,7 +127,7 @@ for i in rec.index.values:
         'modulated': p_values < 0.05, 'p_value': p_values,
         'latency_zeta': latency_zeta, 'latency_peak': latency_peak,
         'latency_peak_hw': latency_peak_hw})))
-        
+
     # Save output for this insertion
     light_neurons.to_csv(join(save_path, 'light_modulated_neurons.csv'), index=False)
     print('Saved output to disk')

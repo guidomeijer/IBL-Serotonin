@@ -51,7 +51,7 @@ reg_neurons = reg_neurons[reg_neurons['region'] != 'root']
 # %%
 
 colors, dpi = figure_style()
-CMAP = 'rainbow'
+CMAP = 'turbo'
 
 # Plot brain map slices
 f, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(6, 4), dpi=dpi)

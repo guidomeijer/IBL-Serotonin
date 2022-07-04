@@ -17,14 +17,14 @@ from serotonin_functions import figure_style
 from brainbox.io.one import SpikeSortingLoader
 from brainbox.singlecell import calculate_peths
 from serotonin_functions import (paths, load_passive_opto_times, combine_regions, load_subjects,
-                                 get_artifact_neurons, remap)
+                                 get_artifact_neurons, remap, get_neuron_qc)
 from one.api import ONE
 from ibllib.atlas import AllenAtlas
 ba = AllenAtlas()
 one = ONE()
 
 # Settings
-REGIONS = ['M2', 'ORB', 'mPFC']
+REGIONS = ['M2', 'OFC', 'mPFC']
 T_BEFORE = 1  # for plotting
 T_AFTER = 2
 BIN_SIZE = 0.1
@@ -53,8 +53,8 @@ peths_df = pd.DataFrame()
 for i, pid in enumerate(np.unique(light_neurons['pid'])):
 
     # Take slice of dataframe
-    #these_neurons = light_neurons[(light_neurons['modulated'] == 1) & (light_neurons['pid'] == pid)] 
-    these_neurons = light_neurons[light_neurons['pid'] == pid] 
+    #these_neurons = light_neurons[(light_neurons['modulated'] == 1) & (light_neurons['pid'] == pid)]
+    these_neurons = light_neurons[light_neurons['pid'] == pid]
 
     # Get session details
     eid = np.unique(these_neurons['eid'])[0]
@@ -62,7 +62,7 @@ for i, pid in enumerate(np.unique(light_neurons['pid'])):
     subject = np.unique(these_neurons['subject'])[0]
     date = np.unique(these_neurons['date'])[0]
     print(f'Starting {subject}, {date}')
-    
+
     # Load in laser pulse times
     opto_train_times, _ = load_passive_opto_times(eid, one=one)
     if len(opto_train_times) == 0:
@@ -74,17 +74,11 @@ for i, pid in enumerate(np.unique(light_neurons['pid'])):
         spikes, clusters, channels = sl.load_spike_sorting()
         clusters = sl.merge_clusters(spikes, clusters, channels)
     except:
-        continue    
-    
+        continue
+
     # Filter neurons that pass QC
-    if 'metrics' in clusters.keys():
-        clusters_pass = np.where(clusters['metrics']['label'] == 1)[0]
-    else:
-        print('Calculating neuron QC metrics..')
-        qc_metrics, _ = spike_sorting_metrics(spikes.times, spikes.clusters,
-                                              spikes.amps, spikes.depths,
-                                              cluster_ids=np.arange(clusters.channels.size))
-        clusters_pass = np.where(qc_metrics['label'] == 1)[0]
+    qc_metrics = get_neuron_qc(pid, one=one, ba=ba)
+    clusters_pass = np.where(qc_metrics['label'] == 1)[0]
 
     # Exclude artifact neurons
     clusters_pass = np.array([i for i in clusters_pass if i not in artifact_neurons.loc[
@@ -105,15 +99,15 @@ for i, pid in enumerate(np.unique(light_neurons['pid'])):
     peths, _ = calculate_peths(spikes.times, spikes.clusters, clusters_pass,
                                opto_train_times, T_BEFORE, T_AFTER, BIN_SIZE, SMOOTHING)
     tscale = peths['tscale']
-    
+
     # Loop over regions
     for j, reg in enumerate(REGIONS):
         if np.sum(clusters_regions == reg) == 0:
             continue
-        
+
         # Get population activity
-        pop_act = peths['means'][clusters_regions == reg]  
-        
+        pop_act = peths['means'][clusters_regions == reg]
+
         # Normalize and offset mean for plotting
         pop_mean = pop_act.mean(axis=0)
         pop_mean_bl = pop_mean - np.mean(pop_mean[tscale < 0])
@@ -123,27 +117,27 @@ for i, pid in enumerate(np.unique(light_neurons['pid'])):
         pop_var_bl = pop_var - np.mean(pop_var[tscale < 0])
         pop_cv = np.std(pop_act, axis=0) / np.mean(pop_act, axis=0)
         pop_cv_bl = pop_cv - np.mean(pop_cv[tscale < 0])
-        
+
         peths_df = pd.concat((peths_df, pd.DataFrame(data={
             'mean': pop_mean, 'median': pop_median, 'var': pop_var, 'cv': pop_cv,
             'mean_bl': pop_mean_bl, 'median_bl': pop_median_bl, 'var_bl': pop_var_bl, 'cv_bl': pop_cv_bl,
             'time': peths['tscale'], 'region': reg, 'subject': subject, 'date': date, 'pid': pid})),
             ignore_index=True)
-    
+
 
 # Do statistics
 mean_table_df = peths_df.pivot(index='time', columns=['region', 'pid'], values='mean_bl')
 mean_table_df = mean_table_df.reset_index()
 for i in mean_table_df.index.values:
     mean_table_df.loc[i, 'p_value'] = kruskal(mean_table_df.loc[i, 'M2'], mean_table_df.loc[i, 'mPFC'],
-                                              mean_table_df.loc[i, 'ORB'])[1]
+                                              mean_table_df.loc[i, 'OFC'])[1]
 
 var_table_df = peths_df.pivot(index='time', columns=['region', 'pid'], values='var_bl')
 var_table_df = var_table_df.reset_index()
 for i in var_table_df.index.values:
     var_table_df.loc[i, 'p_value'] = kruskal(var_table_df.loc[i, 'M2'], var_table_df.loc[i, 'mPFC'],
-                                             var_table_df.loc[i, 'ORB'])[1]
-    
+                                             var_table_df.loc[i, 'OFC'])[1]
+
 # %% Plot
 
 colors, dpi = figure_style()
@@ -153,22 +147,23 @@ sns.lineplot(x='time', y='mean_bl', data=peths_df, ax=ax1, hue='region', ci=68,
              hue_order=REGIONS, palette=[colors[i] for i in REGIONS])
 ax1.set(xlabel='Time (s)', ylabel='Population activity (spks/s)',
         ylim=[-1, 1], xticks=[-1, 0, 1, 2])
-leg = ax1.legend(frameon=True, prop={'size': 6})
+leg = ax1.legend(frameon=True, prop={'size': 5.5}, loc='lower left')
 leg.get_frame().set_linewidth(0.0)
 
 ax2.add_patch(Rectangle((0, -2), 1, 4, color='royalblue', alpha=0.25, lw=0))
 sns.lineplot(x='time', y='var_bl', data=peths_df, ax=ax2, hue='region', ci=68,
-             hue_order=REGIONS, palette=[colors[i] for i in REGIONS], legend=None)
+             hue_order=REGIONS, palette=[colors[i] for i in REGIONS])
 ax2.set(xlabel='Time (s)', ylabel='Population variance (std)',
         xticks=[-1, 0, 1, 2], ylim=[-2, 2.05])
-ax2.plot(var_table_df.loc[var_table_df['p_value'] < 0.05, 'time'],
-         np.ones(np.sum(var_table_df['p_value'] < 0.05))*2, color='k')
-leg = ax2.legend(frameon=True, prop={'size': 6}, loc='lower left')
+#ax2.plot(var_table_df.loc[var_table_df['p_value'] < 0.05, 'time'],
+#         np.ones(np.sum(var_table_df['p_value'] < 0.05))*2, color='k')
+leg = ax2.legend(frameon=True, prop={'size': 5.5}, loc='lower left')
 leg.get_frame().set_linewidth(0.0)
 
 plt.tight_layout()
 sns.despine(trim=True)
 plt.savefig(join(fig_path, 'population_activity.pdf'))
+
 
 
 

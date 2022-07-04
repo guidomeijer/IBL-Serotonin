@@ -493,7 +493,7 @@ def load_exp_smoothing_trials(eids, stimulated=None, rt_cutoff=0.2, after_probe_
         return actions, stimuli, stim_side, prob_left, session_uuids
 
 
-def load_passive_opto_times(eid, one=None):
+def load_passive_opto_times(eid, one=None, force_rerun=False):
     """
     Load in the time stamps of the optogenetic stimulation at the end of the recording, after the
     taks and the spontaneous activity. Or when it's a long stimulation session with different
@@ -510,8 +510,8 @@ def load_passive_opto_times(eid, one=None):
         one = ONE()
 
     # Load in pulses from disk if already extracted
-    session_path = one.eid2path(eid)        
-    if isfile(join(session_path, 'opto_train_times.npy')):
+    session_path = one.eid2path(eid)
+    if isfile(join(session_path, 'opto_train_times.npy')) & ~force_rerun:
         opto_train_times = np.load(join(session_path, 'opto_train_times.npy'))
         opto_on_times = np.load(join(session_path, 'opto_on_times.npy'))
         return opto_train_times, opto_on_times
@@ -530,66 +530,71 @@ def load_passive_opto_times(eid, one=None):
         offset = int((sr.shape[0] / sr.fs - 720) * sr.fs)
         opto_trace = sr.read_sync_analog(slice(offset, sr.shape[0]))[:, 1]
         opto_times = np.arange(offset, sr.shape[0]) / sr.fs
-    
+
         # Get start times of pulse trains
         opto_on_times = opto_times[np.concatenate((np.diff(opto_trace), [0])) > 1]
         if len(opto_on_times) == 0:
             print(f'No pulses found for {eid}')
             return [], []
-               
+
         # Get the times of the onset of each pulse train
         opto_train_times = opto_on_times[np.concatenate(([True], np.diff(opto_on_times) > 1))]
-        
-        # Get the stimulation frequencies 
+
+        # Get the stimulation frequencies
         opto_freqs = np.empty(opto_train_times.shape)
         for i, t_time in enumerate(opto_train_times):
-            opto_freqs[i] = opto_on_times[(opto_on_times >= t_time) & (opto_on_times <= t_time + 1)].shape[0]
+            opto_freqs[i] = 1/np.mean(np.diff(opto_on_times[(opto_on_times >= t_time)
+                                                            & (opto_on_times <= t_time + 1)]))
         opto_freqs = opto_freqs - opto_freqs % 5  # round to 5
         opto_freqs[opto_freqs == 0] = 1
-        
-        # If there are different stimulation frequencies than 25 Hz it's a long stim session 
+
+        # If there are different stimulation frequencies than 25 Hz it's a long stim session
         if np.any(np.isin([1, 5, 10], opto_freqs)):
             print('Long opto stim session detected, extracting 25 Hz pulse trains..')
-            
+
             # Load in the trace in chunks and only extract the 25Hz trains
             opto_train_times = []
             opto_on_times = []
             chunk_edges = np.arange(0, sr.shape[0], 500 * sr.fs).astype(int)
             for j in range(len(chunk_edges[:-1])):
-                
+
                 # Load in chunk of trace
                 trace_chunk = sr.read_sync_analog(slice(chunk_edges[j], chunk_edges[j+1]))[:, 1]
+                analog_chunk = sr.read_sync_analog(slice(chunk_edges[j], chunk_edges[j+1]))[:, 3]
                 times_chunk = np.arange(chunk_edges[j], chunk_edges[j+1]) / sr.fs
-                
+
                 # Get start times of pulse trains
                 these_on_times = times_chunk[np.concatenate((np.diff(trace_chunk), [0])) > 1]
-                
+
                 # Get the times of the onset of each pulse train
                 these_train_times = these_on_times[np.concatenate(([True], np.diff(these_on_times) > 1))]
-                
-                # Get the stimulation frequencies 
+
+                # Get the stimulation frequencies and amplitudes
                 these_freqs = np.empty(these_train_times.shape)
-                for i, t_time in enumerate(these_train_times):
-                    these_freqs[i] = these_on_times[(these_on_times >= t_time) & (these_on_times <= t_time + 1)].shape[0]
+                these_amps = np.empty(these_train_times.shape)
+                for ii, t_time in enumerate(these_train_times):
+                    these_freqs[ii] = these_on_times[(these_on_times >= t_time) & (these_on_times <= t_time + 1)].shape[0]
+                    this_amp = np.max(analog_chunk[(times_chunk >= t_time) & (times_chunk <= t_time + 1)])
+                    these_amps[ii] = np.round(this_amp * 2) / 2  # round to 0.5 or 1
                 these_freqs = these_freqs - these_freqs % 5  # round to 5
                 these_freqs[these_freqs == 0] = 1
-                
-                # Add to array
-                opto_train_times.append(these_train_times[these_freqs == 25])
-                for kk, this_train_time in enumerate(these_train_times[these_freqs == 25]):
+
+                # Add the pulse trains of 25 Hz full power to the array
+                opto_train_times.append(these_train_times[(these_freqs == 25) & (these_amps == 1)])
+                for kk, this_train_time in enumerate(these_train_times[(these_freqs == 25) & (these_amps == 1)]):
                     opto_on_times.append(these_on_times[(these_on_times >= this_train_time)
                                                         & (these_on_times <= this_train_time + 1)])
-                
+
             # Convert to arrays
             opto_train_times = np.concatenate(opto_train_times)
             opto_on_times = np.concatenate(opto_on_times)
-            
+
             # Save extracted pulses to disk
             np.save(join(session_path, 'opto_train_times.npy'), opto_train_times)
             np.save(join(session_path, 'opto_on_times.npy'), opto_on_times)
-            
-            return opto_train_times, opto_on_times            
-        
+
+            return opto_train_times, opto_on_times
+
         # Find the opto pulses after the spontaneous activity (after a long break, here 100s)
         if np.sum(np.diff(opto_train_times) > 100) > 0:
             first_pulse = np.where(np.diff(opto_train_times) > 100)[0][0]+1
@@ -600,18 +605,18 @@ def load_passive_opto_times(eid, one=None):
             return [], []
         opto_train_times = opto_train_times[first_pulse:]
         opto_on_times = opto_on_times[first_pulse:]
-        
+
         # Save extracted pulses to disk
         np.save(join(session_path, 'opto_train_times.npy'), opto_train_times)
         np.save(join(session_path, 'opto_on_times.npy'), opto_on_times)
-       
+
         return opto_train_times, opto_on_times
 
 
 def get_neuron_qc(pid, one=None, ba=None, force_rerun=False):
     one = one or ONE()
     ba = ba or AllenAtlas()
-    
+
     # Check if QC is already computed
     eid, probe = one.pid2eid(pid)
     session_path = one.eid2path(eid)
@@ -619,12 +624,12 @@ def get_neuron_qc(pid, one=None, ba=None, force_rerun=False):
         print('Neuron QC metrics loaded from disk')
         qc_metrics = pd.read_csv(join(session_path, 'alf', probe, 'neuron_qc_metrics.csv'))
         return qc_metrics
-    
+
     # Load in spikes
     sl = SpikeSortingLoader(pid=pid, one=one, atlas=ba)
     spikes, clusters, channels = sl.load_spike_sorting()
     clusters = sl.merge_clusters(spikes, clusters, channels)
-    
+
     # Calculate QC metrics
     print('Calculating neuron QC metrics')
     qc_metrics, _ = spike_sorting_metrics(spikes.times, spikes.clusters,
