@@ -88,7 +88,7 @@ for i, pid in enumerate(np.unique(light_neurons['pid'])):
                            - np.mean(peths['means'][n, ((tscale > BASELINE[0]) & (tscale < BASELINE[1]))]))
                           / (peths['means'][n, :]
                              + np.mean(peths['means'][n, ((tscale > BASELINE[0]) & (tscale < BASELINE[1]))])))
-
+       
             # Add to dataframe
             peths_df = pd.concat((peths_df, pd.DataFrame(index=[peths_df.shape[0]], data={
                 'peth': [peths['means'][n, :]], 'peth_perc': [peth_perc], 'peth_ratio': [peth_ratio],
