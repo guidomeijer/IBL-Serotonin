@@ -24,7 +24,7 @@ one = ONE()
 pca = PCA(n_components=10)
 
 # Settings
-OVERWRITE = True  # whether to overwrite existing runs
+OVERWRITE = False  # whether to overwrite existing runs
 NEURON_QC = True  # whether to use neuron qc to exclude bad units
 PCA = True  # whether to use PCA on neural activity before CCA
 N_PC = 10  # number of PCs to use
@@ -41,10 +41,13 @@ N_MODES = 10
 fig_path, save_path = paths()
 
 # Initialize some things
+"""
 REGION_PAIRS = [['M2', 'mPFC'], ['M2', 'OFC'], ['mPFC', 'Amyg'], ['OFC', 'Amyg'], ['M2', 'Amyg'],
                 ['Hipp', 'PPC'], ['Hipp', 'Thal'], ['OFC', 'mPFC'], ['PPC', 'Thal'], ['MRN', 'SC'],
                 ['RSP', 'SC'], ['BC', 'Str'], ['MRN', 'RSP'], ['MRN', 'SN'], ['Pir', 'Str'],
                 ['SC', 'SN']]
+"""
+REGION_PAIRS = [['M2', 'mPFC'], ['M2', 'OFC']]
 cca = CCA(n_components=N_MODES, max_iter=1000)
 np.random.seed(42)  # fix random seed for reproducibility
 n_time_bins = int((PRE_TIME + POST_TIME) / WIN_SIZE)
@@ -54,7 +57,7 @@ if SMOOTHING > 0:
     window /= np.sum(window)
 
 # Query sessions with frontal and amygdala
-rec = query_ephys_sessions(one=one)
+rec = query_ephys_sessions(one=one, acronym=['MOs'])
 
 # Load in artifact neurons
 artifact_neurons = get_artifact_neurons()

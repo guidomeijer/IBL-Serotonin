@@ -49,7 +49,7 @@ REGION_PAIRS = [['M2', 'mPFC'], ['M2', 'ORB'], ['mPFC', 'Amyg'], ['ORB', 'Amyg']
                 ['RSP', 'SC'], ['BC', 'Str'], ['MRN', 'RSP'], ['MRN', 'SN'], ['Pir', 'Str'],
                 ['SC', 'SN']]
 """
-REGION_PAIRS = [['M2', 'mPFC'], ['M2', 'OFC'], ['mPFC', 'OFC']]
+REGION_PAIRS = [['M2', 'mPFC'], ['M2', 'OFC']]
 np.random.seed(42)  # fix random seed for reproducibility
 n_time_bins = int((PRE_TIME + POST_TIME) / WIN_SIZE)
 if SMOOTHING > 0:
@@ -58,7 +58,7 @@ if SMOOTHING > 0:
     window /= np.sum(window)
 
 # Query sessions with frontal and amygdala
-rec = query_ephys_sessions(one=one)
+rec = query_ephys_sessions(one=one, acronym=['MOs'])
 
 # Load in artifact neurons
 artifact_neurons = get_artifact_neurons()
@@ -78,7 +78,7 @@ for i, eid in enumerate(np.unique(rec['eid'])):
     # Get session details
     subject = rec.loc[rec['eid'] == eid, 'subject'].values[0]
     date = rec.loc[rec['eid'] == eid, 'date'].values[0]
-    print(f'Starting {subject}, {date}')
+    print(f'Starting {subject}, {date} [{i+1} of {len(np.unique(rec["eid"]))}]')
 
     # Load in laser pulse times
     try:

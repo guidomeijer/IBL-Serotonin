@@ -69,7 +69,7 @@ p_value, latencies, dZETA, dRate = getZeta(spikes.times[spikes.clusters == NEURO
                                            tplRestrictRange=(0 + ZETA_BEFORE, 1 + ZETA_BEFORE),
                                            dblUseMaxDur=2 + ZETA_BEFORE,
                                            boolReturnZETA=True, boolReturnRate=True)
-latency = latencies[3] - ZETA_BEFORE
+latency = latencies[2] - ZETA_BEFORE
 dZETA['vecSpikeT'] = dZETA['vecSpikeT'] - ZETA_BEFORE
 
 # Get spike counts for baseline and event timewindow
@@ -103,7 +103,7 @@ print(f'ZETA p-value: {p_value}')
 
 # %% Plot PSTH
 colors, dpi = figure_style()
-p, ax = plt.subplots(1, 1, figsize=(1.75, 1.75), dpi=dpi)
+p, ax = plt.subplots(1, 1, figsize=(1.5, 1.75), dpi=dpi)
 ax.add_patch(Rectangle((0, 0), 1, 100, color='royalblue', alpha=0.25, lw=0))
 ax.add_patch(Rectangle((0, 0), 1, -100, color='royalblue', alpha=0.25, lw=0))
 peri_event_time_histogram(spikes.times, spikes.clusters, opto_train_times,
@@ -113,6 +113,14 @@ peri_event_time_histogram(spikes.times, spikes.clusters, opto_train_times,
                           errbar_kwargs={'color': 'black', 'alpha': 0.3},
                           raster_kwargs={'color': 'black', 'lw': 0.3},
                           eventline_kwargs={'lw': 0})
+
+peths, _ = calculate_peths(spikes.times, spikes.clusters, [NEURON],
+                           opto_train_times, T_BEFORE, T_AFTER, BIN_SIZE, SMOOTHING)
+peak_ind = np.argmin(np.abs(peths['tscale'] - latency))
+peak_act = peths['means'][0][peak_ind]
+ax.plot([latency, latency], [peak_act, peak_act], 'x', color='red', lw=2)
+ax.text(latency+0.15, peak_act, f'{latency*1000:.0f} ms', color='red', fontweight='bold', va='center')
+
 ax.set(ylim=[ax.get_ylim()[0], ax.get_ylim()[1] + ax.get_ylim()[1] * 0.2])
 #ax.plot([0, 1], [0, 0], lw=2, color='royalblue')
 ax.set(ylabel='Firing rate (spks/s)', xlabel='Time (s)',

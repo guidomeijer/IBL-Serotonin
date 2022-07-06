@@ -33,7 +33,7 @@ BASELINE = [-0.5, 0]
 BIN_SIZE = 0.02
 SMOOTHING = 0.02
 MIN_FR = 0.1
-PLOT = False
+PLOT = True
 fig_path, save_path = paths()
 fig_path = join(fig_path, 'Ephys', 'PCA')
 
@@ -151,18 +151,18 @@ for i in rec.index.values:
             ax1.plot(time, pca_proj[:, 0])
             ax1.plot([0, 0], ax1.get_ylim(), ls='--', color='grey')
             ax1.set(ylabel='First principal component', xlabel='Time (s)', title=f'{region}')
-    
+
             ax2.scatter(pca_proj[:, 0], pca_proj[:, 1], c=time, cmap='twilight_r')
             ax2.set(xlabel='PC 1', ylabel='PC 2', title=f'{region}')
-    
+
             ax3.plot(time, np.sum(pca_proj, axis=1))
             ax3.plot([0, 0], ax3.get_ylim(), ls='--', color='grey')
             ax3.set(xlabel='Time (s)', ylabel='Summed first 3 PCs')
-    
+
             ax4.plot(time_diff, pca_dist)
             ax4.plot([0, 0], ax4.get_ylim(), ls='--', color='grey')
             ax4.set(xlabel='Time (s)', ylabel='PCA distance')
-    
+
             sns.despine(trim=True)
             plt.tight_layout()
             plt.savefig(join(fig_path, 'SinglePlots', f'{region}_{subject}_{date}.jpg'), dpi=300)

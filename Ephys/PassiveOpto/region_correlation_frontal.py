@@ -23,8 +23,8 @@ ba = AllenAtlas()
 # Settings
 T_BEFORE = 1
 T_AFTER = 3
-BIN_SIZE = 0.05
-SMOOTHING = 0.025
+BIN_SIZE = 0.25
+SMOOTHING = 0
 SUBTRACT_MEAN = False
 fig_path, save_path = paths()
 fig_path = join(fig_path, 'Ephys', 'PCA')
@@ -84,19 +84,19 @@ for i in rec.index.values:
 
     # Get peri-event time histogram
     peths, spike_counts = calculate_peths(spikes.times, spikes.clusters, cluster_ids,
-                                          opto_train_times, T_BEFORE, T_AFTER, BIN_SIZE, SMOOTHING, 
+                                          opto_train_times, T_BEFORE, T_AFTER, BIN_SIZE, SMOOTHING,
                                           return_fr=False)
     tscale = peths['tscale']
-    
-    
+
+
     if SUBTRACT_MEAN:
         # Subtract mean PSTH from each opto stim
         for tt in range(spike_counts.shape[0]):
             spike_counts[tt, :, :] = spike_counts[tt, :, :] - peths['means']
-    
+
     # Get noise correlations
     if np.sum(clusters_regions == 'M2') == 0:
-        continue    
+        continue
     if np.sum(clusters_regions == 'OFC') > 0:
         all_r, region_1, region_2 = [], [], []
         for ind1, id1 in enumerate(np.where(clusters_regions == 'M2')[0]):
@@ -107,12 +107,12 @@ for i in rec.index.values:
                 r = r - np.mean(r[tscale < 0])
                 all_r.append(r)
         region_corr = np.vstack(all_r)
-        
+
         # Add to df
         corr_df = pd.concat((corr_df, pd.DataFrame(data={
             'pid': pid, 'subject': subject, 'date': date, 'region_pair': 'M2-OFC',
             'region_corr': np.nanmean(region_corr, axis=0), 'time': tscale})), ignore_index=True)
-        
+
     # Get noise correlations
     if np.sum(clusters_regions == 'mPFC') > 0:
         all_r, region_1, region_2 = [], [], []
@@ -124,7 +124,7 @@ for i in rec.index.values:
                 r = r - np.mean(r[tscale < 0])
                 all_r.append(r)
         region_corr = np.vstack(all_r)
-    
+
     # Add to df
     corr_df = pd.concat((corr_df, pd.DataFrame(data={
         'pid': pid, 'subject': subject, 'date': date, 'region_pair': 'M2-mPFC',

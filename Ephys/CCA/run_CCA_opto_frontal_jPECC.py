@@ -16,7 +16,7 @@ from sklearn.model_selection import LeaveOneOut, KFold
 from brainbox.metrics.single_units import spike_sorting_metrics
 from brainbox.io.one import SpikeSortingLoader
 from serotonin_functions import (paths, remap, query_ephys_sessions, load_passive_opto_times,
-                                 get_artifact_neurons, calculate_peths)
+                                 get_artifact_neurons, calculate_peths, get_neuron_qc)
 from one.api import ONE
 from ibllib.atlas import AllenAtlas
 ba = AllenAtlas()
@@ -44,7 +44,7 @@ N_PC = 10  # number of PCs to use
 fig_path, save_path = paths()
 
 # Initialize some things
-REGION_PAIRS = [['M2', 'mPFC'], ['M2', 'ORB'], ['mPFC', 'Amyg'], ['ORB', 'Amyg'], ['M2', 'Amyg']]
+REGION_PAIRS = [['M2', 'mPFC'], ['M2', 'OFC']]
 np.random.seed(42)  # fix random seed for reproducibility
 n_time_bins = int((PRE_TIME + POST_TIME) / WIN_SIZE)
 lio = LeaveOneOut()
@@ -55,7 +55,7 @@ if SMOOTHING > 0:
     window /= np.sum(window)
 
 # Query sessions with frontal and amygdala
-rec = query_ephys_sessions(acronym=['MOs', 'ORB', 'ILA', 'PL', 'ACA', 'MEA', 'CEA', 'BLA', 'COAa'], one=one)
+rec = query_ephys_sessions(acronym=['MOs'], one=one)
 
 # Load in artifact neurons
 artifact_neurons = get_artifact_neurons()
@@ -98,11 +98,8 @@ for i, eid in enumerate(np.unique(rec['eid'])):
 
         # Filter neurons that pass QC and artifact neurons
         if NEURON_QC:
-            print('Calculating neuron QC metrics..')
-            qc_metrics, _ = spike_sorting_metrics(spikes[probe].times, spikes[probe].clusters,
-                                                  spikes[probe].amps, spikes[probe].depths,
-                                                  cluster_ids=np.arange(clusters[probe].channels.size))
-            clusters_pass[probe] = np.where(qc_metrics['label'] > 0.5)[0]
+            qc_metrics = get_neuron_qc(pid, one=one, ba=ba)
+            clusters_pass[probe] = np.where(qc_metrics['label'] == 1)[0]
         else:
             clusters_pass[probe] = np.unique(spikes.clusters)
         clusters_pass[probe] = clusters_pass[probe][~np.isin(clusters_pass[probe], artifact_neurons.loc[
@@ -162,6 +159,7 @@ for i, eid in enumerate(np.unique(rec['eid'])):
 
             # Run CCA per combination of two timebins
             r_opto = np.empty((n_time_bins, n_time_bins))
+            r_opto_bootstraps = np.empty((n_time_bins, n_time_bins, K_FOLD_BOOTSTRAPS * 2))
             for tb_1 in range(n_time_bins):
                 for tb_2 in range(n_time_bins):
                     opto_x = np.empty(pca_opto[region_1][:, :, 0].shape[0])
@@ -178,8 +176,10 @@ for i, eid in enumerate(np.unique(rec['eid'])):
                                         pca_opto[region_2][train_index, :, tb_2])
                                 x, y = cca.transform(pca_opto[region_1][test_index, :, tb_1],
                                                      pca_opto[region_2][test_index, :, tb_2])
-                                r_splits.append(pearsonr(x.T[0], y.T[0])[1])
+                                r_splits.append(pearsonr(x.T[0], y.T[0])[0])
+                                r_opto_bootstraps[tb_1, tb_2, kk] = pearsonr(x.T[0], y.T[0])[0]
                         r_opto[tb_1, tb_2] = np.median(r_splits)
+                        asd
 
                     elif CROSS_VAL == 'leave-one-out':
                         for train_index, test_index in lio.split(pca_opto[region_1][:, :, tb]):

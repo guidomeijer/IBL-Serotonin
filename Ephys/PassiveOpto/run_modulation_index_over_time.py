@@ -22,7 +22,7 @@ OVERWRITE = False
 BASELINE = [0.5, 0]
 PRE_TIME = 1
 POST_TIME = 5
-BIN_SIZE = 0.1
+BIN_SIZE = 0.2
 win_centers = np.arange(-PRE_TIME + (BIN_SIZE/2), POST_TIME, BIN_SIZE)
 
 # Load in results

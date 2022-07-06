@@ -8,6 +8,7 @@ Created on Thu Jun 30 10:50:06 2022
 import numpy as np
 from os.path import join
 import pandas as pd
+from scipy.optimize import curve_fit
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 import seaborn as sns
@@ -15,6 +16,11 @@ from serotonin_functions import paths, combine_regions, load_subjects, figure_st
 
 # Settings
 MIN_NEURONS = 20
+
+
+def monoExp(x, m, t, b):
+    return m * np.exp(-t * x) + b
+
 
 # Load in results
 fig_path, save_path = paths(dropbox=True)
@@ -40,6 +46,20 @@ for i, region in enumerate(np.unique(mod_idx_df['full_region'])):
         mod_long_df = pd.concat((mod_long_df, pd.DataFrame(data={
             'time': time_ax, 'abs_mod_idx': np.abs(mod_idx_df.loc[ind, 'mod_idx']),
             'region': region})), ignore_index=True)
+
+# Calculate decay time
+for i in mod_idx_df.index:
+    this_mod = mod_idx_df.loc[i, 'mod_idx']
+    peak_ind = np.argmax(this_mod[(time_ax > 0) & (time_ax < 1)]) + np.sum(time_ax <= 0)
+    through_ind = np.argmin(this_mod[peak_ind:]) + peak_ind
+    params, cv = curve_fit(monoExp, time_ax[peak_ind:through_ind], this_mod[peak_ind:through_ind], (1, 1, 1))
+    tauSec = 1 / params[1]
+    m, t, b = params
+    plt.plot(time_ax[peak_ind:through_ind], this_mod[peak_ind:through_ind], '.', label="data")
+    plt.plot(time_ax[peak_ind:through_ind], monoExp(time_ax[peak_ind:through_ind], m, t, b), '--', label="fitted")
+    plt.title("Fitted Exponential Curve")
+    asd
+
 
 # %% Plot
 colors, dpi = figure_style()

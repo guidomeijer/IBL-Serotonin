@@ -25,13 +25,13 @@ corr_df = pd.read_csv(join(save_path, 'region_corr_frontal.csv'))
 subjects = load_subjects()
 for i, nickname in enumerate(np.unique(subjects['subject'])):
     corr_df.loc[corr_df['subject'] == nickname, 'sert-cre'] = subjects.loc[subjects['subject'] == nickname, 'sert-cre'].values[0]
-   
+
 # %%
 colors, dpi = figure_style()
 f, ax1 = plt.subplots(1, 1, figsize=(1.75, 1.75), dpi=dpi)
 #ax1.add_patch(Rectangle((0, 0), 1, 4, color='royalblue', alpha=0.25, lw=0))
-sns.lineplot(x='time', y='region_corr', ax=ax1, legend='brief', hue='region_pair', ci=68,
-             data=corr_df[corr_df['sert-cre'] == 1])
+sns.lineplot(x='time', y='region_corr', ax=ax1, legend='brief', hue='region_pair', estimator=None,
+             units='subject', data=corr_df[corr_df['sert-cre'] == 1])
 """
 ax1.set(xlim=[-1, 2], xlabel='Time (s)', ylabel='PCA traj. displacement (a.u.)',
         xticks=[-1, 0, 1, 2], ylim=[0.5, 2.5])

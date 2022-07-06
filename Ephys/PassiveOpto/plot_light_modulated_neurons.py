@@ -19,7 +19,7 @@ from brainbox.singlecell import calculate_peths
 from serotonin_functions import paths, load_passive_opto_times
 from one.api import ONE
 from ibllib.atlas import AllenAtlas
-ba = AllenAtlas()   
+ba = AllenAtlas()
 one = ONE()
 
 # Settings
@@ -27,8 +27,8 @@ T_BEFORE = 1  # for plotting
 T_AFTER = 2
 BIN_SIZE = 0.05
 SMOOTHING = 0.025
-PLOT_LATENCY = False
-OVERWRITE = False
+PLOT_LATENCY = True
+OVERWRITE = True
 fig_path, save_path = paths()
 fig_path = join(fig_path, 'Ephys', 'SingleNeurons', 'LightModNeurons')
 
@@ -68,7 +68,7 @@ for i, pid in enumerate(np.unique(all_neurons['pid'])):
                                     f'{subject}_{date}_{probe}_neuron{neuron_id}_{region}.jpg')):
             continue
 
-        # Plot PSTH        
+        # Plot PSTH
         colors, dpi = figure_style()
         p, ax = plt.subplots(1, 1, figsize=(2, 2), dpi=dpi)
         ax.add_patch(Rectangle((0, 0), 1, 100, color='royalblue', alpha=0.25, lw=0))
@@ -93,9 +93,9 @@ for i, pid in enumerate(np.unique(all_neurons['pid'])):
         if PLOT_LATENCY:
             peths, _ = calculate_peths(spikes.times, spikes.clusters, [neuron_id],
                                        opto_train_times, T_BEFORE, T_AFTER, BIN_SIZE, SMOOTHING)
-            peak_ind = np.argmin(np.abs(peths['tscale'] - modulated.loc[ind, 'latency_peak_hw']))
+            peak_ind = np.argmin(np.abs(peths['tscale'] - modulated.loc[ind, 'latency_peak']))
             peak_act = peths['means'][0][peak_ind]
-            ax.plot([modulated.loc[ind, 'latency_peak_hw'], modulated.loc[ind, 'latency_peak_hw']],
+            ax.plot([modulated.loc[ind, 'latency_peak'], modulated.loc[ind, 'latency_peak']],
                     [peak_act, peak_act], 'xr', lw=2)
 
         plt.tight_layout()

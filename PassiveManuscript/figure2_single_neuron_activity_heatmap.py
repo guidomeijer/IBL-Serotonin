@@ -13,7 +13,8 @@ import pandas as pd
 from serotonin_functions import figure_style
 from brainbox.io.one import SpikeSortingLoader
 from brainbox.singlecell import calculate_peths
-from serotonin_functions import paths, load_passive_opto_times, combine_regions, load_subjects
+from serotonin_functions import (paths, load_passive_opto_times, combine_regions, load_subjects,
+                                 high_level_regions)
 from one.api import ONE
 from ibllib.atlas import AllenAtlas
 ba = AllenAtlas()
@@ -83,7 +84,7 @@ for i, pid in enumerate(np.unique(light_neurons['pid'])):
                           - np.mean(peths['means'][n, ((tscale > BASELINE[0]) & (tscale < BASELINE[1]))]))
                          / np.mean(peths['means'][n, ((tscale > BASELINE[0]) & (tscale < BASELINE[1]))])) * 100
 
-            # Calculate percentage change in firing rate
+            # Calculate ratio change in firing rate
             peth_ratio = ((peths['means'][n, :]
                            - np.mean(peths['means'][n, ((tscale > BASELINE[0]) & (tscale < BASELINE[1]))]))
                           / (peths['means'][n, :]
@@ -92,9 +93,12 @@ for i, pid in enumerate(np.unique(light_neurons['pid'])):
             # Add to dataframe
             peths_df = pd.concat((peths_df, pd.DataFrame(index=[peths_df.shape[0]], data={
                 'peth': [peths['means'][n, :]], 'peth_perc': [peth_perc], 'peth_ratio': [peth_ratio],
+                'peth_bl_sub': [peth_bl_sub],
                 'region': these_neurons.loc[index, 'full_region'], 'modulation': these_neurons.loc[index, 'mod_index_late'],
                 'neuron_id': these_neurons.loc[index, 'neuron_id'], 'subject': these_neurons.loc[index, 'subject'],
                 'eid': these_neurons.loc[index, 'eid'], 'acronym': these_neurons.loc[index, 'region']})))
+
+peths_df['high_level_region'] = high_level_regions(peths_df['acronym'])
 
 # %% Plot
 
@@ -248,4 +252,13 @@ cbar.ax.set_yticks([-1, 0, 1])
 #plt.tight_layout(pad=3)
 plt.savefig(join(fig_path, 'heatmap_per_region.pdf'), bbox_inches='tight')
 
+# %% Plot upper and lower quartile for frontal cortex
+
+peth_slice_df = peths_df[peths_df['high_level_region'] == 'Frontal'].copy()
+peth_slice_df['mod_quantile'] = pd.qcut(peth_slice_df['modulation'], [0, 0.25, 0.5, 0.75, 1],
+                                        labels=[1, 2, 3, 4])
+low_quant = np.array(peth_slice_df[peth_slice_df['mod_quantile'] == 1, 'peth_bl_sub'].tolist())
+peth_long_df = pd.melt(peth_slice_df, id_vars=)
+f, ax1 = plt.subplots(1, 1, figsize=(2, 1.75), dpi=dpi)
+sns.lineplot(x='')
 
