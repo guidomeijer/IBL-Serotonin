@@ -57,6 +57,8 @@ mlapdv = ba.xyz2ccf(fiber.xyz)
 mlab.plot3d(mlapdv[:, 1], mlapdv[:, 2], mlapdv[:, 0],
                 line_width=1, tube_radius=150, color=(.6, .6, .6))
 
+rendering.rotating_video(join(fig_path, 'rotation_brain_insertions.webm'), fig)
+
 # %%
 colors, dpi = figure_style()
 f, ax = plt.subplots(1, 1, figsize=(1.5, 1), dpi=dpi)

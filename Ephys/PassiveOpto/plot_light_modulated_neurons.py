@@ -93,9 +93,9 @@ for i, pid in enumerate(np.unique(all_neurons['pid'])):
         if PLOT_LATENCY:
             peths, _ = calculate_peths(spikes.times, spikes.clusters, [neuron_id],
                                        opto_train_times, T_BEFORE, T_AFTER, BIN_SIZE, SMOOTHING)
-            peak_ind = np.argmin(np.abs(peths['tscale'] - modulated.loc[ind, 'latency_peak']))
+            peak_ind = np.argmin(np.abs(peths['tscale'] - modulated.loc[ind, 'latency_peak_onset']))
             peak_act = peths['means'][0][peak_ind]
-            ax.plot([modulated.loc[ind, 'latency_peak'], modulated.loc[ind, 'latency_peak']],
+            ax.plot([modulated.loc[ind, 'latency_peak_onset'], modulated.loc[ind, 'latency_peak_onset']],
                     [peak_act, peak_act], 'xr', lw=2)
 
         plt.tight_layout()

@@ -20,9 +20,9 @@ import pandas as pd
 # Settings
 fig_dir, data_dir = paths(dropbox=True)
 fig_dir = join(fig_dir, 'PaperPassive', 'figure3')
-CLUSTERING = 'k-means'  # gaussian or k-means
-FEATURES = ['spike_width', 'rp_slope', 'pt_ratio', 'rc_slope', 'spike_amp']
-#FEATURES = ['spike_width', 'pt_ratio']
+CLUSTERING = 'gaussian'  # gaussian or k-means
+#FEATURES = ['spike_width', 'rp_slope', 'pt_ratio', 'rc_slope', 'spike_amp']
+FEATURES = ['spike_width', 'pt_ratio']
 #FEATURES = ['spike_width', 'rp_slope', 'rc_slope', 'pt_ratio']
 #FEATURES = ['spike_width', 'rp_slope', 'rc_slope', 'pt_ratio', 'peak_to_trough', 'firing_rate']
 #FEATURES = ['spike_width', 'firing_rate']
@@ -91,7 +91,7 @@ ax.plot([0.1, 0.1], [-0.18, -0.08], color='k', lw=0.5)
 ax.plot([0.1, 1.1], [-0.18, -0.18], color='k', lw=0.5)
 ax.text(-0.25, -0.16, '0.1 mV', rotation=90)
 ax.text(0.25, -0.21, '1 ms')
-ax.set(xlim=[0, 3], ylim=[-0.2, 0.101])
+ax.set(xlim=[0, 3], ylim=[-0.3, 0.101])
 ax.axis('off')
 
 #plt.tight_layout()

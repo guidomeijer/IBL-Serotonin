@@ -8,8 +8,8 @@ By: Guido Meijer
 from os.path import join
 import pandas as pd
 
-#REPO_PATH = '/home/guido/Repositories/IBL-Serotonin'
-REPO_PATH = 'C:\\Users\\guido\\Repositories\\IBL-Serotonin'
+REPO_PATH = '/home/guido/Repositories/IBL-Serotonin'
+#REPO_PATH = 'C:\\Users\\guido\\Repositories\\IBL-Serotonin'
 artifact_neurons = pd.DataFrame()
 
 # ZFM-02180, 2021-05-21

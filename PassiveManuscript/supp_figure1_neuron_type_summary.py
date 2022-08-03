@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
+from scipy.stats import wilcoxon
 from os.path import join
 from serotonin_functions import paths, figure_style, load_subjects
 
@@ -94,8 +95,42 @@ plt.savefig(join(fig_path, 'light_modulated_neurons_per_type.pdf'))
 
 f, ax1 = plt.subplots(1, 1, figsize=(1.75, 1.75), dpi=dpi)
 for i, subject in enumerate(np.unique(per_mouse_df['subject'])):
-    ax1.plot([1, 2], 
+    ax1.plot([1, 2],
              [per_mouse_df.loc[(per_mouse_df['subject'] == subject) & (per_mouse_df['type'] == 'RS'), 'perc_mod'],
               per_mouse_df.loc[(per_mouse_df['subject'] == subject) & (per_mouse_df['type'] == 'FS'), 'perc_mod']],
              color='k')
-    
+ax1.set(xticks=[1, 2], xticklabels=['RS', 'FS'], ylabel='Modulated neurons (%)',
+        yticks=[0, 20, 40, 60])
+_, p = wilcoxon(per_mouse_df.loc[per_mouse_df['type'] == 'RS', 'perc_mod'],
+                per_mouse_df.loc[per_mouse_df['type'] == 'FS', 'perc_mod'])
+sns.despine(trim=True)
+plt.tight_layout()
+
+
+# %%
+f, ax1 = plt.subplots(1, 1, figsize=(1.75, 1.75), dpi=dpi)
+for i, subject in enumerate(np.unique(per_mouse_df['subject'])):
+    ax1.plot([1, 2],
+             [per_mouse_df.loc[(per_mouse_df['subject'] == subject) & (per_mouse_df['type'] == 'RS'), 'perc_supp'],
+              per_mouse_df.loc[(per_mouse_df['subject'] == subject) & (per_mouse_df['type'] == 'RS'), 'perc_enh']],
+             color=colors['RS'], label='RS')
+    ax1.plot([1, 2],
+             [per_mouse_df.loc[(per_mouse_df['subject'] == subject) & (per_mouse_df['type'] == 'FS'), 'perc_supp'],
+              per_mouse_df.loc[(per_mouse_df['subject'] == subject) & (per_mouse_df['type'] == 'FS'), 'perc_enh']],
+             color=colors['FS'], label='FS')
+
+_, p_RS = wilcoxon(per_mouse_df.loc[per_mouse_df['type'] == 'RS', 'perc_supp'],
+                   per_mouse_df.loc[per_mouse_df['type'] == 'RS', 'perc_enh'])
+
+_, p_FS = wilcoxon(per_mouse_df.loc[per_mouse_df['type'] == 'FS', 'perc_supp'],
+                   per_mouse_df.loc[per_mouse_df['type'] == 'FS', 'perc_enh'])
+
+ax1.set(xticks=[1, 2], xticklabels=['Suppressed', 'Enhanced'], ylabel='Modulated neurons (%)',
+        yticks=[0, 10, 20, 30, 40])
+#ax1.legend(frameon=False, bbox_to_anchor=(0.25, 0.8))
+sns.despine(trim=True)
+plt.tight_layout()
+
+
+
+

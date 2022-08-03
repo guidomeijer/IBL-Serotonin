@@ -10,7 +10,7 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 from os.path import join
-from serotonin_functions import paths, figure_style, combine_regions, load_subjects
+from serotonin_functions import paths, figure_style, combine_regions, load_subjects, high_level_regions
 
 # Settings
 MIN_NEURONS = 10
@@ -28,6 +28,7 @@ neuron_type['neuron_id'] = neuron_type['cluster_id']
 merged_df = pd.merge(light_neurons, neuron_type, on=['subject', 'probe', 'eid', 'pid', 'neuron_id'])
 
 # Get full region names
+#merged_df['full_region'] = high_level_regions(merged_df['region'])
 merged_df['full_region'] = combine_regions(merged_df['region'], split_thalamus=False)
 #light_neurons['full_region'] = light_neurons['region']
 
@@ -54,19 +55,36 @@ for i, nickname in enumerate(np.unique(subjects['subject'])):
     merged_df.loc[merged_df['subject'] == nickname, 'sert-cre'] = subjects.loc[subjects['subject'] == nickname, 'sert-cre'].values[0]
 merged_df = merged_df[merged_df['sert-cre'] == 1]
 
+# Calculate stats per animal
+per_animal_df = merged_df.groupby(['full_region', 'subject']).sum()
+per_animal_df['n_neurons'] = merged_df.groupby(['full_region', 'subject']).size()
+per_animal_df['n_RS'] = merged_df[merged_df['type'] == 'RS'].groupby(['full_region', 'subject']).size()
+per_animal_df['n_FS'] = merged_df[merged_df['type'] == 'FS'].groupby(['full_region', 'subject']).size()
+per_animal_df = per_animal_df.reset_index()
+per_animal_df['perc_mod_FS'] =  (per_animal_df['modulated_FS'] / per_animal_df['n_FS']) * 100
+per_animal_df['perc_mod_RS'] =  (per_animal_df['modulated_RS'] / per_animal_df['n_RS']) * 100
+per_animal_df['perc_enh_FS'] =  (per_animal_df['enhanced_FS'] / per_animal_df['n_FS']) * 100
+per_animal_df['perc_enh_RS'] =  (per_animal_df['enhanced_RS'] / per_animal_df['n_RS']) * 100
+per_animal_df['perc_supp_FS'] =  (per_animal_df['suppressed_FS'] / per_animal_df['n_FS']) * 100
+per_animal_df['perc_supp_RS'] =  (per_animal_df['suppressed_RS'] / per_animal_df['n_RS']) * 100
+per_animal_df.loc[per_animal_df['n_RS'] < MIN_NEURONS, 'perc_mod_RS'] = np.nan
+per_animal_df.loc[per_animal_df['n_FS'] < MIN_NEURONS, 'perc_mod_FS'] = np.nan
+
 # Calculate summary statistics
 summary_df = merged_df.groupby(['full_region']).sum()
 summary_df['n_neurons'] = merged_df.groupby(['full_region']).size()
+summary_df['n_RS'] = merged_df[merged_df['type'] == 'RS'].groupby(['full_region']).size()
+summary_df['n_FS'] = merged_df[merged_df['type'] == 'FS'].groupby(['full_region']).size()
 summary_df['modulation_index_FS'] = merged_df[merged_df['type'] == 'FS'].groupby(['full_region']).mean()['mod_index_late']
 summary_df['modulation_index_RS'] = merged_df[merged_df['type'] == 'RS'].groupby(['full_region']).mean()['mod_index_late']
 summary_df = summary_df.reset_index()
-summary_df['perc_enh_FS'] =  (summary_df['enhanced_FS'] / summary_df['n_neurons']) * 100
-summary_df['perc_supp_FS'] =  (summary_df['suppressed_FS'] / summary_df['n_neurons']) * 100
-summary_df['perc_enh_RS'] =  (summary_df['enhanced_RS'] / summary_df['n_neurons']) * 100
-summary_df['perc_supp_RS'] =  (summary_df['suppressed_RS'] / summary_df['n_neurons']) * 100
+summary_df['perc_enh_FS'] =  (summary_df['enhanced_FS'] / summary_df['n_FS']) * 100
+summary_df['perc_supp_FS'] =  (summary_df['suppressed_FS'] / summary_df['n_FS']) * 100
+summary_df['perc_enh_RS'] =  (summary_df['enhanced_RS'] / summary_df['n_RS']) * 100
+summary_df['perc_supp_RS'] =  (summary_df['suppressed_RS'] / summary_df['n_RS']) * 100
 summary_df['perc_mod'] =  (summary_df['modulated'] / summary_df['n_neurons']) * 100
-summary_df['perc_mod_RS'] =  (summary_df['modulated_RS'] / summary_df['n_neurons']) * 100
-summary_df['perc_mod_FS'] =  (summary_df['modulated_FS'] / summary_df['n_neurons']) * 100
+summary_df['perc_mod_RS'] =  (summary_df['modulated_RS'] / summary_df['n_RS']) * 100
+summary_df['perc_mod_FS'] =  (summary_df['modulated_FS'] / summary_df['n_FS']) * 100
 summary_df = summary_df[summary_df['n_neurons'] >= MIN_NEURONS]
 summary_df['perc_supp_FS'] = -summary_df['perc_supp_FS']
 summary_df['perc_supp_RS'] = -summary_df['perc_supp_RS']
@@ -87,14 +105,22 @@ ordered_regions_FS = summary_df.sort_values('perc_FS_mod', ascending=False).rese
 # %% Plot ratio FS/RS modulated neurons
 
 colors, dpi = figure_style()
-f, ax1 = plt.subplots(1, 1, figsize=(3.75, 2), dpi=dpi)
+f, ax1 = plt.subplots(1, 1, figsize=(3, 2), dpi=dpi)
 sns.barplot(x='100perc', y='full_region', data=summary_df, color=colors['RS'], ax=ax1,
-            order=ordered_regions_FS['full_region'], label='Regular spiking')
+            order=ordered_regions_FS['full_region'], label='RS')
 sns.barplot(x='perc_FS_mod', y='full_region', data=summary_df, color=colors['FS'], ax=ax1,
-            order=ordered_regions_FS['full_region'], label='Fast spiking\ninterneurons')
+            order=ordered_regions_FS['full_region'], label='FS')
 #summary_df[['perc_RS_mod', 'perc_FS_mod']].plot(kind='bar', stacked=True)
+for i, region_name in enumerate(ordered_regions_FS['full_region']):
+    ax1.text(110, i, summary_df.loc[summary_df['full_region'] == region_name, 'n_FS'].values[0].astype(int),
+             va='center', ha='center', fontsize=6)
+    ax1.text(125, i, summary_df.loc[summary_df['full_region'] == region_name, 'n_RS'].values[0].astype(int),
+             va='center', ha='center', fontsize=6)
 ax1.set(ylabel='', xlabel='Percentage of modulated neurons')
-ax1.legend(frameon=False, bbox_to_anchor=(0.98, 1))
+ax1.text(95, -1, 'n =', ha='center', va='center', fontsize=6)
+ax1.text(110, -1, 'FS', ha='center', va='center', fontsize=6, fontweight='bold', color=colors['FS'])
+ax1.text(125, -1, 'RS', ha='center', va='center', fontsize=6, fontweight='bold', color=colors['RS'])
+#ax1.legend(frameon=False, bbox_to_anchor=(0.98, 1))
 
 sns.despine(trim=True)
 plt.tight_layout()
@@ -124,7 +150,7 @@ ax1.plot(ordered_regions['perc_supp_RS'], np.arange(ordered_regions.shape[0])+DI
          color=colors['RS'])
 ax1.plot(ordered_regions['perc_enh_RS'], np.arange(ordered_regions.shape[0])+DIST, 'o',
          color=colors['RS'])
-ax1.set(ylabel='', xlabel='Modulated neurons (%)', xlim=[-40, 20], xticks=[-40, -20, 0, 20],
+ax1.set(ylabel='', xlabel='Modulated neurons (%)', xlim=[-60, 60], xticks=[-40, -20, 0, 20],
         xticklabels=[40, 20, 0, 20])
 ax1.spines['bottom'].set_position(('data', summary_df.shape[0]))
 ax1.margins(x=0)
@@ -132,3 +158,22 @@ ax1.margins(x=0)
 plt.tight_layout()
 sns.despine(trim=True)
 plt.savefig(join(fig_path, 'light_modulation_per_region.pdf'))
+
+# %%
+f, ax1 = plt.subplots(1, 1, figsize=(3, 2.5), dpi=dpi)
+
+sns.stripplot(x='perc_mod_RS', y='full_region', data=per_animal_df, order=ordered_regions['full_region'],
+              color=colors['RS'], size=3, ax=ax1)
+sns.stripplot(x='perc_mod_FS', y='full_region', data=per_animal_df, order=ordered_regions['full_region'],
+              color=colors['FS'], size=3, ax=ax1)
+
+#sns.boxplot(x='perc_mod_RS', y='full_region', data=per_animal_df, order=ordered_regions['full_region'],
+#              color=colors['RS'], ax=ax1)
+
+#sns.stripplot(x='perc_mod_RS', y='full_region', data=per_animal_df, order=ordered_regions['full_region'],
+#              color=colors['RS'], size=3, ax=ax1)
+
+plt.tight_layout()
+
+
+

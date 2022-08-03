@@ -33,7 +33,7 @@ for i, nickname in enumerate(np.unique(subjects['subject'])):
 sert_neurons = all_neurons[(all_neurons['sert-cre'] == 1) & (all_neurons['modulated'] == 1)]
 
 # Transform to ms
-sert_neurons['latency'] = sert_neurons['latency_peak']
+sert_neurons['latency'] = sert_neurons['latency_peak_onset']
 
 # Get percentage modulated per region
 reg_neurons = sert_neurons.groupby('full_region').median()['latency'].to_frame()
