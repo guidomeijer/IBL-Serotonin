@@ -100,7 +100,7 @@ summary_df['perc_FS_mod'] = (summary_df['perc_mod_FS'] /
 summary_df['100perc'] = 100
 
 # Get ordered regions by ratio FS/NS
-ordered_regions_FS = summary_df.sort_values('perc_FS_mod', ascending=False).reset_index()
+ordered_regions_FS = summary_df.sort_values('perc_FS_mod', ascending=True).reset_index()
 
 # %% Plot ratio FS/RS modulated neurons
 
@@ -111,69 +111,25 @@ sns.barplot(x='100perc', y='full_region', data=summary_df, color=colors['RS'], a
 sns.barplot(x='perc_FS_mod', y='full_region', data=summary_df, color=colors['FS'], ax=ax1,
             order=ordered_regions_FS['full_region'], label='FS')
 #summary_df[['perc_RS_mod', 'perc_FS_mod']].plot(kind='bar', stacked=True)
+
+ax1.set(ylabel='', xlabel='Fraction of modulated neurons')
+"""
+ax1.text(95, -1, 'n =', ha='center', va='center', fontsize=6)
+ax1.text(110, -1, 'FS', ha='center', va='center', fontsize=6, fontweight='bold', color=colors['FS'])
+ax1.text(125, -1, 'RS', ha='center', va='center', fontsize=6, fontweight='bold', color=colors['RS'])
 for i, region_name in enumerate(ordered_regions_FS['full_region']):
     ax1.text(110, i, summary_df.loc[summary_df['full_region'] == region_name, 'n_FS'].values[0].astype(int),
              va='center', ha='center', fontsize=6)
     ax1.text(125, i, summary_df.loc[summary_df['full_region'] == region_name, 'n_RS'].values[0].astype(int),
              va='center', ha='center', fontsize=6)
-ax1.set(ylabel='', xlabel='Percentage of modulated neurons')
-ax1.text(95, -1, 'n =', ha='center', va='center', fontsize=6)
-ax1.text(110, -1, 'FS', ha='center', va='center', fontsize=6, fontweight='bold', color=colors['FS'])
-ax1.text(125, -1, 'RS', ha='center', va='center', fontsize=6, fontweight='bold', color=colors['RS'])
+"""
+ax1.text(110, -1, 'Mod. neurons', ha='center', va='center', fontsize=6)
+for i, region_name in enumerate(ordered_regions_FS['full_region']):
+    ax1.text(110, i, summary_df.loc[summary_df['full_region'] == region_name, 'modulated'].values[0].astype(int),
+             va='center', ha='center', fontsize=6)
 #ax1.legend(frameon=False, bbox_to_anchor=(0.98, 1))
 
 sns.despine(trim=True)
 plt.tight_layout()
 plt.savefig(join(fig_path, 'ratio_mod_neurons.pdf'))
-
-# %%  Plot percentage of enhanced and suppressed neurons per type and region
-
-colors, dpi = figure_style()
-f, ax1 = plt.subplots(1, 1, figsize=(3, 2.5), dpi=dpi)
-DIST = 0.15
-ax1.plot([0, 0], [0, summary_df.shape[0]], color=[0.5, 0.5, 0.5])
-sns.stripplot(x='perc_enh_FS', y='full_region', data=summary_df, order=ordered_regions['full_region'],
-              color='k', alpha=0, ax=ax1)  # this actually doesn't plot anything
-ax1.hlines(y=np.arange(ordered_regions.shape[0])-DIST, xmin=0, xmax=ordered_regions['perc_enh_FS'],
-           color=colors['FS'])
-ax1.hlines(y=np.arange(ordered_regions.shape[0])-DIST, xmin=ordered_regions['perc_supp_FS'], xmax=0,
-           color=colors['FS'])
-ax1.plot(ordered_regions['perc_supp_FS'], np.arange(ordered_regions.shape[0])-DIST, 'o',
-         color=colors['FS'])
-ax1.plot(ordered_regions['perc_enh_FS'], np.arange(ordered_regions.shape[0])-DIST, 'o',
-         color=colors['FS'])
-ax1.hlines(y=np.arange(ordered_regions.shape[0])+DIST, xmin=0, xmax=ordered_regions['perc_enh_RS'],
-           color=colors['RS'])
-ax1.hlines(y=np.arange(ordered_regions.shape[0])+DIST, xmin=ordered_regions['perc_supp_RS'], xmax=0,
-           color=colors['RS'])
-ax1.plot(ordered_regions['perc_supp_RS'], np.arange(ordered_regions.shape[0])+DIST, 'o',
-         color=colors['RS'])
-ax1.plot(ordered_regions['perc_enh_RS'], np.arange(ordered_regions.shape[0])+DIST, 'o',
-         color=colors['RS'])
-ax1.set(ylabel='', xlabel='Modulated neurons (%)', xlim=[-60, 60], xticks=[-40, -20, 0, 20],
-        xticklabels=[40, 20, 0, 20])
-ax1.spines['bottom'].set_position(('data', summary_df.shape[0]))
-ax1.margins(x=0)
-
-plt.tight_layout()
-sns.despine(trim=True)
-plt.savefig(join(fig_path, 'light_modulation_per_region.pdf'))
-
-# %%
-f, ax1 = plt.subplots(1, 1, figsize=(3, 2.5), dpi=dpi)
-
-sns.stripplot(x='perc_mod_RS', y='full_region', data=per_animal_df, order=ordered_regions['full_region'],
-              color=colors['RS'], size=3, ax=ax1)
-sns.stripplot(x='perc_mod_FS', y='full_region', data=per_animal_df, order=ordered_regions['full_region'],
-              color=colors['FS'], size=3, ax=ax1)
-
-#sns.boxplot(x='perc_mod_RS', y='full_region', data=per_animal_df, order=ordered_regions['full_region'],
-#              color=colors['RS'], ax=ax1)
-
-#sns.stripplot(x='perc_mod_RS', y='full_region', data=per_animal_df, order=ordered_regions['full_region'],
-#              color=colors['RS'], size=3, ax=ax1)
-
-plt.tight_layout()
-
-
 

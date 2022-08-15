@@ -26,12 +26,21 @@ subjects = load_subjects()
 for i, nickname in enumerate(np.unique(subjects['subject'])):
     corr_df.loc[corr_df['subject'] == nickname, 'sert-cre'] = subjects.loc[subjects['subject'] == nickname, 'sert-cre'].values[0]
 
+corr_df = corr_df.groupby(['subject', 'time', 'region_pair']).mean().reset_index()
+
 # %%
 colors, dpi = figure_style()
 f, ax1 = plt.subplots(1, 1, figsize=(1.75, 1.75), dpi=dpi)
 #ax1.add_patch(Rectangle((0, 0), 1, 4, color='royalblue', alpha=0.25, lw=0))
-sns.lineplot(x='time', y='region_corr', ax=ax1, legend='brief', hue='region_pair', estimator=None,
-             units='subject', data=corr_df[corr_df['sert-cre'] == 1])
+#sns.lineplot(x='time', y='region_corr', ax=ax1, legend='brief', hue='region_pair', estimator=None,
+#             units='subject', data=corr_df[corr_df['sert-cre'] == 1])
+sns.lineplot(x='time', y='region_corr', ax=ax1, legend='brief', hue='region_pair', ci=68,
+             data=corr_df[corr_df['sert-cre'] == 1])
+ax1.set(ylabel='Correlation (r)', xlabel='Time (s)', xticks=[-1, 0, 1, 2, 3])
+leg = ax1.legend(title='', prop={'size': 4}, loc='upper right', frameon=False)
+plt.tight_layout()
+sns.despine(trim=True)
+
 """
 ax1.set(xlim=[-1, 2], xlabel='Time (s)', ylabel='PCA traj. displacement (a.u.)',
         xticks=[-1, 0, 1, 2], ylim=[0.5, 2.5])

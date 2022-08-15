@@ -20,7 +20,7 @@ REGIONS = ['M2', 'OFC', 'mPFC']
 
 # Paths
 fig_path, save_path = paths(dropbox=True)
-fig_path = join(fig_path, 'PaperPassive', 'figure5')
+fig_path = join(fig_path, 'PaperPassive', 'figure6')
 
 # Load in data
 pca_df = pd.read_csv(join(save_path, 'pca_regions.csv'))
@@ -35,7 +35,7 @@ for i, nickname in enumerate(np.unique(subjects['subject'])):
 
 # Select sert mice and regions of interest
 pca_dist_df = pca_dist_df[(pca_dist_df['sert-cre'] == 1) & (pca_dist_df['region'].isin(REGIONS))]
-    
+
 # Take average over multiple sessions per animal
 pca_dist_df = pca_dist_df.groupby(['subject', 'time', 'region']).median().reset_index()
 
@@ -46,7 +46,7 @@ for i, subject in enumerate(pca_dist_df['subject'].unique()):
             pca_dist_df.loc[(pca_dist_df['subject'] == subject) & (pca_dist_df['region'] == region), 'pca_dist_smooth'] = (
                 smooth_interpolate_signal_sg(pca_dist_df.loc[(pca_dist_df['subject'] == subject)
                                                              & (pca_dist_df['region'] == region), 'pca_dist'], window=15))
-    
+
 # Do statistics
 pca_table_df = pca_dist_df.pivot(index='time', columns=['region', 'subject'], values='pca_dist')
 pca_table_df = pca_table_df.reset_index()
@@ -61,7 +61,7 @@ ax1.add_patch(Rectangle((0, 0), 1, 4, color='royalblue', alpha=0.25, lw=0))
 sns.lineplot(x='time', y='pca_dist_smooth', ax=ax1, legend='brief', hue='region', ci=68,
              data=pca_dist_df, units='subject', estimator=None,
              hue_order=REGIONS, palette=[colors[i] for i in REGIONS])
-#ax1.plot(pca_table_df.loc[(pca_table_df['p_value'] < 0.05) & (pca_table_df['time'] < 1), 'time'], 
+#ax1.plot(pca_table_df.loc[(pca_table_df['p_value'] < 0.05) & (pca_table_df['time'] < 1), 'time'],
 #         np.ones(pca_table_df[(pca_table_df['p_value'] < 0.05) & (pca_table_df['time'] < 1)].shape[0])*4, color='k')
 ax1.set(xlim=[-1, 2], xlabel='Time (s)', ylabel='PCA traj. displacement (a.u.)',
         xticks=[-1, 0, 1, 2], ylim=[0, 4.05])
@@ -77,7 +77,7 @@ f, ax1 = plt.subplots(1, 1, figsize=(1.75, 1.75), dpi=dpi)
 ax1.add_patch(Rectangle((0, 0), 1, 4, color='royalblue', alpha=0.25, lw=0))
 sns.lineplot(x='time', y='pca_dist_smooth', ax=ax1, legend='brief', hue='region', ci=68,
              data=pca_dist_df, hue_order=REGIONS, palette=[colors[i] for i in REGIONS])
-#ax1.plot(pca_table_df.loc[(pca_table_df['p_value'] < 0.05) & (pca_table_df['time'] < 1), 'time'], 
+#ax1.plot(pca_table_df.loc[(pca_table_df['p_value'] < 0.05) & (pca_table_df['time'] < 1), 'time'],
 #         np.ones(pca_table_df[(pca_table_df['p_value'] < 0.05) & (pca_table_df['time'] < 1)].shape[0])*4, color='k')
 ax1.set(xlim=[-1, 2], xlabel='Time (s)', ylabel='PCA traj. displacement (a.u.)',
         xticks=[-1, 0, 1, 2], ylim=[0.5, 2.5])

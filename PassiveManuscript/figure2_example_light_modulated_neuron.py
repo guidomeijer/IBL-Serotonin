@@ -34,36 +34,29 @@ SUBJECT = 'ZFM-01802'
 DATE = '2021-03-11'
 PROBE = 'probe00'
 NEURON = 235
-
 SUBJECT = 'ZFM-01802'
 DATE = '2021-03-09'
 PROBE = 'probe00'
 NEURON = 349
-
 # frontal cortex complex modulation
 SUBJECT = 'ZFM-02600'
 DATE = '2021-08-25'
 PROBE = 'probe00'
 NEURON = 442
-
 # frontal cortex enhancement
 SUBJECT = 'ZFM-03330'
 DATE = '2022-02-15'
 PROBE = 'probe00'
 NEURON = 323
-
-
 SUBJECT = 'ZFM-01802'
 DATE = '2021-03-11'
 PROBE = 'probe00'
 NEURON = 181
-
 # good example complex modulation
 SUBJECT = 'ZFM-01802'
 DATE = '2021-03-11'
 PROBE = 'probe00'
 NEURON = 207
-
 # Good example thalamus
 SUBJECT = 'ZFM-01802'
 DATE = '2021-03-09'
@@ -168,6 +161,3 @@ ax.yaxis.set_label_coords(-.2, .75)
 plt.tight_layout()
 
 plt.savefig(join(fig_path, f'{region}_{SUBJECT}_{DATE}_{PROBE}_neuron{NEURON}.pdf'))
-
-
-

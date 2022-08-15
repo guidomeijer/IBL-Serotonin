@@ -18,7 +18,7 @@ MIN_NEURONS = 10
 
 # Paths
 fig_path, save_path = paths(dropbox=True)
-fig_path = join(fig_path, 'PaperPassive', 'figure3')
+fig_path = join(fig_path, 'PaperPassive', 'figure4')
 
 # Load in results
 all_neurons = pd.read_csv(join(save_path, 'light_modulated_neurons.csv'))
@@ -59,7 +59,7 @@ sert_neurons['log_latency'] = np.log10(sert_neurons['latency'])
 # %%
 
 colors, dpi = figure_style()
-f, ax1 = plt.subplots(1, 1, figsize=(3, 2.2), dpi=dpi)
+f, ax1 = plt.subplots(1, 1, figsize=(3, 2), dpi=dpi)
 #sns.pointplot(x='latency', y='full_region', data=sert_neurons, order=ordered_regions['full_region'],
 #              join=False, ci=68, color=colors['general'], ax=ax1)
 #sns.boxplot(x='latency', y='full_region', data=sert_neurons, order=ordered_regions['full_region'],

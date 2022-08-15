@@ -44,27 +44,27 @@ POST_TIME = [0, 1]
 BIN_SIZE = 0.05
 SMOOTHING = 0.025
 fig_path, save_path = paths(dropbox=True)
-fig_path = join(fig_path, 'PaperPassive', 'figure5')
+fig_path = join(fig_path, 'PaperPassive', 'figure6')
 
 for (subject, date, probe, neuron) in zip(SUBJECTS, DATES, PROBES, NEURONS):
     # Get session details
     ins = one.alyx.rest('insertions', 'list', date=date, subject=subject, name=probe)
     pid = ins[0]['id']
     eid = ins[0]['session']
-    
+
     # Load in laser pulse times
     opto_train_times, _ = load_passive_opto_times(eid, one=one)
-    
+
     # Load in spikes
     sl = SpikeSortingLoader(pid=pid, one=one, atlas=ba)
     spikes, clusters, channels = sl.load_spike_sorting()
     clusters = sl.merge_clusters(spikes, clusters, channels)
-    
+
     # Select spikes of passive period
     start_passive = opto_train_times[0] - 360
     spikes.clusters = spikes.clusters[spikes.times > start_passive]
     spikes.times = spikes.times[spikes.times > start_passive]
-    
+
     # Calculate ZETA
     p_value, latencies, dZETA, dRate = getZeta(spikes.times[spikes.clusters == neuron],
                                                opto_train_times - ZETA_BEFORE,
@@ -74,24 +74,24 @@ for (subject, date, probe, neuron) in zip(SUBJECTS, DATES, PROBES, NEURONS):
                                                boolReturnZETA=True, boolReturnRate=True)
     latency = latencies[3] - ZETA_BEFORE
     dZETA['vecSpikeT'] = dZETA['vecSpikeT'] - ZETA_BEFORE
-    
+
     # Get spike counts for baseline and event timewindow
     baseline_times = np.column_stack(((opto_train_times - PRE_TIME[0]), (opto_train_times - PRE_TIME[1])))
     baseline_counts, cluster_ids = get_spike_counts_in_bins(spikes.times, spikes.clusters,
                                                             baseline_times)
     times = np.column_stack(((opto_train_times + POST_TIME[0]), (opto_train_times + POST_TIME[1])))
     spike_counts, cluster_ids = get_spike_counts_in_bins(spikes.times, spikes.clusters, times)
-    
+
     fpr, tpr, _ = roc_curve(np.append(np.zeros(baseline_counts.shape[1]), np.ones(baseline_counts.shape[1])),
                             np.append(baseline_counts[cluster_ids == neuron, :], spike_counts[cluster_ids == neuron, :]))
-    
+
     roc_auc, cluster_ids = roc_single_event(spikes.times, spikes.clusters,
                                             opto_train_times, pre_time=PRE_TIME, post_time=POST_TIME)
     mod_index = 2 * (roc_auc - 0.5)
-    
+
     # Get region
     region = remap(clusters.acronym[neuron])[0]
-    
+
     # Calculate mean spike rate
     stim_intervals = np.vstack((opto_train_times, opto_train_times + 1)).T
     spike_rate, neuron_ids = get_spike_counts_in_bins(spikes.times, spikes.clusters, stim_intervals)
@@ -99,11 +99,11 @@ for (subject, date, probe, neuron) in zip(SUBJECTS, DATES, PROBES, NEURONS):
     bl_intervals = np.vstack((opto_train_times - 1, opto_train_times)).T
     spike_rate, neuron_ids = get_spike_counts_in_bins(spikes.times, spikes.clusters, bl_intervals)
     bl_rate = spike_rate[neuron_ids == neuron, :][0]
-    
+
     print(f'Area under ROC curve: {roc_auc[cluster_ids == neuron][0]:.2f}')
     print(f'Modulation index: {mod_index[cluster_ids == neuron][0]:.2f}')
     print(f'ZETA p-value: {p_value}')
-    
+
     # %% Plot PSTH
     colors, dpi = figure_style()
     p, ax = plt.subplots(1, 1, figsize=(1.75, 2), dpi=dpi)
@@ -123,7 +123,7 @@ for (subject, date, probe, neuron) in zip(SUBJECTS, DATES, PROBES, NEURONS):
            ylim=[ax.get_ylim()[0], np.round(ax.get_ylim()[1])])
     ax.yaxis.set_major_formatter(FormatStrFormatter('%.0f'))
     ax.yaxis.set_label_coords(-.2, .75)
-    
+
     plt.tight_layout()
     plt.savefig(join(fig_path, f'{region}_{subject}_{date}_{probe}_neuron{neuron}.pdf'))
 

@@ -13,6 +13,7 @@ import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 import matplotlib as mpl
+from matplotlib.lines import Line2D
 from sklearn.mixture import GaussianMixture
 from sklearn.manifold import TSNE
 import pandas as pd
@@ -62,8 +63,10 @@ else:
     waveforms_df.loc[waveforms_df['type'] == 0, 'type'] = 'RS'
     waveforms_df.loc[waveforms_df['type'] == 1, 'type'] = 'FS'
 
-print(f'{(np.sum(waveforms_df["type"] == "FS") / waveforms_df.shape[0]) * 100:.2f}% fast spiking')
-print(f'{(np.sum(waveforms_df["type"] == "RS") / waveforms_df.shape[0]) * 100:.2f}% regural spiking')
+perc_reg = (np.sum(waveforms_df["type"] == "RS") / waveforms_df.shape[0]) * 100
+perc_fast = (np.sum(waveforms_df["type"] == "FS") / waveforms_df.shape[0]) * 100
+print(f'{perc_fast:.2f}% fast spiking')
+print(f'{perc_reg:.2f}% regural spiking')
 
 # Save result
 neuron_type = waveforms_df.copy()
@@ -101,13 +104,17 @@ plt.savefig(join(fig_dir, 'mean_waveforms.pdf'), bbox_inches='tight')
 # %% Plot waveform clustering
 f, ax = plt.subplots(1, 1, figsize=(1.75, 1.75), dpi=dpi)
 ax.scatter(waveforms_df.loc[waveforms_df['type'] == 'RS', 'spike_width'],
-            waveforms_df.loc[waveforms_df['type'] == 'RS', 'pt_ratio'], label='Regular spiking',
+            waveforms_df.loc[waveforms_df['type'] == 'RS', 'pt_ratio'],
+            label=f'Regular spiking (RS)',
             color=colors['RS'], s=1)
 ax.scatter(waveforms_df.loc[waveforms_df['type'] == 'FS', 'spike_width'],
-            waveforms_df.loc[waveforms_df['type'] == 'FS', 'pt_ratio'], label='Narrow spiking',
+            waveforms_df.loc[waveforms_df['type'] == 'FS', 'pt_ratio'],
+            label=f'Narrow spiking (NS)',
             color=colors['FS'], s=1)
-ax.set(xlabel='Spike width (ms)', ylabel='Peak-to-trough ratio', xlim=[0, 1.5], ylim=[0, 1])
-ax.legend(frameon=False, markerscale=2, bbox_to_anchor=(0.2, 0.8), handletextpad=0.1)
+ax.set(xlabel='Spike width (ms)', ylabel='Peak-to-trough ratio', xlim=[0, 1.55], ylim=[0, 1],
+       xticks=[0, 0.5, 1, 1.5])
+ax.legend(frameon=False, markerscale=2, bbox_to_anchor=(0.2, 0.8), handletextpad=0.1,
+          prop={'size': 5.5})
 
 plt.tight_layout()
 sns.despine(trim=True)
@@ -117,10 +124,13 @@ plt.savefig(join(fig_dir, 'waveform_clustering.pdf'))
 
 f, ax = plt.subplots(1, 1, figsize=(1.5, 1.75), dpi=dpi)
 ax.hist(waveforms_df.loc[waveforms_df['type'] == 'RS', 'firing_rate'], histtype='step',
-         color=colors['RS'], density=True, bins=100, cumulative=True)
+         color=colors['RS'], density=True, bins=100, cumulative=True, label='Regular spiking (RS)')
 ax.hist(waveforms_df.loc[waveforms_df['type'] == 'FS', 'firing_rate'], histtype='step',
-         color=colors['FS'], density=True, bins=100, cumulative=True)
+         color=colors['FS'], density=True, bins=100, cumulative=True, label='Narrow spiking (NS)')
 ax.set(xlabel='Firing rate (spks/s)', ylabel='Density')
+custom_lines = [Line2D([0], [0], color=colors['RS'], lw=1),
+                Line2D([0], [0], color=colors['FS'], lw=1)]
+ax.legend(custom_lines, ['RS', 'NS'], frameon=False, prop={'size':5}, loc='right')
 fix_hist_step_vertical_line_at_end(ax)
 
 plt.tight_layout()

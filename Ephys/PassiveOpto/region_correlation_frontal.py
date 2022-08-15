@@ -23,8 +23,8 @@ ba = AllenAtlas()
 # Settings
 T_BEFORE = 1
 T_AFTER = 3
-BIN_SIZE = 0.25
-SMOOTHING = 0
+BIN_SIZE = 0.1
+SMOOTHING = 0.05
 SUBTRACT_MEAN = False
 fig_path, save_path = paths()
 fig_path = join(fig_path, 'Ephys', 'PCA')

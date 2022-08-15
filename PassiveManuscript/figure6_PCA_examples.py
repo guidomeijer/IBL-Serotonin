@@ -10,6 +10,7 @@ from os.path import join
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
+from matplotlib.colors import LinearSegmentedColormap, TwoSlopeNorm
 from matplotlib.collections import LineCollection
 from serotonin_functions import figure_style
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
@@ -24,7 +25,7 @@ TITLES = ['Secondary motor', 'Orbitofrontal', 'Medial prefrontal']
 
 # Paths
 fig_path, save_path = paths(dropbox=True)
-fig_path = join(fig_path, 'PaperPassive', 'figure5')
+fig_path = join(fig_path, 'PaperPassive', 'figure6')
 
 # Load in data
 pca_df = pd.read_csv(join(save_path, 'pca_regions.csv'))
@@ -45,7 +46,7 @@ for i in range(len(SUBJECTS)):
     line = axs[0].add_collection(lc)
     """
 
-    sp = axs[i].scatter(df_slice['pca1'], df_slice['pca2'], c=df_slice['time'], cmap='twilight_r')
+    sp = axs[i].scatter(df_slice['pca1'], df_slice['pca2'], c=df_slice['time'], cmap='')
     axs[i].axis('off')
     axs[i].set(xlabel='PC 1', ylabel='PC 2', title=TITLES[i])
 
