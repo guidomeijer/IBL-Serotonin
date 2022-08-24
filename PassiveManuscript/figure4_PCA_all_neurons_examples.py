@@ -8,6 +8,8 @@ By: Guido Meijer
 import numpy as np
 from os.path import join
 import matplotlib.pyplot as plt
+from matplotlib import cm
+from matplotlib.colors import ListedColormap
 import pandas as pd
 import seaborn as sns
 from serotonin_functions import figure_style
@@ -29,16 +31,23 @@ fig_path = join(fig_path, 'PaperPassive', 'figure4')
 # Load in data
 pca_df = pd.read_csv(join(save_path, 'pca_all_neurons.csv'))
 
+# Create colormap
+blues = cm.get_cmap('Blues_r', 256)(np.linspace(0, 1, 600))[200:500]
+blue = [0.1, 0.4, 0.68, 1]
+color_array = np.vstack([np.tile([.7, .7, .7, 1], (100, 1)), np.tile(blue, (100, 1)), blues])
+newcmp = ListedColormap(color_array)
+
+# Plot
 colors, dpi = figure_style()
 f, (ax1, ax2, ax_cb) = plt.subplots(1, 3, figsize=(4, 1.75), gridspec_kw={'width_ratios': [1, 1, 0.15]}, dpi=dpi)
 
 df_slice = pca_df[(pca_df['subject'] == SERT_SUB) & (pca_df['date'] == SERT_DATE)]
-sp = ax1.scatter(df_slice['pca1'], df_slice['pca2'], c=df_slice['time'], cmap='twilight_r')
+sp = ax1.scatter(df_slice['pca1'], df_slice['pca2'], c=df_slice['time'], cmap=newcmp)
 ax1.axis('off')
 ax1.set(xlabel='PC 1', ylabel='PC 2', title='SERT')
 
 df_slice = pca_df[(pca_df['subject'] == WT_SUB) & (pca_df['date'] == WT_DATE)]
-sp = ax2.scatter(df_slice['pca1'], df_slice['pca2'], c=df_slice['time'], cmap='twilight_r')
+sp = ax2.scatter(df_slice['pca1'], df_slice['pca2'], c=df_slice['time'], cmap=newcmp)
 ax2.axis('off')
 ax2.set(xlabel='PC 1', ylabel='PC 2', title='WT')
 

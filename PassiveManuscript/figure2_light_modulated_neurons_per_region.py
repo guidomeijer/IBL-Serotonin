@@ -15,7 +15,7 @@ from serotonin_functions import paths, figure_style, combine_regions, load_subje
 # Settings
 MIN_NEURONS_POOLED = 5
 MIN_NEURONS_PER_MOUSE = 10
-MIN_MOD_NEURONS = 10
+MIN_MOD_NEURONS = 7
 MIN_REC = 1
 
 # Paths
@@ -148,13 +148,20 @@ plt.savefig(join(fig_path, 'light_modulation_per_region.pdf'))
 
 # %%
 colors, dpi = figure_style()
+
+PROPS = {'boxprops':{'facecolor':'none', 'edgecolor':'none'}, 'medianprops':{'color':'none'},
+         'whiskerprops':{'color':'none'}, 'capprops':{'color':'none'}}
+ORDER = mod_neurons.groupby('full_region').mean()['mod_index_late'].sort_values().reset_index()['full_region']
+
 f, ax1 = plt.subplots(1, 1, figsize=(3, 2), dpi=dpi)
-sns.stripplot(x='mod_index_late', y='full_region', ax=ax1, data=mod_neurons,
-              order=ordered_regions_pm.loc[ordered_regions_pm['full_region'].isin(mod_neurons['full_region']), 'full_region'],
-              size=2, palette=colors) 
+sns.boxplot(x='mod_index_late', y='full_region', ax=ax1, data=mod_neurons, showmeans=True,
+            order=ORDER, meanprops={"marker": "|", "markeredgecolor": "black", "markersize": "7"},
+            fliersize=0, **PROPS)
+sns.stripplot(x='mod_index_late', y='full_region', ax=ax1, data=mod_neurons, order=ORDER,
+              size=2, palette=colors)
 ax1.plot([0, 0], ax1.get_ylim(), ls='--', color=colors['grey'])
 ax1.set(ylabel='', xlabel='Modulation index', xlim=[-1.05, 1.05], xticklabels=[-1, -0.5, 0, 0.5, 1])
-ax1.spines['bottom'].set_position(('data', np.floor(ax1.get_ylim()[0]) - 0.4))
+#ax1.spines['bottom'].set_position(('data', np.floor(ax1.get_ylim()[0]) - 0.4))
 plt.tight_layout()
 sns.despine(trim=True)
 plt.savefig(join(fig_path, 'light_modulation_per_neuron_per_region.pdf'))

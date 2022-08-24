@@ -45,8 +45,9 @@ all_mice = all_mice.rename({0: 'perc_mod'}, axis=1)
 colors, dpi = figure_style()
 f, ax1 = plt.subplots(1, 1, figsize=(1.2, 1.75), dpi=dpi)
 
+
 sns.stripplot(x='sert-cre', y='perc_mod', data=all_mice, order=[1, 0], size=3,
-              palette=[colors['sert'], colors['wt']], ax=ax1)
+              palette=[colors['sert'], colors['wt']], ax=ax1, jitter=0.2)
 ax1.set(xticklabels=['SERT', 'WT'], ylabel='Sig. modulated neurons (%)', ylim=[0, 60], xlabel='')
 
 sns.despine(trim=True)

@@ -10,19 +10,24 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from os.path import join
-from scipy.stats import mannwhitneyu
+from scipy.stats import mannwhitneyu, pearsonr
 from serotonin_functions import paths, load_subjects, remap, figure_style, combine_regions
 
 # Initialize some things
-""" 
+"""
 MOTION_REG = ['wheel_velocity', 'nose', 'paw_l', 'paw_r', 'tongue_end_l', 'tongue_end_r',
               'motion_energy_body', 'motion_energy_left', 'motion_energy_right', 'pupil_diameter']
-OPTO_REG = ['opto_4_bases', 'opto_6_bases', 'opto_8_bases', 'opto_10_bases', 'opto_12_bases', 
+OPTO_REG = ['opto_4_bases', 'opto_6_bases', 'opto_8_bases', 'opto_10_bases', 'opto_12_bases',
             'opto_boxcar']
 """
 
-MOTION_REG = ['nose', 'paw_l', 'tongue_end_l', 'pupil_diameter']
-OPTO_REG = ['opto_onset', 'opto_boxcar']
+MOTION_REG = ['paw_motion', 'pupil_diameter', 'motSVD_dim0', 'motSVD_dim1', 'motSVD_dim2',
+              'motSVD_dim3', 'motSVD_dim4']
+OPTO_REG = ['opto_onset', 'opto_offset', 'opto_boxcar']
+
+
+#MOTION_REG = ['motSVD_dim0']
+#OPTO_REG = ['opto_onset']
 
 MIN_NEURONS_RATIO = 5
 MIN_NEURONS_PERC = 20
@@ -37,7 +42,7 @@ all_glm_df = pd.read_csv(join(save_path, 'GLM', 'GLM_passive_opto.csv'))
 for i, nickname in enumerate(np.unique(subjects['subject'])):
     all_glm_df.loc[all_glm_df['subject'] == nickname, 'sert-cre'] = subjects.loc[
         subjects['subject'] == nickname, 'sert-cre'].values[0]
-    
+
 # Add regions
 all_glm_df['region'] = remap(all_glm_df['acronym'])
 
@@ -94,6 +99,9 @@ print(f'p-value motion: {p_motion}')
 
 # Get dataframe with means per animal
 grouped_df = all_glm_df[all_glm_df['modulated']].groupby('subject').mean()
+
+# Get sert animals
+sert_glm_df = all_glm_df[all_glm_df['sert-cre'] == 1]
 
 # Calculate percentage stim modulated neurons that are better explained by stim vs motion
 all_glm_df['better_stim'] = (all_glm_df['ratio_opto'] > 0) & (all_glm_df['modulated'])
@@ -235,7 +243,7 @@ plt.savefig(join(fig_path, 'motion_per_region.pdf'))
 # %% Plot var explained by opto vs motion per neuron in scatterplot
 
 f, ax1 = plt.subplots(1, 1, figsize=(1.75, 1.75), dpi=dpi)
-ax1.scatter(all_glm_df['opto_stim'], all_glm_df['all_motion'], c=colors['general'], s=2)
+ax1.scatter(sert_glm_df['opto_stim'], sert_glm_df['all_motion'], c=colors['general'], s=2)
 ax1.plot([0.0001, 1], [0.0001, 1], color='k')
 ax1.set(xlabel=u'Δ var. explained by stimulation', ylabel=u'Δ var. explained by motion',
         xlim=[0.0001, 1], ylim=[0.0001, 1], xscale='log', yscale='log',
@@ -243,6 +251,38 @@ ax1.set(xlabel=u'Δ var. explained by stimulation', ylabel=u'Δ var. explained b
 plt.minorticks_off()
 plt.tight_layout()
 sns.despine(trim=True)
+
+# %% Plot modulation vs motion
+
+glm_df_slice = all_glm_df[(all_glm_df['sert-cre'] == 1) & (all_glm_df['modulated'] == 1)
+                          & (all_glm_df['full_region'] != 'root')]
+glm_df_slice['motion_log'] = np.log10(glm_df_slice['all_motion'])
+r, p = pearsonr(glm_df_slice['motion_log'], glm_df_slice['mod_index_late'])
+f, ax1 = plt.subplots(1, 1, figsize=(1.75, 1.75), dpi=dpi)
+#ax1.scatter(all_glm_df['mod_index_late'], all_glm_df['all_motion'], c=colors['general'], s=2)
+sns.regplot(x='mod_index_late', y='motion_log', data=glm_df_slice, ax=ax1, ci=0,
+            scatter_kws={'color': colors['general']}, line_kws={'color': 'k'})
+ax1.set(xlabel='Modulation index', ylabel=u'Δ var. explained by motion', xticks=[-1, -0.5, 0, 0.5, 1],
+        yticks=[-4, -3, -2, -1, 0], yticklabels=[0.0001, 0.001, 0.01, 0.1, 1])
+plt.minorticks_off()
+plt.tight_layout()
+sns.despine(trim=True)
+
+
+# %% Plot modulation vs ratio
+
+glm_df_slice = all_glm_df[(all_glm_df['sert-cre'] == 1) & (all_glm_df['modulated'] == 1)
+                          & (all_glm_df['full_region'] != 'root')]
+r, p = pearsonr(glm_df_slice['ratio_opto'], glm_df_slice['mod_index_late'])
+f, ax1 = plt.subplots(1, 1, figsize=(1.75, 1.75), dpi=dpi)
+#ax1.scatter(all_glm_df['mod_index_late'], all_glm_df['all_motion'], c=colors['general'], s=2)
+sns.regplot(x='mod_index_late', y='ratio_opto', data=glm_df_slice, ax=ax1, ci=0,
+            scatter_kws={'color': colors['general']}, line_kws={'color': 'k'})
+ax1.set(xlabel='Modulation index', ylabel='Ratio stimulation / motion', xticks=[-1, -0.5, 0, 0.5, 1],
+        yticks=[-1, -0.5, 0, 0.5, 1])
+plt.tight_layout()
+sns.despine(trim=True)
+
 
 # %% Plot percentage modulated neurons but only the ones that are better explained by opto
 colors, dpi = figure_style()

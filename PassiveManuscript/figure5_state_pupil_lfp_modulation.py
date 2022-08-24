@@ -17,7 +17,7 @@ from serotonin_functions import paths, figure_style, load_subjects
 
 # Paths
 fig_path, save_path = paths(dropbox=True)
-fig_path = join(fig_path, 'PassivePaper', 'figure5')
+fig_path = join(fig_path, 'PaperPassive', 'figure5')
 
 # Load in results
 all_neurons = pd.read_csv(join(save_path, 'light_modulated_neurons.csv'))
@@ -52,7 +52,7 @@ lfp_df = lfp_df[lfp_df['mod_sign'] != 0]
 # %% Plot
 colors, dpi = figure_style()
 
-f, ax = plt.subplots(1, 1, figsize=(1.75, 1.75), dpi=dpi)
+f, ax = plt.subplots(1, 1, figsize=(1.5, 1.75), dpi=dpi)
 for i in pupil_df[pupil_df['sert-cre'] == 1].index:
     ax.plot([1, 2], [pupil_df.loc[i, 'mod_index_small_abs'], pupil_df.loc[i, 'mod_index_large_abs']],
             color=colors['sert'])
@@ -64,11 +64,12 @@ _, p = wilcoxon(pupil_df[pupil_df['sert-cre'] == 1]['mod_index_small_abs'],
 if p < 0.05:
     ax.text(1.5, 0.18, '*', fontsize=12, fontweight='bold', color=colors['sert'], ha='center')
     print(f'Pupil: p = {p:.3f}')
-ax.set(xticks=[1, 2], xticklabels=['Small pupil', 'Large pupil'], ylabel='Abs. modulation index',
+ax.set(xticks=[1, 2], xticklabels=['Small\npupil', 'Large\npupil'], ylabel='Abs. modulation index',
        yticks=[0, .1, .2])
 
 sns.despine(trim=True)
-plt.tight_layout()
+plt.tight_layout(pad=1.2)
+plt.savefig(join(fig_path, 'pupil_modulation.pdf'))
 
 # %%
 f, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(4, 1.75), dpi=dpi)
@@ -141,4 +142,5 @@ ax3.set(xticks=[1, 2], xticklabels=['Low', 'High'],
 
 sns.despine(trim=True)
 plt.tight_layout()
+plt.savefig(join(fig_path, 'lfp_state_modulation.pdf'))
 

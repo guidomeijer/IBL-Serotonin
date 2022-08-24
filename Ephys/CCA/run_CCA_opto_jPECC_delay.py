@@ -12,8 +12,7 @@ from scipy.stats import pearsonr
 from scipy.signal import gaussian
 from sklearn.cross_decomposition import CCA
 from sklearn.decomposition import PCA
-from sklearn.model_selection import LeaveOneOut, KFold
-from brainbox.metrics.single_units import spike_sorting_metrics
+from sklearn.model_selection import KFold
 from brainbox.io.one import SpikeSortingLoader
 from serotonin_functions import (paths, remap, query_ephys_sessions, load_passive_opto_times,
                                  get_artifact_neurons, calculate_peths, get_neuron_qc)
@@ -21,11 +20,11 @@ from one.api import ONE
 from ibllib.atlas import AllenAtlas
 ba = AllenAtlas()
 one = ONE()
-cca = CCA(n_components=1, max_iter=1000)
+cca = CCA(n_components=1, max_iter=5000)
 pca = PCA(n_components=10)
 
 # Settings
-OVERWRITE = False  # whether to overwrite existing runs
+OVERWRITE = True  # whether to overwrite existing runs
 NEURON_QC = True  # whether to use neuron qc to exclude bad units
 PCA = True  # whether to use PCA on neural activity before CCA
 N_PC = 10  # number of PCs to use
@@ -35,8 +34,10 @@ PRE_TIME = 1.5  # time before stim onset in s
 POST_TIME = 3.5  # time after stim onset in s
 SMOOTHING = 0.1  # smoothing of psth
 MAX_DELAY = 0.5  # max delay shift
-SUBTRACT_MEAN = True  # whether to subtract the mean PSTH from each trial
-DIV_BASELINE = False  # whether to divide over baseline + 1 spk/s
+SUBTRACT_MEAN = False  # whether to subtract the mean PSTH from each trial
+DIV_BASELINE = True  # whether to divide over baseline + 1 spk/s
+K_FOLD = 5  # k in k-fold
+K_FOLD_BOOTSTRAPS = 100  # how often to repeat the random trial selection
 MIN_FR = 0.5  # minimum firing rate over the whole recording
 
 # Paths
@@ -52,6 +53,7 @@ REGION_PAIRS = [['M2', 'mPFC'], ['M2', 'ORB'], ['mPFC', 'Amyg'], ['ORB', 'Amyg']
 REGION_PAIRS = [['M2', 'mPFC'], ['M2', 'OFC']]
 np.random.seed(42)  # fix random seed for reproducibility
 n_time_bins = int((PRE_TIME + POST_TIME) / WIN_SIZE)
+kfold = KFold(n_splits=K_FOLD, shuffle=True)
 if SMOOTHING > 0:
     w = n_time_bins - 1 if n_time_bins % 2 == 0 else n_time_bins
     window = gaussian(w, std=SMOOTHING / WIN_SIZE)
@@ -63,11 +65,7 @@ rec = query_ephys_sessions(one=one, acronym=['MOs'])
 # Load in artifact neurons
 artifact_neurons = get_artifact_neurons()
 
-if PCA:
-    file_name = f'jPECC_delay_{WIN_SIZE}_binsize.pickle'
-else:
-    file_name = f'jPECC_delay_{WIN_SIZE}_binsize_no_PCA.pickle'
-
+file_name = f'jPECC_delay_{WIN_SIZE}_binsize.pickle'
 if ~OVERWRITE & isfile(join(save_path, file_name)):
     cca_df = pd.read_pickle(join(save_path, file_name))
 else:
@@ -178,10 +176,13 @@ for i, eid in enumerate(np.unique(rec['eid'])):
             print(f'Calculating {region_1}-{region_2}')
 
             # Run CCA per combination of two timebins
-            r_opto = np.empty((n_time_bins - int(MAX_DELAY/WIN_SIZE)*2, (int(MAX_DELAY/WIN_SIZE) * 2)+1))
+            r_mean = np.empty((n_time_bins - int(MAX_DELAY/WIN_SIZE)*2, (int(MAX_DELAY/WIN_SIZE) * 2)+1))
+            r_std = np.empty((n_time_bins - int(MAX_DELAY/WIN_SIZE)*2, (int(MAX_DELAY/WIN_SIZE) * 2)+1))
             delta_time = np.arange(-MAX_DELAY, MAX_DELAY + WIN_SIZE, WIN_SIZE)
 
             for it_1, time_1 in enumerate(psth_opto['tscale'][int(MAX_DELAY/WIN_SIZE) : -int(MAX_DELAY/WIN_SIZE)]):
+                if np.mod(it_1, 20) == 0:
+                    print(f'Timebin {it_1} of {n_time_bins}..')
                 for it_2, time_2 in enumerate(psth_opto['tscale'][(psth_opto['tscale'] >= time_1 - MAX_DELAY - (WIN_SIZE/2))
                                                                   & (psth_opto['tscale'] <= time_1 + MAX_DELAY + (WIN_SIZE/2))]):
 
@@ -195,30 +196,32 @@ for i, eid in enumerate(np.unique(rec['eid'])):
                     else:
                         act_mat = spks_opto
 
-                    # Create indices for odd and even trials
-                    even_ind = np.arange(0, act_mat[region_1][:, :, 0].shape[0], 2).astype(int)
-                    odd_ind = np.arange(1, act_mat[region_1][:, :, 0].shape[0], 2).astype(int)
+                    # Run CCA
+                    opto_x = np.empty(pca_opto[region_1][:, :, 0].shape[0])
+                    opto_y = np.empty(pca_opto[region_1][:, :, 0].shape[0])
 
-                    # Fit on the even trials and correlate the odd trials
-                    cca.fit(act_mat[region_1][even_ind, :, tb_1],
-                            act_mat[region_2][even_ind, :, tb_2])
-                    x, y = cca.transform(act_mat[region_1][odd_ind, :, tb_1],
-                                         act_mat[region_2][odd_ind, :, tb_2])
-                    r_splits = []
-                    r_splits.append(pearsonr(x.T[0], y.T[0])[0])
-
-                    # Fit on the odd trials and correlate the even trials
-                    cca.fit(act_mat[region_1][odd_ind, :, tb_1],
-                            act_mat[region_2][odd_ind, :, tb_2])
-                    x, y = cca.transform(act_mat[region_1][even_ind, :, tb_1],
-                                         act_mat[region_2][even_ind, :, tb_2])
-                    r_splits.append(pearsonr(x.T[0], y.T[0])[0])
-                    r_opto[it_1, it_2] = np.mean(r_splits)
+                    r_boot = []
+                    for kk in range(K_FOLD_BOOTSTRAPS):
+                        r_splits = []
+                        x_test, y_test = np.empty(opto_train_times.shape[0]), np.empty(opto_train_times.shape[0])
+                        for train_index, test_index in kfold.split(pca_opto[region_1][:, :, 0]):
+                            cca.fit(pca_opto[region_1][train_index, :, tb_1],
+                                    pca_opto[region_2][train_index, :, tb_2])
+                            x, y = cca.transform(pca_opto[region_1][test_index, :, tb_1],
+                                                 pca_opto[region_2][test_index, :, tb_2])
+                            x_test[test_index] = x.T[0]
+                            y_test[test_index] = y.T[0]
+                            r_splits.append(pearsonr(x.T[0], y.T[0])[0])
+                        #r_boot.append(np.mean(r_splits))
+                        r_boot.append(pearsonr(x_test, y_test)[0])
+                    r_mean[it_1, it_2] = np.mean(r_boot)
+                    r_std[it_1, it_2] = np.std(r_boot)
 
             # Add to dataframe
             cca_df = pd.concat((cca_df, pd.DataFrame(index=[cca_df.shape[0]], data={
                 'subject': subject, 'date': date, 'eid': eid, 'region_1': region_1, 'region_2': region_2,
-                'region_pair': f'{region_1}-{region_2}', 'r_opto': [r_opto], 'delta_time': [delta_time],
+                'region_pair': f'{region_1}-{region_2}', 'r_opto': [r_mean], 'r_std': [r_std],
+                'delta_time': [delta_time],
                 'time': [psth_opto['tscale'][int(MAX_DELAY/WIN_SIZE) : -int(MAX_DELAY/WIN_SIZE)]]})))
     cca_df.to_pickle(join(save_path, file_name))
 

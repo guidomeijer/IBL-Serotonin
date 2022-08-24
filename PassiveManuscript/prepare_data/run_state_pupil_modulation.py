@@ -19,7 +19,7 @@ one = ONE()
 
 # Settings
 OVERWRITE = True
-PRE_TIME = [1, 0]
+PRE_TIME = [0.5, 0]
 POST_TIME = [0.5, 1]
 _, save_path = paths()
 
@@ -83,7 +83,7 @@ for i in rec.index.values:
     if np.sum(np.isnan(pre_pupil_size)) == pre_pupil_size.shape[0]:
         continue
 
-    """
+    # Split in three
     quantiles = np.percentile(pre_pupil_size[~np.isnan(pre_pupil_size)], [0, 33.3, 66.6, 100])
     pupil_quantiles = np.searchsorted(quantiles, pre_pupil_size)
     pupil_quantiles[pupil_quantiles == 0] = 1
@@ -91,9 +91,9 @@ for i in rec.index.values:
     pre_pupil[pupil_quantiles == 3] = 1
     """
     # Median split
-    pre_pupil[pre_pupil_size < np.median(pre_pupil_size)] = -1
-    pre_pupil[pre_pupil_size > np.median(pre_pupil_size)] = 1
-
+    pre_pupil[pre_pupil_size < np.nanmedian(pre_pupil_size)] = -1
+    pre_pupil[pre_pupil_size > np.nanmedian(pre_pupil_size)] = 1
+    """
     # Calculate modulation index for optimal and small/large size
     roc_auc, cluster_ids = roc_single_event(spikes.times, spikes.clusters,
                                             opto_train_times[pre_pupil == -1], pre_time=PRE_TIME,

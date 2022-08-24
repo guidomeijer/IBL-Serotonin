@@ -16,7 +16,7 @@ from sklearn.model_selection import LeaveOneOut, KFold
 from brainbox.metrics.single_units import spike_sorting_metrics
 from brainbox.io.one import SpikeSortingLoader
 from serotonin_functions import (paths, remap, query_ephys_sessions, load_passive_opto_times,
-                                 get_artifact_neurons, calculate_peths)
+                                 get_artifact_neurons, calculate_peths, get_neuron_qc)
 from one.api import ONE
 from ibllib.atlas import AllenAtlas
 ba = AllenAtlas()
@@ -34,19 +34,21 @@ POST_TIME = 3.25  # time after stim onset in s
 SMOOTHING = 0.025  # smoothing of psth
 SUBTRACT_MEAN = True  # whether to subtract the mean PSTH from each trial
 DIV_BASELINE = False  # whether to divide over baseline + 1 spk/s
-CROSS_VAL = 'odd-even'  # None, odd-even, k-fold or leave-one-out
+CROSS_VAL = 'k-fold'  # None, odd-even, k-fold or leave-one-out
 K_FOLD = 2  # k in k-fold
 K_FOLD_SHUFFLE = True  # whether to use a random subset of trials for fitting and testing
 K_FOLD_BOOTSTRAPS = 50  # how often to repeat the random trial selection
 MIN_FR = 0.5  # minimum firing rate over the whole recording
 N_PC = 10  # number of PCs to use
+PLOT = True  # whether to plot region pair summary
 
 # Paths
 fig_path, save_path = paths()
 
 # Initialize some things
-REGION_PAIRS = [['M2', 'mPFC'], ['M2', 'ORB'], ['mPFC', 'Amyg'], ['ORB', 'Amyg'], ['M2', 'Amyg'],
-                ['Hipp', 'PPC'], ['Hipp', 'Thal'], ['ORB', 'mPFC'], ['PPC', 'Thal']]
+#REGION_PAIRS = [['M2', 'mPFC'], ['M2', 'ORB'], ['mPFC', 'Amyg'], ['ORB', 'Amyg'], ['M2', 'Amyg'],
+#                ['Hipp', 'PPC'], ['Hipp', 'Thal'], ['ORB', 'mPFC'], ['PPC', 'Thal']]
+REGION_PAIRS = [['M2', 'mPFC'], ['M2', 'OFC']]
 np.random.seed(42)  # fix random seed for reproducibility
 n_time_bins = int((PRE_TIME + POST_TIME) / WIN_SIZE)
 lio = LeaveOneOut()
@@ -57,7 +59,7 @@ if SMOOTHING > 0:
     window /= np.sum(window)
 
 # Query sessions with frontal and amygdala
-rec = query_ephys_sessions(one=one)
+rec = query_ephys_sessions(one=one, acronym='MOs')
 
 # Load in artifact neurons
 artifact_neurons = get_artifact_neurons()
@@ -100,11 +102,8 @@ for i, eid in enumerate(np.unique(rec['eid'])):
 
         # Filter neurons that pass QC and artifact neurons
         if NEURON_QC:
-            print('Calculating neuron QC metrics..')
-            qc_metrics, _ = spike_sorting_metrics(spikes[probe].times, spikes[probe].clusters,
-                                                  spikes[probe].amps, spikes[probe].depths,
-                                                  cluster_ids=np.arange(clusters[probe].channels.size))
-            clusters_pass[probe] = np.where(qc_metrics['label'] > 0.5)[0]
+            qc_metrics = get_neuron_qc(pid, one=one, ba=ba)
+            clusters_pass[probe] = np.where(qc_metrics['label'] == 1)[0]
         else:
             clusters_pass[probe] = np.unique(spikes.clusters)
         clusters_pass[probe] = clusters_pass[probe][~np.isin(clusters_pass[probe], artifact_neurons.loc[

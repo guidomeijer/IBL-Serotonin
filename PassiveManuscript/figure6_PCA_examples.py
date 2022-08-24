@@ -10,7 +10,8 @@ from os.path import join
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
-from matplotlib.colors import LinearSegmentedColormap, TwoSlopeNorm
+from matplotlib import cm
+from matplotlib.colors import ListedColormap
 from matplotlib.collections import LineCollection
 from serotonin_functions import figure_style
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
@@ -30,6 +31,12 @@ fig_path = join(fig_path, 'PaperPassive', 'figure6')
 # Load in data
 pca_df = pd.read_csv(join(save_path, 'pca_regions.csv'))
 
+# Create colormap
+blues = cm.get_cmap('Blues_r', 256)(np.linspace(0, 1, 400))[150:350]
+blue = [0.1, 0.4, 0.68, 1]
+color_array = np.vstack([np.tile([.7, .7, .7, 1], (100, 1)), np.tile(blue, (100, 1)), blues])
+newcmp = ListedColormap(color_array)
+
 colors, dpi = figure_style()
 f, axs = plt.subplots(1, 4, figsize=(5.25, 1.75), gridspec_kw={'width_ratios': [1, 1, 1, 0.02]}, dpi=dpi)
 for i in range(len(SUBJECTS)):
@@ -46,7 +53,7 @@ for i in range(len(SUBJECTS)):
     line = axs[0].add_collection(lc)
     """
 
-    sp = axs[i].scatter(df_slice['pca1'], df_slice['pca2'], c=df_slice['time'], cmap='')
+    sp = axs[i].scatter(df_slice['pca1'], df_slice['pca2'], c=df_slice['time'], cmap=newcmp)
     axs[i].axis('off')
     axs[i].set(xlabel='PC 1', ylabel='PC 2', title=TITLES[i])
 

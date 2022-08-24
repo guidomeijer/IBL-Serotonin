@@ -89,11 +89,10 @@ for i, pid in enumerate(np.unique(light_neurons['pid'])):
                            - np.mean(peths['means'][n, ((tscale > BASELINE[0]) & (tscale < BASELINE[1]))]))
                           / (peths['means'][n, :]
                              + np.mean(peths['means'][n, ((tscale > BASELINE[0]) & (tscale < BASELINE[1]))])))
-       
+
             # Add to dataframe
             peths_df = pd.concat((peths_df, pd.DataFrame(index=[peths_df.shape[0]], data={
                 'peth': [peths['means'][n, :]], 'peth_perc': [peth_perc], 'peth_ratio': [peth_ratio],
-                'peth_bl_sub': [peth_bl_sub],
                 'region': these_neurons.loc[index, 'full_region'], 'modulation': these_neurons.loc[index, 'mod_index_late'],
                 'neuron_id': these_neurons.loc[index, 'neuron_id'], 'subject': these_neurons.loc[index, 'subject'],
                 'eid': these_neurons.loc[index, 'eid'], 'acronym': these_neurons.loc[index, 'region']})))
@@ -123,50 +122,50 @@ plt.savefig(join(fig_path, 'figure2_all_neurons.pdf'))
 # %%
 # Plot per region
 peths_df = peths_df.sort_values(['region', 'modulation'], ascending=[True, False])
-f, ((ax_mpfc, ax_hc, ax_pag, ax_pir, ax_bc, ax_orb),
-    (ax_ppc, ax_m2, ax_sc, ax_1, ax_2, ax_3),
-    (ax_th, ax_am, ax_str, ax_cb, ax_4, ax_5)) = plt.subplots(3, 6, figsize=(7, 3.5), sharex=True, dpi=dpi)
+f, ((ax_mpfc, ax_orb, ax_m2, ax_hc, ax_pir, ax_th),
+    (ax_am, ax_ppc, ax_bc, ax_1, ax_2, ax_3),
+    (ax_sc, ax_mrn, ax_pag, ax_cb, ax_4, ax_5)) = plt.subplots(3, 6, figsize=(7, 3.5), sharex=True, dpi=dpi)
 title_font = 7
+cmap = sns.diverging_palette(240, 20, as_cmap=True)
 
 these_peths = peths_df[peths_df['region'] == 'Medial prefrontal cortex']
-img = ax_mpfc.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=sns.diverging_palette(220, 20, as_cmap=True),
+img = ax_mpfc.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=cmap,
                  vmin=VMIN, vmax=VMAX, extent=[-T_BEFORE, T_AFTER, -1, 1], interpolation='none')
 ax_mpfc.set(yticks=[1], yticklabels=[these_peths.shape[0]], ylabel='Mod. neurons')
 ax_mpfc.set_title('Medial prefrontal cortex', fontsize=title_font)
 ax_mpfc.plot([0, 0], [-1, 1], ls='--', color='k')
 
 these_peths = peths_df[peths_df['region'] == 'Orbitofrontal cortex']
-img = ax_orb.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=sns.diverging_palette(220, 20, as_cmap=True),
+img = ax_orb.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=cmap,
                  vmin=VMIN, vmax=VMAX, extent=[-T_BEFORE, T_AFTER, -1, 1], interpolation='none')
-ax_orb.set(yticks=[1], yticklabels=[these_peths.shape[0]], xlabel='Time (s)')
+ax_orb.set(yticks=[1], yticklabels=[these_peths.shape[0]])
 ax_orb.set_title('Orbitofrontal', fontsize=title_font)
-ax_orb.xaxis.set_tick_params(which='both', labelbottom=True)
 ax_orb.plot([0, 0], [-1, 1], ls='--', color='k')
 
 these_peths = peths_df[peths_df['region'] == 'Amygdala']
-img = ax_am.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=sns.diverging_palette(220, 20, as_cmap=True),
+img = ax_am.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=cmap,
                  vmin=VMIN, vmax=VMAX, extent=[-T_BEFORE, T_AFTER, -1, 1], interpolation='none')
-ax_am.set(yticks=[1], yticklabels=[these_peths.shape[0]], xlabel='Time (s)', xticks=[-1, 0, 1, 2])
+ax_am.set(yticks=[1], yticklabels=[these_peths.shape[0]], ylabel='Mod. neurons')
 ax_am.set_title('Amygdala', fontsize=title_font)
 ax_am.plot([0, 0], [-1, 1], ls='--', color='k')
-ax_am.xaxis.set_tick_params(which='both', labelbottom=True)
 
 these_peths = peths_df[peths_df['region'] == 'Posterior parietal cortex']
-img = ax_ppc.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=sns.diverging_palette(220, 20, as_cmap=True),
+img = ax_ppc.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=cmap,
                  vmin=VMIN, vmax=VMAX, extent=[-T_BEFORE, T_AFTER, -1, 1], interpolation='none')
-ax_ppc.set(yticks=[1], yticklabels=[these_peths.shape[0]], ylabel='Mod. neurons')
+ax_ppc.set(yticks=[1], yticklabels=[these_peths.shape[0]])
 ax_ppc.set_title('Posterior parietal cortex', fontsize=title_font)
 ax_ppc.plot([0, 0], [-1, 1], ls='--', color='k')
 
 these_peths = peths_df[peths_df['region'] == 'Hippocampus']
-img = ax_hc.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=sns.diverging_palette(220, 20, as_cmap=True),
+img = ax_hc.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=cmap,
                  vmin=VMIN, vmax=VMAX, extent=[-T_BEFORE, T_AFTER, -1, 1], interpolation='none')
-ax_hc.set(yticks=[1], yticklabels=[these_peths.shape[0]])
+ax_hc.set(yticks=[1], yticklabels=[these_peths.shape[0]], xlabel='Time (s)')
 ax_hc.set_title('Hippocampus', fontsize=title_font)
+ax_hc.xaxis.set_tick_params(which='both', labelbottom=True)
 ax_hc.plot([0, 0], [-1, 1], ls='--', color='k')
 
 these_peths = peths_df[peths_df['region'] == 'Piriform']
-img = ax_pir.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=sns.diverging_palette(220, 20, as_cmap=True),
+img = ax_pir.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=cmap,
                  vmin=VMIN, vmax=VMAX, extent=[-T_BEFORE, T_AFTER, -1, 1], interpolation='none')
 ax_pir.set(yticks=[1], yticklabels=[these_peths.shape[0]], xlabel='Time (s)')
 ax_pir.set_title('Piriform', fontsize=title_font)
@@ -174,48 +173,48 @@ ax_pir.plot([0, 0], [-1, 1], ls='--', color='k')
 ax_pir.xaxis.set_tick_params(which='both', labelbottom=True)
 
 these_peths = peths_df[peths_df['region'] == 'Thalamus']
-img = ax_th.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=sns.diverging_palette(220, 20, as_cmap=True),
+img = ax_th.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=cmap,
                  vmin=VMIN, vmax=VMAX, extent=[-T_BEFORE, T_AFTER, -1, 1], interpolation='none')
-ax_th.set(yticks=[1], yticklabels=[these_peths.shape[0]], xlabel='Time (s)', ylabel='Mod. neurons')
+ax_th.set(yticks=[1], yticklabels=[these_peths.shape[0]], xlabel='Time (s)')
 ax_th.set_title('Thalamus', fontsize=title_font)
 ax_th.plot([0, 0], [-1, 1], ls='--', color='k')
 ax_th.xaxis.set_tick_params(which='both', labelbottom=True)
 
 these_peths = peths_df[peths_df['region'] == 'Secondary motor cortex']
-img = ax_m2.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=sns.diverging_palette(220, 20, as_cmap=True),
+img = ax_m2.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=cmap,
                  vmin=VMIN, vmax=VMAX, extent=[-T_BEFORE, T_AFTER, -1, 1], interpolation='none')
 ax_m2.set(yticks=[1], yticklabels=[these_peths.shape[0]], xticks=[-1, 0, 1, 2])
 ax_m2.set_title('Secondary motor cortex', fontsize=title_font)
 ax_m2.plot([0, 0], [-1, 1], ls='--', color='k')
 
 these_peths = peths_df[peths_df['region'] == 'Barrel cortex']
-img = ax_bc.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=sns.diverging_palette(220, 20, as_cmap=True),
+img = ax_bc.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=cmap,
                  vmin=VMIN, vmax=VMAX, extent=[-T_BEFORE, T_AFTER, -1, 1], interpolation='none')
-ax_bc.set(yticks=[1], yticklabels=[these_peths.shape[0]], xticks=[-1, 0, 1, 2], xlabel='Time (s)')
+ax_bc.set(yticks=[1], yticklabels=[these_peths.shape[0]])
 ax_bc.set_title('Barrel cortex', fontsize=title_font)
 ax_bc.plot([0, 0], [-1, 1], ls='--', color='k')
-ax_bc.xaxis.set_tick_params(which='both', labelbottom=True)
 
 these_peths = peths_df[peths_df['region'] == 'Periaqueductal gray']
-img = ax_pag.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=sns.diverging_palette(220, 20, as_cmap=True),
+img = ax_pag.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=cmap,
                  vmin=VMIN, vmax=VMAX, extent=[-T_BEFORE, T_AFTER, -1, 1], interpolation='none')
-ax_pag.set(yticks=[1], yticklabels=[these_peths.shape[0]])
+ax_pag.set(yticks=[1], yticklabels=[these_peths.shape[0]], xlabel='Time (s)')
 ax_pag.set_title('Periaqueductal gray', fontsize=title_font)
 ax_pag.plot([0, 0], [-1, 1], ls='--', color='k')
 
 these_peths = peths_df[peths_df['region'] == 'Superior colliculus']
-img = ax_sc.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=sns.diverging_palette(220, 20, as_cmap=True),
+img = ax_sc.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=cmap,
                  vmin=VMIN, vmax=VMAX, extent=[-T_BEFORE, T_AFTER, -1, 1], interpolation='none')
-ax_sc.set(yticks=[1], yticklabels=[these_peths.shape[0]], xticks=[-1, 0, 1, 2])
+ax_sc.set(yticks=[1], yticklabels=[these_peths.shape[0]], xticks=[-1, 0, 1, 2], xlabel='Time (s)',
+          ylabel='Mod. neurons')
 ax_sc.set_title('Superior colliculus', fontsize=title_font)
 ax_sc.plot([0, 0], [-1, 1], ls='--', color='k')
 
 these_peths = peths_df[peths_df['region'] == 'Midbrain reticular nucleus']
-img = ax_str.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=sns.diverging_palette(220, 20, as_cmap=True),
+img = ax_mrn.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=cmap,
                  vmin=VMIN, vmax=VMAX, extent=[-T_BEFORE, T_AFTER, -1, 1], interpolation='none')
-ax_str.set(yticks=[1], yticklabels=[these_peths.shape[0]], xlabel='Time (s)', xticks=[-1, 0, 1, 2])
-ax_str.set_title('Midbrain reticular nucl.', fontsize=title_font)
-ax_str.plot([0, 0], [-1, 1], ls='--', color='k')
+ax_mrn.set(yticks=[1], yticklabels=[these_peths.shape[0]], xlabel='Time (s)', xticks=[-1, 0, 1, 2])
+ax_mrn.set_title('Midbrain reticular nucl.', fontsize=title_font)
+ax_mrn.plot([0, 0], [-1, 1], ls='--', color='k')
 
 """
 these_peths = peths_df[peths_df['region'] == 'Tail of the striatum']
@@ -252,13 +251,5 @@ cbar.ax.set_yticks([-1, 0, 1])
 #plt.tight_layout(pad=3)
 plt.savefig(join(fig_path, 'heatmap_per_region.pdf'), bbox_inches='tight')
 
-# %% Plot upper and lower quartile for frontal cortex
 
-peth_slice_df = peths_df[peths_df['high_level_region'] == 'Frontal'].copy()
-peth_slice_df['mod_quantile'] = pd.qcut(peth_slice_df['modulation'], [0, 0.25, 0.5, 0.75, 1],
-                                        labels=[1, 2, 3, 4])
-low_quant = np.array(peth_slice_df[peth_slice_df['mod_quantile'] == 1, 'peth_bl_sub'].tolist())
-peth_long_df = pd.melt(peth_slice_df, id_vars=)
-f, ax1 = plt.subplots(1, 1, figsize=(2, 1.75), dpi=dpi)
-sns.lineplot(x='')
 

@@ -32,7 +32,7 @@ for i in rec.index.values:
             cam = 'right'
         else:
             cam = video_file[-18:-14]
-        if ~isfile(join(TO, f'{subject}_{date}_{cam}.mp4')) | OVERWRITE:
+        if (isfile(join(TO, f'{subject}_{date}_{cam}.mp4')) == False) | OVERWRITE:
             print(f'Copying {subject}_{date}_{cam}.mp4')
             copyfile(video_file, join(TO, f'{subject}_{date}_{cam}.mp4'))
 

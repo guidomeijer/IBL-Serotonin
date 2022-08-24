@@ -72,9 +72,10 @@ cca_df = cca_df.reset_index()
 
 # %% Plot
 colors, dpi = figure_style()
+VMAX = 0.3
 f, (ax1, ax2, ax3, ax_cb) = plt.subplots(1, 4, figsize=(4, 1.75),
                                     gridspec_kw={'width_ratios': [1, 1, 1, 0.2]}, dpi=dpi)
-ax1.imshow(np.flipud(np.mean(jPECC['M2-mPFC'], axis=2)), vmin=-0.5, vmax=0.5, cmap='icefire',
+ax1.imshow(np.flipud(np.mean(jPECC['M2-mPFC'], axis=2)), vmin=-VMAX, vmax=VMAX, cmap='icefire',
            interpolation='nearest', aspect='auto',
            extent=[time_asy[0], time_asy[-1],
                    time_ax[0] - np.mean(np.diff(time_ax))/2, time_ax[-1] + np.mean(np.diff(time_ax))/2])
@@ -83,7 +84,7 @@ ax1.set(ylabel='Time from stim. onset (s)', xlabel='Delay (s)',
         title='M2 vs mPFC', ylim=[-1, 3],
         xticks=[time_asy[0], 0, time_asy[-1]])
 
-ax2.imshow(np.flipud(np.mean(jPECC['M2-OFC'], axis=2)), vmin=-0.5, vmax=0.5, cmap='icefire',
+ax2.imshow(np.flipud(np.mean(jPECC['M2-OFC'], axis=2)), vmin=-VMAX, vmax=VMAX, cmap='icefire',
            interpolation='nearest', aspect='auto',
            extent=[time_asy[0], time_asy[-1],
                    time_ax[0] - np.mean(np.diff(time_ax))/2, time_ax[-1] + np.mean(np.diff(time_ax))/2])
@@ -106,6 +107,17 @@ cbar = f.colorbar(mappable=ax2.images[0], cax=cb_ax)
 cbar.ax.set_ylabel('Population correlation (r)', rotation=270, labelpad=10)
 
 plt.savefig(join(fig_path, 'jPECC_M2_mPFC_ORB.pdf'))
+
+# %% Plot per animal
+VMAX = 0.5
+for i, rp in enumerate(REGION_PAIRS):
+    for j in range(jPECC[rp].shape[2]):
+        f, ax1 = plt.subplots(1, 1, figsize=(1.75, 1.75), dpi=dpi)
+        ax1.imshow(np.flipud(jPECC[rp][:,:,j]), vmin=-VMAX, vmax=VMAX, cmap='icefire',
+                   interpolation='nearest', aspect='auto',
+                   extent=[time_asy[0], time_asy[-1],
+                           time_ax[0] - np.mean(np.diff(time_ax))/2, time_ax[-1] + np.mean(np.diff(time_ax))/2])
+        ax1.set(title=f'{rp}')
 
 
 # %%

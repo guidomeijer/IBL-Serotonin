@@ -14,6 +14,10 @@ one = ONE()
 rec = query_ephys_sessions()
 
 for i, eid in enumerate(np.unique(rec['eid'])):
-    one.load_dataset(eid, dataset='_iblrig_leftCamera.raw.mp4', download_only=True)
+    try:
+        one.load_dataset(eid, dataset='_iblrig_leftCamera.raw.mp4', download_only=True)
+    except Exception:
+        print('Download error!')
+        continue
     #one.load_dataset(eid, dataset='_iblrig_rightCamera.raw.mp4', download_only=True)
     #one.load_dataset(eid, dataset='_iblrig_bodyCamera.raw.mp4', download_only=True)
