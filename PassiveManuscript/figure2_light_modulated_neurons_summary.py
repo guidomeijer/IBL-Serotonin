@@ -10,6 +10,7 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 from os.path import join
+from scipy.stats import pearsonr
 from serotonin_functions import paths, figure_style, load_subjects
 
 # Settings
@@ -23,6 +24,7 @@ fig_path = join(fig_path, 'PaperPassive', 'figure2')
 
 # Load in results
 all_neurons = pd.read_csv(join(save_path, 'light_modulated_neurons.csv'))
+expression_df = pd.read_csv(join(save_path, 'expression_levels.csv'))
 
 # Add genotype
 subjects = load_subjects()
@@ -41,20 +43,48 @@ wt_mice['sert-cre'] = 0
 all_mice = pd.concat((all_mice, wt_mice), ignore_index=True)
 all_mice = all_mice.rename({0: 'perc_mod'}, axis=1)
 
+# Merge dataframes
+merged_df = pd.merge(all_mice, expression_df, on=['subject', 'sert-cre'])
+merged_df = merged_df[merged_df['sert-cre'] == 1]
+
 # %% Plot percentage mod neurons
 colors, dpi = figure_style()
-f, ax1 = plt.subplots(1, 1, figsize=(1.2, 1.75), dpi=dpi)
+f, ax1 = plt.subplots(1, 1, figsize=(1.2, 1), dpi=dpi)
 
+f.subplots_adjust(bottom=0.2, left=0.35, right=0.85, top=0.9)
+#sns.stripplot(x='sert-cre', y='perc_mod', data=all_mice, order=[1, 0], size=3,
+#              palette=[colors['sert'], colors['wt']], ax=ax1, jitter=0.2)
 
-sns.stripplot(x='sert-cre', y='perc_mod', data=all_mice, order=[1, 0], size=3,
-              palette=[colors['sert'], colors['wt']], ax=ax1, jitter=0.2)
-ax1.set(xticklabels=['SERT', 'WT'], ylabel='Sig. modulated neurons (%)', ylim=[0, 60], xlabel='')
+sns.swarmplot(x='sert-cre', y='perc_mod', data=all_mice, order=[1, 0], size=2.5,
+              palette=[colors['sert'], colors['wt']], ax=ax1)
+ax1.set(xticklabels=['SERT', 'WT'], ylabel='Mod. neurons (%)', ylim=[-1, 50], xlabel='',
+        yticks=[0, 25, 50])
 
 sns.despine(trim=True)
-plt.tight_layout()
+#plt.tight_layout()
 
 plt.savefig(join(fig_path, 'light_mod_summary.pdf'))
 plt.savefig(join(fig_path, 'light_mod_summary.jpg'), dpi=300)
+
+# %% Plot percentage mod neurons vs expression
+colors, dpi = figure_style()
+f, ax1 = plt.subplots(1, 1, figsize=(1.2, 1), dpi=dpi)
+
+f.subplots_adjust(bottom=0.3, left=0.32, right=0.88, top=0.9)
+sns.regplot(x='rel_fluo', y='perc_mod', data=merged_df,
+            ci=0, scatter_kws={'color': colors['sert'], 'linewidths': 0}, line_kws={'color': 'k'})
+ax1.set(ylabel='Mod. neurons (%)', ylim=[0, 50], yticks=[0, 25, 50],
+        xticks=[0, 200, 400])
+ax1.tick_params(axis='x', which='major', pad=2)
+ax1.set_xlabel('Rel. expression (%)', rotation=0, labelpad=2)
+r, p = pearsonr(merged_df['rel_fluo'], merged_df['perc_mod'])
+print(f'correlation p-value: {p:.3f}')
+ax1.text(150, 40, '*', fontsize=10)
+sns.despine(trim=True)
+#plt.tight_layout()
+
+plt.savefig(join(fig_path, 'light_mod_vs_expression.pdf'))
+plt.savefig(join(fig_path, 'light_mod_vs_expression.jpg'), dpi=300)
 
 
 

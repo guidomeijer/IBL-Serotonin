@@ -25,7 +25,7 @@ cca = CCA(n_components=1, max_iter=1000)
 pca = PCA(n_components=10)
 
 # Settings
-OVERWRITE = False  # whether to overwrite existing runs
+OVERWRITE = True  # whether to overwrite existing runs
 NEURON_QC = True  # whether to use neuron qc to exclude bad units
 MIN_NEURONS = 10  # minimum neurons per region
 WIN_SIZE = 0.05  # window size in seconds
@@ -34,9 +34,9 @@ POST_TIME = 2.25  # time after stim onset in s
 SMOOTHING = 0.1  # smoothing of psth
 SUBTRACT_MEAN = True  # whether to subtract the mean PSTH from each trial
 CROSS_VAL = 'k-fold'  # None, k-fold or leave-one-out
-K_FOLD = 2  # k in k-fold
+K_FOLD = 5  # k in k-fold
 K_FOLD_SHUFFLE = True  # whether to use a random subset of trials for fitting and testing
-K_FOLD_BOOTSTRAPS = 50  # how often to repeat the random trial selection
+K_FOLD_BOOTSTRAPS = 100  # how often to repeat the random trial selection
 MIN_FR = 0.5  # minimum firing rate over the whole recording
 N_PC = 10  # number of PCs to use
 
@@ -179,7 +179,6 @@ for i, eid in enumerate(np.unique(rec['eid'])):
                                 r_splits.append(pearsonr(x.T[0], y.T[0])[0])
                                 r_opto_bootstraps[tb_1, tb_2, kk] = pearsonr(x.T[0], y.T[0])[0]
                         r_opto[tb_1, tb_2] = np.median(r_splits)
-                        asd
 
                     elif CROSS_VAL == 'leave-one-out':
                         for train_index, test_index in lio.split(pca_opto[region_1][:, :, tb]):

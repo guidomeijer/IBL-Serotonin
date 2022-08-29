@@ -24,7 +24,8 @@ EXP_WIN_XY = [190, 130]  # top left point
 CTRL_WIN_XY = [190, 85]
 WIN_WIDTH = 80
 WIN_HEIGHT = 30
-_, save_path = paths()
+fig_path, save_path = paths(dropbox=True)
+fig_path = join(fig_path, 'PaperPassive', 'supp_figure_expression')
 
 # Query subjects
 rec = query_ephys_sessions()
@@ -86,10 +87,13 @@ for i, subject in enumerate(subjects):
 expr_df.to_csv(join(save_path, 'expression_levels.csv'))
 
 # Plot overview plot
-sns.stripplot(x='sert-cre', y='rel_fluo', data=expr_df, order=[1, 0], size=3,
-              palette=[colors['sert'], colors['wt']], ax=axs[-1], jitter=0.2)
+
+f.subplots_adjust(bottom=0.3, left=0.32, right=0.88, top=0.9, ax=axs[-1])
+sns.swarmplot(x='sert-cre', y='rel_fluo', data=expr_df, order=[1, 0], size=3,
+              palette=[colors['sert'], colors['wt']], ax=axs[-1])
 axs[-1].set(xticklabels=['SERT', 'WT'], ylabel='Relative fluoresence (%)', xlabel='',
             yticks=[0, 100, 200, 300, 400])
 
 plt.tight_layout()
 sns.despine(trim=True)
+plt.savefig(join(fig_path, 'supp_fig_expression_levels.pdf'))
