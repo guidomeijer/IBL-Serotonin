@@ -14,8 +14,8 @@ from serotonin_functions import paths, figure_style, load_subjects, plot_scalar_
 from ibllib.atlas import AllenAtlas
 ba = AllenAtlas(res_um=10)
 
-# Settings
-N_BINS = 30
+# %% Settings
+
 MIN_MOD_NEURONS = 10
 AP = [2, -1.5, -3.5]
 
@@ -31,15 +31,14 @@ all_neurons = all_neurons[all_neurons['region'] != 'void']
 # Add genotype
 subjects = load_subjects()
 for i, nickname in enumerate(np.unique(subjects['subject'])):
-    all_neurons.loc[all_neurons['subject'] == nickname, 'expression'] = subjects.loc[subjects['subject'] == nickname, 'expression'].values[0]
     all_neurons.loc[all_neurons['subject'] == nickname, 'sert-cre'] = subjects.loc[subjects['subject'] == nickname, 'sert-cre'].values[0]
+all_neurons = all_neurons[all_neurons['sert-cre'] == 1]
 
 # Get percentage modulated per region
 reg_neurons = ((all_neurons.groupby('region').sum()['modulated'] / all_neurons.groupby('region').size()) * 100).to_frame()
 reg_neurons = reg_neurons.rename({0: 'percentage'}, axis=1)
 reg_neurons['mod_early'] = all_neurons.groupby('region').mean()['mod_index_early']
 reg_neurons['mod_late'] = all_neurons.groupby('region').mean()['mod_index_late']
-reg_neurons['latency'] = all_neurons[all_neurons['modulated'] == 1].groupby('region').median()['latency_peak_hw'] * 1000
 reg_neurons['n_neurons'] = all_neurons.groupby(['region']).size()
 reg_neurons['n_mod_neurons'] = all_neurons[all_neurons['modulated'] == 1].groupby(['region']).size()
 reg_neurons = reg_neurons.loc[reg_neurons['n_mod_neurons'] >= MIN_MOD_NEURONS]
@@ -55,8 +54,8 @@ sim_neurons = sim_neurons.rename({0: 'n_neurons'}, axis=1)
 # %%
 
 colors, dpi = figure_style()
-CMAP = 'rainbow'
-CLIM = 0.1
+CMAP = 'Spectral_r'
+CLIM = 0.18
 
 # Plot brain map slices
 f, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(6, 4), dpi=dpi)

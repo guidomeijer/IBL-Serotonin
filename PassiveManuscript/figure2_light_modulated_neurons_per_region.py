@@ -14,8 +14,8 @@ from serotonin_functions import paths, figure_style, combine_regions, load_subje
 
 # Settings
 MIN_NEURONS_POOLED = 5
-MIN_NEURONS_PER_MOUSE = 10
-MIN_MOD_NEURONS = 7
+MIN_NEURONS_PER_MOUSE = 12
+MIN_MOD_NEURONS = 10
 MIN_REC = 1
 
 # Paths
@@ -111,7 +111,7 @@ sns.barplot(x='perc_mod', y='full_region', data=per_mouse_df, order=ordered_regi
             color=colors['sert'], ax=ax1, ci=None)
 sns.swarmplot(x='perc_mod', y='full_region', data=per_mouse_df, order=ordered_regions_pm['full_region'],
               color=colors['grey'], ax=ax1, size=2)
-ax1.set(xlabel='Modulated neurons (%)', ylabel='', xlim=[0, 75], xticks=np.arange(0, 76, 25))
+ax1.set(xlabel='Modulated neurons (%)', ylabel='', xlim=[0, 82], xticks=np.arange(0, 81, 20))
 ax1.legend(frameon=False, bbox_to_anchor=(0.5, 0.3))
 #ax1.plot([-1, ax1.get_xlim()[1]], [5, 5], ls='--', color='grey')
 #plt.xticks(rotation=90)
@@ -151,7 +151,7 @@ colors, dpi = figure_style()
 
 PROPS = {'boxprops':{'facecolor':'none', 'edgecolor':'none'}, 'medianprops':{'color':'none'},
          'whiskerprops':{'color':'none'}, 'capprops':{'color':'none'}}
-ORDER = mod_neurons.groupby('full_region').mean()['mod_index_late'].sort_values().reset_index()['full_region']
+ORDER = mod_neurons.groupby('full_region').mean()['mod_index_late'].sort_values(ascending=False).reset_index()['full_region']
 
 f, ax1 = plt.subplots(1, 1, figsize=(3, 2), dpi=dpi)
 sns.boxplot(x='mod_index_late', y='full_region', ax=ax1, data=mod_neurons, showmeans=True,

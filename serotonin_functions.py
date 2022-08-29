@@ -125,6 +125,7 @@ def figure_style():
               'BC': sns.color_palette('Accent')[0],
               'Str': sns.color_palette('Accent')[1],
               'MRN': sns.color_palette('Accent')[2],
+              'OLF': sns.color_palette('tab10')[8],
               'RSP': 'r',
               'SNr': [0.75, 0.75, 0.75],
               'Orbitofrontal cortex': sns.color_palette('Dark2')[0],
@@ -140,6 +141,7 @@ def figure_style():
               'Thalamus': sns.color_palette('tab10')[9],
               'Tail of the striatum': sns.color_palette('Set2')[1],
               'Midbrain reticular nucleus': sns.color_palette('Accent')[2],
+              'Olfactory areas': sns.color_palette('tab10')[8],
               'Substantia nigra': [0.75, 0.75, 0.75],
               'Retrosplenial cortex': 'r',
               'Frontal': sns.color_palette('Dark2')[2],
@@ -298,7 +300,7 @@ def combine_regions(acronyms, split_thalamus=False, abbreviate=False):
         regions[np.in1d(acronyms, ['SNr', 'SNc', 'SNl'])] = 'SN'
         regions[np.in1d(acronyms, ['VISa', 'VISam'])] = 'PPC'
         regions[np.in1d(acronyms, ['MEA', 'CEA', 'BLA', 'COAa'])] = 'Amyg'
-        regions[np.in1d(acronyms, ['AON'])] = 'AON'
+        regions[np.in1d(acronyms, ['AON', 'TTd', 'DP'])] = 'OLF'
         regions[np.in1d(acronyms, ['CP', 'STR', 'STRd', 'STRv'])] = 'Str'
         regions[np.in1d(acronyms, ['CA1', 'CA3', 'DG'])] = 'Hipp'
     else:
@@ -317,7 +319,7 @@ def combine_regions(acronyms, split_thalamus=False, abbreviate=False):
         regions[np.in1d(acronyms, ['RSPv', 'RSPd'])] = 'Retrosplenial cortex'
         regions[np.in1d(acronyms, ['GPi', 'GPe'])] = 'Globus pallidus'
         regions[np.in1d(acronyms, ['MRN'])] = 'Midbrain reticular nucleus'
-        regions[np.in1d(acronyms, ['AON'])] = 'Anterior olfactory nucleus'
+        regions[np.in1d(acronyms, ['AON', 'TTd', 'DP'])] = 'Olfactory areas'
         regions[np.in1d(acronyms, ['ZI'])] = 'Zona incerta'
         regions[np.in1d(acronyms, ['PAG'])] = 'Periaqueductal gray'
         regions[np.in1d(acronyms, ['RL', 'IF', 'IPN', 'CLI', 'DR'])] = 'Raphe nucleus'
