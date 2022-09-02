@@ -181,18 +181,24 @@ def query_opto_sessions(subject, one=None):
     return [sess['url'][-36:] for sess in sessions]
 
 
-def query_ephys_sessions(selection='aligned', acronym=None, one=None):
+def query_ephys_sessions(aligned=True, behavior_crit=False, n_trials=0, acronym=None, one=None):
     if one is None:
         one = ONE()
-    assert selection in ['all', 'aligned', 'aligned-behavior']
+
+    # Construct django query string
     DJANGO_STR = ('session__project__name__icontains,serotonin_inference,'
                  'session__qc__lt,50')
-    if selection == 'aligned':
+    if aligned:
         # Query all ephys-histology aligned sessions
-        DJANGO_STR = DJANGO_STR + ',json__extended_qc__alignment_count__gt,0'
-    if selection == 'aligned-behavior':
+        DJANGO_STR += ',json__extended_qc__alignment_count__gt,0'
+
+    if behavior_crit:
         # Query sessions with an alignment and that meet behavior criterion
-        DJANGO_STR = DJANGO_STR + ',session__extended_qc__behavior,1'
+        DJANGO_STR += ',session__extended_qc__behavior,1'
+
+    # Query sessions with at least this many trials
+    if n_trials > 0:
+        DJANGO_STR += f',session__n_trials__gte,{n_trials}'
 
     # Query sessions
     if acronym is None:

@@ -30,6 +30,24 @@ all_neurons = pd.merge(stim_neurons, light_neurons, on=['subject', 'date', 'neur
 subjects = load_subjects()
 for i, nickname in enumerate(np.unique(all_neurons['subject'])):
     all_neurons.loc[all_neurons['subject'] == nickname, 'sert-cre'] = subjects.loc[subjects['subject'] == nickname, 'sert-cre'].values[0]
+sert_neurons = all_neurons[all_neurons['sert-cre'] == 1]
+
+# Get percentages of neurons
+sert_neurons['choice_mod'] = sert_neurons['choice_p'] < 0.05
+grouped_df = pd.DataFrame()
+grouped_df['prior_all'] = (sert_neurons.groupby('subject').sum()['prior_modulated']
+                           / sert_neurons.groupby('subject').size())
+grouped_df['prior_opto'] = (sert_neurons[sert_neurons['modulated']].groupby('subject').sum()['prior_modulated']
+                            / sert_neurons[sert_neurons['modulated']].groupby('subject').size())
+grouped_df['prior_no_opto'] = (sert_neurons[~sert_neurons['modulated']].groupby('subject').sum()['prior_modulated']
+                               / sert_neurons[~sert_neurons['modulated']].groupby('subject').size())
+
+grouped_df['choice_all'] = (sert_neurons.groupby('subject').sum()['choice_mod']
+                            / sert_neurons.groupby('subject').size())
+grouped_df['choice_opto'] = (sert_neurons[sert_neurons['modulated']].groupby('subject').sum()['choice_mod']
+                            / sert_neurons[sert_neurons['modulated']].groupby('subject').size())
+grouped_df['choice_no_opto'] = (sert_neurons[~sert_neurons['modulated']].groupby('subject').sum()['choice_mod']
+                                / sert_neurons[~sert_neurons['modulated']].groupby('subject').size())
 
 # %% Plot
 colors, dpi = figure_style()
@@ -86,3 +104,30 @@ plt.tight_layout()
 sns.despine(trim=True)
 plt.savefig(join(fig_path, 'Ephys', 'stim_vs_light_modulation.png'))
 plt.savefig(join(fig_path, 'Ephys', 'stim_vs_light_modulation.pdf'))
+
+# %%
+
+f, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(4, 4), dpi=dpi)
+ax1.plot([0, 0], [-1, 1], color=[.5, .5, .5], ls='--')
+ax1.plot([-1, 1], [0, 0], color=[.5, .5, .5], ls='--')
+
+ax1.scatter(sert_neurons.loc[sert_neurons['modulated'], 'mod_index_late'],
+            sert_neurons.loc[sert_neurons['modulated'], 'prior_roc'],
+            color=colors['sert'], s=6)
+ax1.set(ylim=[-1, 1], xlim=[-1, 1], xlabel='5-HT modulation', ylabel='Prior modulation')
+
+ax2.plot([0, 0], [-1, 1], color=[.5, .5, .5], ls='--')
+ax2.plot([-1, 1], [0, 0], color=[.5, .5, .5], ls='--')
+ax2.scatter(sert_neurons.loc[sert_neurons['modulated'], 'mod_index_late'],
+            sert_neurons.loc[sert_neurons['modulated'], 'choice_roc'],
+            color=colors['sert'], s=6)
+ax2.set(ylim=[-1, 1], xlim=[-1, 1], xlabel='5-HT modulation', ylabel='Choice modulation')
+
+sert_neurons['choice_roc_abs'] = sert_neurons['choice_roc'].abs()
+sns.boxplot(x='modulated', y='choice_roc_abs', data=sert_neurons, ax=ax3, fliersize=0)
+ax3.set(ylim=[0, 0.4])
+
+sert_neurons['prior_roc_abs'] = sert_neurons['prior_roc'].abs()
+sns.boxplot(x='modulated', y='prior_roc_abs', data=sert_neurons, ax=ax4, fliersize=0)
+
+
