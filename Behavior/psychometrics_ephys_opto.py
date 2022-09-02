@@ -12,15 +12,15 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from serotonin_functions import (load_trials, plot_psychometric, paths, behavioral_criterion,
-                                 fit_psychfunc, figure_style)
+                                 fit_psychfunc, figure_style, load_subjects)
 from one.api import ONE
 one = ONE()
 
 # Settings
 PLOT_SINGLE_ANIMALS = True
-_, fig_path, _ = paths()
+fig_path, _ = paths()
 fig_path = join(fig_path, 'Behavior', 'Ephys')
-subjects = pd.read_csv(join('..', 'subjects.csv'))
+subjects = load_subjects()
 
 #subjects = subjects[subjects['subject'] == 'ZFM-01867'].reset_index(drop=True)
 

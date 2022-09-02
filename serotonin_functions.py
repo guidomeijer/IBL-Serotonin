@@ -164,8 +164,12 @@ def remove_artifact_neurons(df):
     for i, column in enumerate(df.columns):
         if df[column].dtype == bool:
             df[column] = df[column].astype('boolean')
-    df = pd.merge(df, artifact_neurons, indicator=True, how='outer',
-                  on=['pid', 'neuron_id', 'probe', 'subject', 'date']).query('_merge=="left_only"').drop('_merge', axis=1)
+    if 'pid' in df.columns:
+        df = pd.merge(df, artifact_neurons, indicator=True, how='outer',
+                      on=['pid', 'neuron_id']).query('_merge=="left_only"').drop('_merge', axis=1)
+    else:
+        df = pd.merge(df, artifact_neurons, indicator=True, how='outer',
+                      on=['subject', 'probe', 'date', 'neuron_id']).query('_merge=="left_only"').drop('_merge', axis=1)
     return df
 
 

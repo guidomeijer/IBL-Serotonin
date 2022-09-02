@@ -17,14 +17,15 @@ from brainbox.metrics.single_units import spike_sorting_metrics
 from brainbox.task.closed_loop import (responsive_units, roc_single_event,
                                        roc_between_two_events, generate_pseudo_blocks)
 from brainbox.plot import peri_event_time_histogram
-from serotonin_functions import paths, remap, query_ephys_sessions, load_trials, figure_style
+from serotonin_functions import (paths, remap, query_ephys_sessions, load_trials, figure_style,
+                                 get_neuron_qc)
 from one.api import ONE
 from ibllib.atlas import AllenAtlas
 ba = AllenAtlas()
 one = ONE()
 
 # Settings
-OVERWRITE = True
+OVERWRITE = False
 NEURON_QC = True
 PLOT = True
 ITERATIONS = 500
@@ -72,9 +73,7 @@ for i in rec.index.values:
 
     # Filter neurons that pass QC
     if NEURON_QC:
-        print('Calculating neuron QC metrics..')
-        qc_metrics, _ = spike_sorting_metrics(spikes.times, spikes.clusters, spikes.amps, spikes.depths,
-                                              cluster_ids=np.arange(clusters.channels.size))
+        qc_metrics = get_neuron_qc(pid, one=one, ba=ba)
         clusters_pass = np.where(qc_metrics['label'] == 1)[0]
     else:
         clusters_pass = np.unique(spikes.clusters)
