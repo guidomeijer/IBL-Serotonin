@@ -27,7 +27,7 @@ one = ONE()
 # Settings
 OVERWRITE = True
 NEURON_QC = True
-PLOT = True
+PLOT = False
 ITERATIONS = 500
 T_BEFORE = 1  # for plotting
 T_AFTER = 2
@@ -88,51 +88,87 @@ for i in rec.index.values:
                                             pre_time=PRE_TIME, post_time=POST_TIME)
     roc_task = 2 * (roc_task - 0.5)  # Recalculate modulation index
 
+    roc_no_opto_task, neuron_ids = roc_single_event(spikes.times, spikes.clusters,
+                                                    trials.loc[trials['laser_stimulation'] == 0, 'goCue_times'],
+                                                    pre_time=PRE_TIME, post_time=POST_TIME)
+    roc_no_opto_task = 2 * (roc_no_opto_task - 0.5)
+
+    roc_opto_task, neuron_ids = roc_single_event(spikes.times, spikes.clusters,
+                                                 trials.loc[trials['laser_stimulation'] == 1, 'goCue_times'],
+                                                 pre_time=PRE_TIME, post_time=POST_TIME)
+    roc_opto_task = 2 * (roc_no_opto_task - 0.5)
+
     # Get choice selective neurons
     choice_lr = trials['choice'].values
     choice_lr[choice_lr == -1] = 0
-    choice_roc = roc_between_two_events(spikes.times, spikes.clusters,
-                                        trials['goCue_times'], choice_lr,
-                                        pre_time=POST_TIME[0], post_time=POST_TIME[1])[0]
-    choice_roc = 2 * (choice_roc - 0.5)
-    choice_p = differentiate_units(spikes.times, spikes.clusters, trials['goCue_times'], choice_lr,
-                                   pre_time=POST_TIME[0], post_time=POST_TIME[1])[2]
+    choice_no_stim_roc = roc_between_two_events(spikes.times, spikes.clusters,
+                                                trials.loc[trials['laser_stimulation'] == 0, 'goCue_times'],
+                                                choice_lr[trials['laser_stimulation'] == 0],
+                                                pre_time=POST_TIME[0], post_time=POST_TIME[1])[0]
+    choice_no_stim_roc = 2 * (choice_no_stim_roc - 0.5)
+
+    if len(np.unique(choice_lr[trials['laser_stimulation'] == 1])) == 2:
+        choice_stim_roc = roc_between_two_events(spikes.times, spikes.clusters,
+                                                 trials.loc[trials['laser_stimulation'] == 1, 'goCue_times'],
+                                                 choice_lr[trials['laser_stimulation'] == 1],
+                                                 pre_time=POST_TIME[0], post_time=POST_TIME[1])[0]
+        choice_stim_roc = 2 * (choice_stim_roc - 0.5)
+    else:
+        choice_stim_roc = np.array([np.nan] * roc_opto_task.shape[0])
+
+    choice_no_stim_p = differentiate_units(spikes.times, spikes.clusters,
+                                           trials.loc[trials['laser_stimulation'] == 0, 'goCue_times'],
+                                           choice_lr[trials['laser_stimulation'] == 0],
+                                           pre_time=POST_TIME[0], post_time=POST_TIME[1])[2]
+
+    choice_stim_p = differentiate_units(spikes.times, spikes.clusters,
+                                        trials.loc[trials['laser_stimulation'] == 1, 'goCue_times'],
+                                        choice_lr[trials['laser_stimulation'] == 1],
+                                        pre_time=POST_TIME[0], post_time=POST_TIME[1])[2]
 
     # Get prior selective neurons
     prior_roc, _ = roc_between_two_events(spikes.times, spikes.clusters, trials['goCue_times'],
                                           (trials['probabilityLeft'] == 0.2).astype(int),
-                                          pre_time=PRE_TIME[1], post_time=POST_TIME[1])
+                                          pre_time=PRE_TIME[0], post_time=PRE_TIME[1])
     prior_roc = 2 * (prior_roc - 0.5)
 
     # Determine stimulus evoked light modulated neurons
     roc_auc, neuron_ids = roc_between_two_events(spikes.times, spikes.clusters, trials['goCue_times'],
-                                                 trials['laser_stimulation'], pre_time=PRE_TIME[1],
+                                                 trials['laser_stimulation'], pre_time=POST_TIME[0],
                                                  post_time=POST_TIME[1])
     roc_stim_mod = 2 * (roc_auc - 0.5)
 
     print(f'Running {ITERATIONS} pseudo block shuffles..')
-    pseudo_roc = np.empty((ITERATIONS, neuron_ids.shape[0]))
+    pseudo_pre_roc = np.empty((ITERATIONS, neuron_ids.shape[0]))
+    pseudo_post_roc = np.empty((ITERATIONS, neuron_ids.shape[0]))
     for k in range(ITERATIONS):
         pseudo_blocks = generate_pseudo_blocks(trials.shape[0], first5050=0)
         this_pseudo_roc = roc_between_two_events(spikes.times, spikes.clusters,
                                                  trials['goCue_times'], (pseudo_blocks == 0.2).astype(int),
+                                                 pre_time=PRE_TIME[0], post_time=PRE_TIME[1])[0]
+        pseudo_pre_roc[k, :] = 2 * (this_pseudo_roc - 0.5)
+        this_pseudo_roc = roc_between_two_events(spikes.times, spikes.clusters,
+                                                 trials['goCue_times'], (pseudo_blocks == 0.2).astype(int),
                                                  pre_time=POST_TIME[0], post_time=POST_TIME[1])[0]
-        pseudo_roc[k, :] = 2 * (this_pseudo_roc - 0.5)
+        pseudo_post_roc[k, :] = 2 * (this_pseudo_roc - 0.5)
 
     # Use shuffled null distribution to get significance
-    prior_mod = ((prior_roc > np.percentile(pseudo_roc, 97.5, axis=0))
-                 | (prior_roc < np.percentile(pseudo_roc, 2.5, axis=0)))
+    prior_mod = ((prior_roc > np.percentile(pseudo_pre_roc, 97.5, axis=0))
+                 | (prior_roc < np.percentile(pseudo_pre_roc, 2.5, axis=0)))
     print(f'Found {np.sum(prior_mod)} prior modulated neurons')
-    stim_mod = ((roc_stim_mod > np.percentile(pseudo_roc, 97.5, axis=0))
-                | (roc_stim_mod < np.percentile(pseudo_roc, 2.5, axis=0)))
+    stim_mod = ((roc_stim_mod > np.percentile(pseudo_post_roc, 97.5, axis=0))
+                | (roc_stim_mod < np.percentile(pseudo_post_roc, 2.5, axis=0)))
     print(f'Found {np.sum(stim_mod)} opto modulated neurons')
 
     # Add results to df
     cluster_regions = remap(clusters.acronym[neuron_ids])
     task_neurons = pd.concat((task_neurons, pd.DataFrame(data={
         'subject': subject, 'date': date, 'eid': eid, 'probe': probe, 'neuron_id': neuron_ids,
-        'region': cluster_regions, 'task_responsive': task_resp, 'task_roc': roc_task,
-        'prior_roc': prior_roc, 'choice_roc': choice_roc, 'choice_p': choice_p,
+        'region': cluster_regions, 'task_responsive': task_resp,
+        'task_roc': roc_task, 'task_no_opto_roc': roc_no_opto_task, 'task_opto_roc': roc_opto_task,
+        'prior_roc': prior_roc,
+        'choice_no_stim_roc': choice_no_stim_roc, 'choice_stim_roc': choice_stim_roc,
+        'choice_stim_p': choice_stim_p, 'choice_no_stim_p': choice_no_stim_p,
         'opto_modulated': stim_mod, 'prior_modulated': prior_mod, 'opto_mod_roc': roc_stim_mod})))
 
     if PLOT:
@@ -168,5 +204,7 @@ for i in rec.index.values:
             plt.savefig(join(fig_path, cluster_regions[neuron_ids == neuron_id][0],
                              f'{subject}_{date}_{probe}_neuron{neuron_id}.pdf'))
             plt.close(p)
+
+    task_neurons.to_csv(join(save_path, 'task_modulated_neurons.csv'))
 
 task_neurons.to_csv(join(save_path, 'task_modulated_neurons.csv'))

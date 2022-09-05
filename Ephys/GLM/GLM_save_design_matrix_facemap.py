@@ -52,7 +52,7 @@ for i, file_path in enumerate(ses):
         facemap_dict = np.load(file_path, allow_pickle=True).item()
     except Exception:
         continue
-    asd
+
     # Load in DLC
     try:
         cam_times, XYs = get_dlc_XYs(one, eid)  # DLC
