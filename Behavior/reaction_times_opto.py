@@ -19,7 +19,8 @@ from one.api import ONE
 one = ONE()
 
 # Settings
-_, fig_path, save_path = paths()
+INCLUDE_EPHYS = True
+fig_path, save_path = paths()
 fig_path = join(fig_path, 'Behavior', 'ReactionTimes')
 PLOT = True
 
@@ -29,7 +30,7 @@ subjects = subjects.reset_index()
 results_df = pd.DataFrame()
 for i, nickname in enumerate(subjects['subject']):
     print(f'Processing {nickname}')
-    eids = query_opto_sessions(nickname, one=one)
+    eids = query_opto_sessions(nickname, include_ephys=INCLUDE_EPHYS, one=one)
     if len(eids) == 0:
         continue
 

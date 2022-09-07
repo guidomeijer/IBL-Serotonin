@@ -27,7 +27,7 @@ colors, dpi = figure_style()
 f, ax = plt.subplots(1, 1, figsize=(1.75, 1.75), dpi=dpi)
 ax.add_patch(Rectangle((0, -5), 1, 12, color='royalblue', alpha=0.25, lw=0))
 g = sns.lineplot(x='time', y='baseline_subtracted', data=avg_pupil_df, ax=ax, hue='expression',
-                 hue_order=[1, 0], palette=[colors['sert'], colors['wt']], ci=68)
+                 hue_order=[1, 0], palette=[colors['sert'], colors['wt']], errorbar='se')
 ax.set(ylabel='Pupil size change (%)', xlabel='Time (s)', xticks=[0, 1, 2, 3, 4], ylim=[-4, 6])
 ax.legend(frameon=False, bbox_to_anchor=(0.7, 0.8), prop={'size': 5.5})
 new_labels = ['SERT', 'WT']

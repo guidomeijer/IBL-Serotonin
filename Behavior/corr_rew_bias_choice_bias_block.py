@@ -17,11 +17,12 @@ from one.api import ONE
 one = ONE()
 
 # Settings
+INCLUDE_EPHYS = True
 TRIALS_AFTER_SWITCH = 6
 REWARD_WIN = 10  # trials
 CHOICE_WIN = 5  # trials
 MIN_TRIALS = 5  # for estimating reward bias
-subjects = load_subjects(behavior=True)
+subjects = load_subjects()
 fig_path, save_path = paths()
 fig_path = join(fig_path, 'Behavior', 'ModelAgnostic')
 
@@ -30,7 +31,7 @@ all_trials = pd.DataFrame()
 for i, nickname in enumerate(subjects['subject']):
 
     # Query sessions
-    eids = query_opto_sessions(nickname, one=one)
+    eids = query_opto_sessions(nickname, include_ephys=INCLUDE_EPHYS, one=one)
     eids = behavioral_criterion(eids, one=one)
 
     # Get trials DataFrame
@@ -43,7 +44,7 @@ for i, nickname in enumerate(subjects['subject']):
         except:
             print(f'\nError loading {eid}\n')
             continue
-        
+
         if trials.shape[0] < 100:
             continue
 

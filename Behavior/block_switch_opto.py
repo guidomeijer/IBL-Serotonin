@@ -18,19 +18,17 @@ from one.api import ONE
 one = ONE()
 
 # Settings
+INCLUDE_EPHYS = True
 PLOT_SINGLE_ANIMALS = True
 fig_path, _ = paths()
-fig_path = join(fig_path, 'Behavior', 'Psychometrics')
+fig_path = join(fig_path, 'Behavior', 'BlockSwitch')
 subjects = load_subjects()
 
 switch_df = pd.DataFrame()
 for i, nickname in enumerate(subjects['subject']):
 
     # Query sessions
-    eids = query_opto_sessions(nickname, one=one)
-
-    # Exclude the first opto sessions
-    #eids = eids[:-1]
+    eids = query_opto_sessions(nickname, include_ephys=INCLUDE_EPHYS, one=one)
 
     # Apply behavioral criterion
     eids = behavioral_criterion(eids, one=one)
@@ -64,16 +62,58 @@ for i, nickname in enumerate(subjects['subject']):
     block_trans = np.append(np.array(np.where(np.diff(trial_blocks) != 0)) + 1, [trial_blocks.shape[0]])
 
     for t, trans in enumerate(block_trans[:-1]):
-        r_choice = trials.loc[(trials['signed_contrast'] == 0) & (trials.index.values < block_trans[t+1])
+        r_choice = trials.loc[(trials.index.values < block_trans[t+1])
                               & (trials.index.values >= block_trans[t]), 'right_choice'].reset_index(drop=True)
+        if trials.loc[trans, 'probabilityLeft'] == 0.8:
+            to_prior_choice = np.logical_not(r_choice).astype(int)
+        else:
+            to_prior_choice = r_choice.copy()
         switch_df = pd.concat((switch_df, pd.DataFrame(data={
-            'right_choice': r_choice, 'trial': r_choice.index.values, 'opto': trials.loc[trans, 'laser_stimulation'],
+            'right_choice': r_choice, 'trial': r_choice.index.values,
+            'opto': trials.loc[trans, 'laser_stimulation'], 'to_prior_choice': to_prior_choice,
             'switch_to': trials.loc[trans, 'probabilityLeft'], 'subject': nickname,
             'sert-cre': subjects.loc[i, 'sert-cre']})), ignore_index=True)
 
     if PLOT_SINGLE_ANIMALS:
         colors, dpi = figure_style()
-        f, ax1 = plt.subplots(1, 1, figsize=(3, 3), dpi=dpi)
-        sns.lineplot(x='trial', y='right_choice', data=switch_df, style='opto', hue='switch_to')
-        ax1.set(xlim=[0, 15])
+        f, ax1 = plt.subplots(1, 1, figsize=(1.75, 1.75), dpi=dpi)
+        sns.lineplot(x='trial', y='to_prior_choice', data=switch_df[switch_df['subject'] == nickname],
+                     hue='opto', errorbar='se', hue_order=[1, 0],
+                     palette=[colors['stim'], colors['no-stim']])
+        ax1.set(xlim=[0, 20], ylabel='Frac. choices to biased side', xlabel='Trials since switch',
+                title=f'{nickname}, SERT: {subjects.loc[i, "sert-cre"]}')
+        leg_handles, _ = ax1.get_legend_handles_labels()
+        leg_labels = ['Opto', 'No opto']
+        ax1.legend(leg_handles, leg_labels, prop={'size': 5}, loc='lower left', frameon=False)
+        sns.despine(trim=True)
+        plt.tight_layout()
+        plt.savefig(join(fig_path, f'block_switch_{nickname}.jpg'), dpi=300)
+
+# %%
+
+per_animal_df = switch_df.groupby(['subject', 'trial', 'opto']).mean().reset_index()
+
+colors, dpi = figure_style()
+f, (ax1, ax2) = plt.subplots(1, 2, figsize=(3.5, 1.75), dpi=dpi)
+sns.lineplot(x='trial', y='to_prior_choice', data=per_animal_df[per_animal_df['sert-cre'] == 1],
+             hue='opto', errorbar='se', hue_order=[1, 0],
+             palette=[colors['stim'], colors['no-stim']], ax=ax1)
+ax1.set(xlim=[0, 20], ylabel='Frac. choices to biased side', xlabel='Trials since switch',
+        title='SERT')
+leg_handles, _ = ax1.get_legend_handles_labels()
+leg_labels = ['Opto', 'No opto']
+ax1.legend(leg_handles, leg_labels, prop={'size': 5}, loc='lower left', frameon=False)
+
+sns.lineplot(x='trial', y='to_prior_choice', data=per_animal_df[per_animal_df['sert-cre'] == 0],
+             hue='opto', errorbar='se', hue_order=[1, 0],
+             palette=[colors['stim'], colors['no-stim']], ax=ax2)
+ax2.set(xlim=[0, 20], ylabel='Frac. choices to biased side', xlabel='Trials since switch',
+        title='WT')
+leg_handles, _ = ax1.get_legend_handles_labels()
+leg_labels = ['Opto', 'No opto']
+ax2.legend(leg_handles, leg_labels, prop={'size': 5}, loc='lower left', frameon=False)
+
+sns.despine(trim=True)
+plt.tight_layout()
+plt.savefig(join(fig_path, f'all_block_switch.jpg'), dpi=300)
 

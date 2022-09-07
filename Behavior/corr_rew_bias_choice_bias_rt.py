@@ -17,11 +17,12 @@ from one.api import ONE
 one = ONE()
 
 # Settings
+INCLUDE_EPHYS = True
 RT_CUTOFF = 0.5
 REWARD_WIN = 10  # trials
 CHOICE_WIN = 5  # trials
 MIN_TRIALS = 5  # for estimating reward bias
-subjects = load_subjects(behavior=True)
+subjects = load_subjects()
 fig_path, save_path = paths()
 fig_path = join(fig_path, 'Behavior', 'ModelAgnostic')
 
@@ -30,7 +31,7 @@ all_trials = pd.DataFrame()
 for i, nickname in enumerate(subjects['subject']):
 
     # Query sessions
-    eids = query_opto_sessions(nickname, one=one)
+    eids = query_opto_sessions(nickname, include_ephys=INCLUDE_EPHYS, one=one)
     eids = behavioral_criterion(eids, one=one)
 
     # Get trials DataFrame
@@ -107,14 +108,14 @@ plot_df.loc[plot_df['opto'] == 0, 'opto'] = 'No stim'
 colors, dpi = figure_style()
 f, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(4, 4), dpi=dpi)
 sns.lineplot(x='opto', y='r_long_rt', data=plot_df, hue='sert-cre', estimator=None, units='subject',
-             palette=[colors['sert'], colors['wt']], legend='brief', dashes=False,
+             hue_order=['Sert', 'WT'], palette=[colors['sert'], colors['wt']], legend='brief', dashes=False,
              markers=['o']*int(plot_df.shape[0]/2), ax=ax1)
 ax1.legend(frameon=False)
 ax1.set(xlabel='', xticks=[0, 1], xticklabels=['No stim', 'Stim'], ylabel='Corr. reward bias vs choice bias',
         title=f'Long RT (> {RT_CUTOFF}s)', ylim=[0, 0.5])
 
 sns.lineplot(x='opto', y='r_short_rt', data=plot_df, hue='sert-cre', estimator=None, units='subject',
-             palette=[colors['sert'], colors['wt']], legend=None, dashes=False,
+             palette=[colors['sert'], colors['wt']], hue_order=['Sert', 'WT'], legend=None, dashes=False,
              markers=['o']*int(plot_df.shape[0]/2), ax=ax2)
 ax2.set(xlabel='', xticks=[0, 1], xticklabels=['No stim', 'Stim'], ylabel='Corr. reward bias vs choice bias',
         title=f'Short RT (< {RT_CUTOFF}s)', ylim=[0, 0.8])

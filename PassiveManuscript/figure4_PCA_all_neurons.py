@@ -35,7 +35,7 @@ ax1.add_patch(Rectangle((0, 0), 1, 100, color='royalblue', alpha=0.25, lw=0))
 #ax.add_patch(Rectangle((0, 0), 1, -100, color='royalblue', alpha=0.25, lw=0))
 #sns.lineplot(x='time', y='pca_dist', ax=ax1, legend=None, hue='sert-cre', ci=68,
 #             data=pca_df[pca_df['sert-cre'] == 1], palette=['k'])
-sns.lineplot(x='time', y='pca_dist', ax=ax1, legend='brief', hue='sert-cre', ci=68,
+sns.lineplot(x='time', y='pca_dist', ax=ax1, legend='brief', hue='sert-cre', errorbar='se',
              data=pca_df, hue_order=[0, 1], palette=[colors['wt'], colors['sert']])
 ax1.set(xlim=[-1, 4], xlabel='Time (s)', ylabel='PCA trajectory distance\nfrom baseline (a.u.)',
         xticks=[-1, 0, 1, 2, 3, 4], ylim=[5, 15], yticks=[5, 10, 15])

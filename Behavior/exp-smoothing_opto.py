@@ -25,20 +25,21 @@ one = ONE()
 PRE_TRIALS = 5
 POST_TRIALS = 20
 PLOT_EXAMPLES = True
+INCLUDE_EPHYS = True
 REMOVE_OLD_FIT = False
 POSTERIOR = 'posterior_mean'
 STIM = 'block'
 fig_path, save_path = paths()
 fig_path = join(fig_path, 'Behavior', 'Models')
 
-subjects = load_subjects(behavior=True)
+subjects = load_subjects()
 
 results_df = pd.DataFrame()
 block_switches = pd.DataFrame()
 for i, nickname in enumerate(subjects['subject']):
 
     # Query sessions
-    eids = query_opto_sessions(nickname, one=one)
+    eids = query_opto_sessions(nickname, include_ephys=INCLUDE_EPHYS, one=one)
     eids = behavioral_criterion(eids, one=one)
     if len(eids) == 0:
         continue
@@ -89,7 +90,7 @@ for i, nickname in enumerate(subjects['subject']):
         colors, dpi = figure_style()
         f, ax1 = plt.subplots(1, 1, figsize=(3, 2), dpi=dpi)
         sns.lineplot(x='trial', y='prior_prevaction', data=block_switches[block_switches['subject'] == nickname],
-                 hue='change_to', style='opto', palette='colorblind', ax=ax1, ci=68)
+                 hue='change_to', style='opto', palette='colorblind', ax=ax1, errorbar='se')
         #plt.plot([0, 0], [0, 1], color=[0.5, 0.5, 0.5], ls='--')
         handles, labels = ax1.get_legend_handles_labels()
         labels = ['', 'Change to R', 'Change to L', '', 'No stim', 'Stim']

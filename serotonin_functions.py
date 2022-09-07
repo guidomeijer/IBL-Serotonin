@@ -174,11 +174,16 @@ def remove_artifact_neurons(df):
     return df
 
 
-def query_opto_sessions(subject, one=None):
+def query_opto_sessions(subject, include_ephys=False, one=None):
     one = one or ONE()
-    sessions = one.alyx.rest('sessions', 'list', subject=subject,
-                             task_protocol='_iblrig_tasks_opto_biasedChoiceWorld',
-                             project='serotonin_inference')
+    if include_ephys:
+        sessions = one.alyx.rest('sessions', 'list', subject=subject,
+                                 task_protocol='_iblrig_tasks_opto_',
+                                 project='serotonin_inference')
+    else:
+        sessions = one.alyx.rest('sessions', 'list', subject=subject,
+                                 task_protocol='_iblrig_tasks_opto_biasedChoiceWorld',
+                                 project='serotonin_inference')
     return [sess['url'][-36:] for sess in sessions]
 
 
@@ -885,7 +890,7 @@ def plot_psychometric(trials, ax, **kwargs):
     sns.lineplot(x=trials['signed_contrast'], y=trials['right_choice'], ax=ax,
                      **{**{'err_style':"bars",
                      'linewidth':0, 'linestyle':'None', 'mew':0.5,
-                     'marker':'o', 'ci':68}, **kwargs})
+                     'marker':'o', 'errorbar':'se'}, **kwargs})
 
     ax.set(xticks=[-35, -25, -12.5, 0, 12.5, 25, 35], xlim=[-40, 40], ylim=[0, 1.02],
            yticks=[0, 0.25, 0.5, 0.75, 1], yticklabels=['0', '25', '50', '75', '100'],
