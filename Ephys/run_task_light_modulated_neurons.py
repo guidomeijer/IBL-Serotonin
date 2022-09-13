@@ -18,7 +18,7 @@ from brainbox.task.closed_loop import (responsive_units, roc_single_event, diffe
                                        roc_between_two_events, generate_pseudo_blocks)
 from brainbox.plot import peri_event_time_histogram
 from serotonin_functions import (paths, remap, query_ephys_sessions, load_trials, figure_style,
-                                 get_neuron_qc)
+                                 get_neuron_qc, peri_multiple_events_time_histogram)
 from one.api import ONE
 from ibllib.atlas import AllenAtlas
 ba = AllenAtlas()
@@ -27,7 +27,7 @@ one = ONE()
 # Settings
 OVERWRITE = True
 NEURON_QC = True
-PLOT = False
+PLOT = True
 ITERATIONS = 500
 T_BEFORE = 1  # for plotting
 T_AFTER = 2
@@ -164,7 +164,7 @@ for i in rec.index.values:
     cluster_regions = remap(clusters.acronym[neuron_ids])
     task_neurons = pd.concat((task_neurons, pd.DataFrame(data={
         'subject': subject, 'date': date, 'eid': eid, 'probe': probe, 'neuron_id': neuron_ids,
-        'region': cluster_regions, 'task_responsive': task_resp,
+        'pid': pid, 'region': cluster_regions, 'task_responsive': task_resp,
         'task_roc': roc_task, 'task_no_opto_roc': roc_no_opto_task, 'task_opto_roc': roc_opto_task,
         'prior_roc': prior_roc,
         'choice_no_stim_roc': choice_no_stim_roc, 'choice_stim_roc': choice_stim_roc,
@@ -172,37 +172,30 @@ for i in rec.index.values:
         'opto_modulated': stim_mod, 'prior_modulated': prior_mod, 'opto_mod_roc': roc_stim_mod})))
 
     if PLOT:
+        colors, dpi = figure_style()
         for n, neuron_id in enumerate(neuron_ids[stim_mod]):
             if not isdir(join(fig_path, f'{cluster_regions[neuron_ids == neuron_id][0]}')):
                 mkdir(join(fig_path, f'{cluster_regions[neuron_ids == neuron_id][0]}'))
 
             # Plot PSTH
-            colors, dpi = figure_style()
             p, ax = plt.subplots(1, 1, figsize=(1.75, 1.75), dpi=dpi)
-            peri_event_time_histogram(spikes.times, spikes.clusters,
-                                      trials.loc[trials['laser_stimulation'] == 1, 'goCue_times'],
-                                      neuron_id, t_before=T_BEFORE, t_after=T_AFTER, bin_size=BIN_SIZE,
-                                      include_raster=False, error_bars='sem', ax=ax,
-                                      pethline_kwargs={'color': colors['stim'], 'lw': 1},
-                                      errbar_kwargs={'color': colors['stim'], 'alpha': 0.3},
-                                      eventline_kwargs={'lw': 0})
-            this_y_lim = ax.get_ylim()
-            peri_event_time_histogram(spikes.times, spikes.clusters,
-                                      trials.loc[trials['laser_stimulation'] == 0, 'goCue_times'],
-                                      neuron_id, t_before=T_BEFORE, t_after=T_AFTER, bin_size=BIN_SIZE,
-                                      include_raster=False, error_bars='sem', ax=ax,
-                                      pethline_kwargs={'color': colors['no-stim'], 'lw': 1},
-                                      errbar_kwargs={'color': colors['no-stim'], 'alpha': 0.3},
-                                      eventline_kwargs={'lw': 0})
-            ax.set(ylim=[np.min([this_y_lim[0], ax.get_ylim()[0]]),
-                         np.max([this_y_lim[1], ax.get_ylim()[1]]) + np.max([this_y_lim[1], ax.get_ylim()[1]]) * 0.2])
-            ax.set(ylabel='Firing rate (spikes/s)', xlabel='Time from trial start (s)',
-                   yticks=np.linspace(0, np.round(ax.get_ylim()[1]), 3))
-            ax.yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
-            sns.despine(trim=True, offset=2)
+            peri_multiple_events_time_histogram(
+                spikes.times, spikes.clusters, trials['goCue_times'], trials['laser_stimulation'],
+                neuron_id, t_before=T_BEFORE, t_after=T_AFTER, bin_size=BIN_SIZE, ax=ax,
+                pethline_kwargs=[{'color': colors['no-stim'], 'lw': 1}, {'color': colors['stim'], 'lw': 1}],
+                errbar_kwargs=[{'color': colors['no-stim'], 'alpha': 0.3}, {'color': colors['stim'], 'alpha': 0.3}],
+                raster_kwargs=[{'color': colors['no-stim'], 'lw': 0.5}, {'color': colors['stim'], 'lw': 0.5}],
+                eventline_kwargs={'lw': 0}, include_raster=True)
+            ax.set(ylabel='Firing rate (spikes/s)', xlabel='Time from first lick (s)',
+                   yticks=np.linspace(0, np.round(ax.get_ylim()[1]), 3), xticks=[-1, 0, 1, 2, 3, 4])
+            if np.round(ax.get_ylim()[1]) % 2 == 0:
+                ax.yaxis.set_major_formatter(FormatStrFormatter('%.0f'))
+            else:
+                ax.yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
+            sns.despine(trim=False)
             plt.tight_layout()
             plt.savefig(join(fig_path, cluster_regions[neuron_ids == neuron_id][0],
-                             f'{subject}_{date}_{probe}_neuron{neuron_id}.pdf'))
+                             f'{subject}_{date}_{probe}_neuron{neuron_id}.jpg'), dpi=600)
             plt.close(p)
 
     task_neurons.to_csv(join(save_path, 'task_modulated_neurons.csv'))

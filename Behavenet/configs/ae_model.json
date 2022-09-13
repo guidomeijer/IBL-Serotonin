@@ -1,0 +1,59 @@
+{
+
+#############################
+## Commonly changed params ##
+#############################
+
+"experiment_name": "ae-example", # type: str
+
+"model_type": "conv", # type: str, help: conv or linear
+
+"n_ae_latents": [4, 8, 12, 16], # type: int, help: number of latents
+
+"l2_reg": 0.0, # type: float
+
+"rng_seed_model": 0, # type: int, help: control model initialization
+
+
+#############################################
+## Conv params (will be ignored if linear) ##
+#############################################
+
+"fit_sess_io_layers": false, # type: boolean
+
+"ae_arch_json": null, # type: str, help: null to use architecture from behavenet paper; path to json file for user-defined architectures; see example json in behavenet/fitting/json_configs/ae_jsons/ae_arch_default.json
+
+
+#################
+## Misc params ##
+#################
+
+"model_class": "ae", # type: str
+
+"conditional_encoder": false, # type: str
+
+"msp.alpha": null, # type: float, help: weight on matrix subspace projection loss
+
+"vae.beta": 1, # type: int, help: weight on VAE KL divergence term
+
+"vae.beta_anneal_epochs": 100, # type: int, help: number of epochs to linearly increase vae beta
+
+"beta_tcvae.beta": 1, # type: int, help: weight on VAE total correlation term
+
+"beta_tcvae.beta_anneal_epochs": 100, # type: int, help: number of epochs to linearly increase betatcvae beta
+
+"ps_vae.alpha": 1, # type: int, help: weight on label reconstruction term
+
+"ps_vae.beta": 1, # type: int, help: weight on total correlation term
+
+"ps_vae.gamma": 1, # type: int, help: weight on subspace overlap term
+
+"ps_vae.delta": 1, # type: int, help: weight on background subspace triplet loss for msps-vae
+
+"ps_vae.anneal_epochs": 100, # type: int, help: number of epochs to linearly increase psvae beta value
+
+"n_background": 3, # type: int, help: dimensionality of background subspace in msps-vae
+
+"n_sessions_per_batch": 1 # type: int, help: number of sessions to load per batch in msps-vae
+
+}

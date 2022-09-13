@@ -27,8 +27,8 @@ T_BEFORE = 1  # for plotting
 T_AFTER = 2
 BIN_SIZE = 0.05
 SMOOTHING = 0.025
-PLOT_LATENCY = True
-OVERWRITE = False
+PLOT_LATENCY = False
+OVERWRITE = True
 fig_path, save_path = paths()
 fig_path = join(fig_path, 'Ephys', 'SingleNeurons', 'LightModNeurons')
 
@@ -110,4 +110,6 @@ for i, pid in enumerate(np.unique(all_neurons['pid'])):
                          f'{subject}_{date}_{probe}_neuron{neuron_id}_{region}.jpg'), dpi=600)
         plt.savefig(join(fig_path, 'PDFs',
                          f'{region}_{subject}_{date}_{probe}_neuron{neuron_id}.pdf'))
+        plt.savefig(join(fig_path, 'JPEGs',
+                         f'{region}_{subject}_{date}_{probe}_neuron{neuron_id}.jpg'), dpi=600)
         plt.close(p)
