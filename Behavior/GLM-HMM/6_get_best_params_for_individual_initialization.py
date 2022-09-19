@@ -26,7 +26,7 @@ labels_for_plot = ['stim', 'pc', 'wsls', 'bias']
 cv_file = join(results_dir, "cvbt_folds_model.npz")
 cvbt_folds_model = load_cv_arr(cv_file)
 
-for K in range(2, 6):
+for K in range(2, 4):
     print("K = " + str(K))
     with open(join(results_dir, "best_init_cvbt_dict.json"), 'r') as f:
         best_init_cvbt_dict = json.load(f)

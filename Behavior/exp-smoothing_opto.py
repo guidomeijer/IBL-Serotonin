@@ -40,7 +40,7 @@ for i, nickname in enumerate(subjects['subject']):
 
     # Query sessions
     eids = query_opto_sessions(nickname, include_ephys=INCLUDE_EPHYS, one=one)
-    eids = behavioral_criterion(eids, one=one)
+    eids = behavioral_criterion(eids, max_lapse=1, max_bias=1, min_trials=100, one=one)
     if len(eids) == 0:
         continue
     if len(eids) > 10:
@@ -68,6 +68,8 @@ for i, nickname in enumerate(subjects['subject']):
                                                       'subject': nickname}))
 
     # Add prior around block switches
+    if prob_left.shape[0] == 1:
+        priors_prevaction = [priors_prevaction]
     for k in range(len(priors_prevaction)):
         transitions = np.array(np.where(np.diff(prob_left[k]) != 0)[0])[:-1] + 1
         for t, trans in enumerate(transitions):
@@ -76,13 +78,13 @@ for i, nickname in enumerate(subjects['subject']):
                     opto = 'stim'
                 elif stim_trials[k][trans] == 0:
                     opto = 'no stim'
-                block_switches = block_switches.append(pd.DataFrame(data={
+                block_switches = pd.concat((block_switches, pd.DataFrame(data={
                             'prior_prevaction': priors_prevaction[k][trans-PRE_TRIALS:trans+POST_TRIALS],
                             'trial': np.append(np.arange(-PRE_TRIALS, 0), np.arange(0, POST_TRIALS)),
                             'change_to': prob_left[k][trans],
                             'opto': opto,
                             'sert_cre': subjects.loc[i, 'sert-cre'],
-                            'subject': nickname}))
+                            'subject': nickname})))
     block_switches = block_switches.reset_index(drop=True)
 
     # Plot for this animal
@@ -102,8 +104,14 @@ for i, nickname in enumerate(subjects['subject']):
         plt.savefig(join(fig_path, '%s_model_prevaction' % nickname), dpi=300)
 
         # Plot priors of example session
-        these_priors = priors_prevaction[0][:np.where(stim_side[0] == 0)[0][0] - 1]
-        these_p_left = prob_left[0][:np.where(stim_side[0] == 0)[0][0] - 1]
+        if np.sum(stim_side[0] == 0) == 0:
+            these_priors = priors_prevaction[0]
+            these_p_left = prob_left[0]
+            these_stim = stim_trials[0]
+        else:
+            these_priors = priors_prevaction[0][:np.where(stim_side[0] == 0)[0][0] - 1]
+            these_p_left = prob_left[0][:np.where(stim_side[0] == 0)[0][0] - 1]
+            these_stim = stim_trials[0][:np.where(stim_side[0] == 0)[0][0] - 1]
         BLOCK_COLORS = (colors['left'], colors['right'])
         f, ax1 = plt.subplots(1, 1, figsize=(6, 3), dpi=dpi)
         trial_blocks = (these_p_left == 0.2).astype(int)
@@ -114,7 +122,6 @@ for i, nickname in enumerate(subjects['subject']):
                           color=BLOCK_COLORS[trial_blocks[trans]])
             ax1.add_patch(p)
         ax1.plot(np.arange(1, these_priors.shape[0] + 1), these_priors, color='k')
-        these_stim = stim_trials[0][:np.where(stim_side[0] == 0)[0][0] - 1]
         these_stim[these_stim == 0] = np.nan
         these_stim[these_stim == 1] = 1.1
         ax1.plot(np.arange(1, these_priors.shape[0] + 1), these_stim, lw=2, color=colors['stim'])

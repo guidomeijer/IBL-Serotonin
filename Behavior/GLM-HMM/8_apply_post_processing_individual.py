@@ -25,7 +25,7 @@ results_dir = join(data_path, 'GLM-HMM', 'results', 'individual_fit')
 C = 2  # number of output classes
 num_folds = 5  # number of folds
 D = 1  # number of output dimensions
-K_max = 5  # number of latent states
+K_max = 3  # number of latent states
 num_models = K_max + 2  # model for each latent + 2 lapse
 # models
 
@@ -52,6 +52,8 @@ for animal in animal_list:
         train_nonviolation_mask, this_train_session, M, n_test, \
         n_train = prepare_data_for_cv(
             inpt, y, session, session_fold_lookup_table, fold)
+        if len(test_y) == 0:
+            continue
         ll0 = calculate_baseline_test_ll(
             train_y[train_nonviolation_mask == 1, :],
             test_y[test_nonviolation_mask == 1, :], C)

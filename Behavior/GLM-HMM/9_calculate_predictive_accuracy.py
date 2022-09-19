@@ -15,6 +15,7 @@ from plotting_utils import load_glmhmm_data, load_animal_list, load_cv_arr, \
     calculate_predictive_acc_lapse_model
 
 N_FOLDS = 5
+MAX_K = 3
 cols = ["#e74c3c", "#15b01a", "#7e1e9c", "#3498db", "#f97306"]
 
 # Paths
@@ -57,7 +58,7 @@ for animal in animal_list:
         num_trials_mat.append(len(idx_to_exclude))
     predictive_acc_mat.append(predictive_acc_glm)
 
-    for K in range(2, 6):
+    for K in range(2, MAX_K+1):
         with open(join(results_dir, "best_init_cvbt_dict.json"), 'r') as f:
             best_init_cvbt_dict = json.load(f)
 

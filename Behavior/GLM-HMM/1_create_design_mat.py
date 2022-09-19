@@ -39,14 +39,14 @@ if not isdir(join(save_path, 'data_by_animal')):
     os.mkdir(join(save_path, 'data_by_animal'))
 
 # Query which subjects to use and create eid list per subject
-subjects = load_subjects(behavior=True)
+subjects = load_subjects()
 animal_list = subjects['subject'].values
 animal_eid_dict = dict()
 for i, nickname in enumerate(subjects['subject']):
 
     # Query sessions
-    eids = query_opto_sessions(nickname, one=one)
-    #eids = behavioral_criterion(eids, one=one)
+    eids = query_opto_sessions(nickname, include_ephys=True, one=one)
+    eids = behavioral_criterion(eids, max_lapse=1.1, max_bias=1.1, min_trials=100, one=one)
 
     # animal_eid_dict is a dict with subjects as keys and a list of eids per subject
     animal_eid_dict[nickname] = eids
@@ -70,23 +70,26 @@ final_animal_eid_dict = defaultdict(list)
 for z, animal in enumerate(animal_list):
     sess_counter = 0
     for eid in animal_eid_dict[animal]:
-        animal, unnormalized_inpt, y, session, num_viols_50, rewarded = \
-            get_all_unnormalized_data_this_session(
-                eid, one)
-        if num_viols_50 < 10:  # only include session if number of viols is less than 10
-            if sess_counter == 0:
-                animal_unnormalized_inpt = np.copy(unnormalized_inpt)
-                animal_y = np.copy(y)
-                animal_session = session
-                animal_rewarded = np.copy(rewarded)
-            else:
-                animal_unnormalized_inpt = np.vstack(
-                    (animal_unnormalized_inpt, unnormalized_inpt))
-                animal_y = np.vstack((animal_y, y))
-                animal_session = np.concatenate((animal_session, session))
-                animal_rewarded = np.vstack((animal_rewarded, rewarded))
-            sess_counter += 1
-            final_animal_eid_dict[animal].append(eid)
+        try:
+            animal, unnormalized_inpt, y, session, num_viols_50, rewarded = \
+                get_all_unnormalized_data_this_session(
+                    eid, one)
+            if num_viols_50 < 10:  # only include session if number of viols is less than 10
+                if sess_counter == 0:
+                    animal_unnormalized_inpt = np.copy(unnormalized_inpt)
+                    animal_y = np.copy(y)
+                    animal_session = session
+                    animal_rewarded = np.copy(rewarded)
+                else:
+                    animal_unnormalized_inpt = np.vstack(
+                        (animal_unnormalized_inpt, unnormalized_inpt))
+                    animal_y = np.vstack((animal_y, y))
+                    animal_session = np.concatenate((animal_session, session))
+                    animal_rewarded = np.vstack((animal_rewarded, rewarded))
+                sess_counter += 1
+                final_animal_eid_dict[animal].append(eid)
+        except Exception as err:
+            print(err)
     # Write out animal's unnormalized data matrix:
     np.savez(join(save_path, 'data_by_animal', animal + '_unnormalized.npz'),
              animal_unnormalized_inpt, animal_y, animal_session)

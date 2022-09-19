@@ -16,8 +16,8 @@ from plotting_utils import load_glmhmm_data, load_cv_arr, load_data, \
     get_marginal_posterior, get_prob_right
 
 # Settings
-animal = 'ZFM-02600'
-K = 4
+animal = 'ZFM-04122'
+K = 3
 
 # Paths
 figure_path, data_path = paths()

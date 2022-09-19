@@ -389,10 +389,11 @@ def get_full_region_name(acronyms):
         return full_region_names
 
 
-def behavioral_criterion(eids, max_lapse=0.3, max_bias=0.4, min_trials=1, one=None):
+def behavioral_criterion(eids, max_lapse=0.3, max_bias=0.4, min_trials=1, return_excluded=False,
+                         one=None):
     if one is None:
         one = ONE()
-    use_eids = []
+    use_eids, excl_eids = [], []
     for j, eid in enumerate(eids):
         try:
             trials = load_trials(eid, one=one)
@@ -409,13 +410,17 @@ def behavioral_criterion(eids, max_lapse=0.3, max_bias=0.4, min_trials=1, one=No
             else:
                 print('%s %s excluded (n_trials: %d, lapse_l: %.2f, lapse_r: %.2f, bias: %.2f)'
                       % (details['subject'], details['start_time'][:10], trials.shape[0], lapse_l, lapse_r, bias))
+                excl_eids.append(eid)
         except Exception:
             print('Could not load session %s' % eid)
-    return use_eids
+    if return_excluded:
+        return use_eids, excl_eids
+    else:
+        return use_eids
 
 
 def load_exp_smoothing_trials(eids, stimulated=None, rt_cutoff=0.2, after_probe_trials=0, stim_trial_shift=0,
-                              pseudo=False, patch_old_opto=True, min_trials=100, one=None):
+                              pseudo=False, patch_old_opto=False, min_trials=100, one=None):
     """
     Parameters
     ----------

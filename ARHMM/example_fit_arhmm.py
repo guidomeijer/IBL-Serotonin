@@ -11,6 +11,7 @@ import ssm
 from ssm.plots import gradient_cmap
 import matplotlib.pyplot as plt
 from serotonin_functions import figure_style
+from dlc_functions import smooth_interpolate_signal_sg
 
 
 T = 100  # number of time bins
