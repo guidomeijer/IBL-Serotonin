@@ -19,13 +19,13 @@ from one.api import ONE
 one = ONE()
 
 # Settings
-REMOVE_OLD_FIT = True
-TRIALS_AFTER_SWITCH = 10
+REMOVE_OLD_FIT = False
+TRIALS_AFTER_SWITCH = 20
 POSTERIOR = 'posterior_mean'
-_, fig_path, save_path = paths()
+fig_path, save_path = paths()
 fig_path = join(fig_path, 'Behavior', 'Models')
 
-subjects = load_subjects(behavior=True)
+subjects = load_subjects()
 
 results_df = pd.DataFrame()
 for i, nickname in enumerate(subjects['subject']):
@@ -63,7 +63,7 @@ for i, nickname in enumerate(subjects['subject']):
         continue
 
     # Fit models
-    model = exp_prev_action('./model_fit_results/', session_uuids, '%s_rt' % nickname,
+    model = exp_prev_action('./model_fit_results/', session_uuids, '%s_blockswitch_opto' % nickname,
                             actions, stimuli, stim_side, torch.tensor(stim_block))
     model.load_or_train(nb_steps=2000, remove_old=REMOVE_OLD_FIT)
     param_prevaction = model.get_parameters(parameter_type=POSTERIOR)
@@ -76,17 +76,40 @@ for i, nickname in enumerate(subjects['subject']):
 results_df = results_df.reset_index(drop=True)
 # %% Plot
 colors, dpi = figure_style()
-f, (ax1, ax2) = plt.subplots(1, 2, figsize=(4, 2), dpi=dpi)
-sns.lineplot(x='opto_stim', y='tau_pa', hue='block_switch', style='subject', estimator=None,
-             data=results_df[results_df['sert-cre'] == 1],
-             legend='brief', ax=ax1, palette=[colors['enhanced'], colors['suppressed']])
-ax1.set(xlabel='', ylabel='Lenght of integration window (tau)', title='SERT')
+f, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(3.5, 3.5), dpi=dpi)
 
-sns.lineplot(x='opto_stim', y='tau_pa', hue='block_switch', style='subject', estimator=None,
-             data=results_df[results_df['sert-cre'] == 0], dashes=False,
-             legend=None, ax=ax2, palette=[colors['enhanced'], colors['suppressed']])
-ax2.set(xlabel='', ylabel='Lenght of integration window (tau)', title='WT')
+sns.lineplot(x='opto_stim', y='tau_pa', hue='sert-cre', style='subject', estimator=None,
+             data=results_df[results_df['block_switch'] == 'early'],
+             dashes=False, markers=['o']*int(results_df.shape[0]/4),
+             hue_order=[1, 0], palette=[colors['sert'], colors['wt']],
+             legend=False, ax=ax1)
+ax1.set(xlabel='', ylabel='Length of integration window (tau)', xticks=[0, 1],
+        xticklabels=['No stim', 'Stim'],
+        title=f'Early block (<{TRIALS_AFTER_SWITCH} trials)')
+
+sns.lineplot(x='opto_stim', y='tau_pa', hue='sert-cre', style='subject', estimator=None,
+             data=results_df[results_df['block_switch'] == 'late'],
+             dashes=False, markers=['o']*int(results_df.shape[0]/4),
+             hue_order=[1, 0], palette=[colors['sert'], colors['wt']],
+             legend=False, ax=ax2)
+ax2.set(xlabel='', ylabel='Length of integration window (tau)', xticks=[0, 1],
+        xticklabels=['No stim', 'Stim'],
+        title=f'Late block (>{TRIALS_AFTER_SWITCH} trials)')
+
+sns.lineplot(x='block_switch', y='tau_pa', hue='opto_stim', style='subject', estimator=None,
+             data=results_df[results_df['sert-cre'] == 1],
+             dashes=False, markers=['o']*int(results_df.shape[0]/4),
+             hue_order=[1, 0], palette=[colors['stim'], colors['no-stim']],
+             legend=False, ax=ax3)
+ax3.set(xlabel='', ylabel='Length of integration window (tau)', title='SERT')
+
+sns.lineplot(x='block_switch', y='tau_pa', hue='opto_stim', style='subject', estimator=None,
+             data=results_df[results_df['sert-cre'] == 0],
+             dashes=False, markers=['o']*int(results_df.shape[0]/4),
+             hue_order=[1, 0], palette=[colors['stim'], colors['no-stim']],
+             legend=False, ax=ax4)
+ax4.set(xlabel='', ylabel='Length of integration window (tau)', title='WT')
 
 sns.despine(trim=True)
 plt.tight_layout()
-plt.savefig(join(fig_path, f'model_prevaction_block-switch_{TRIALS_AFTER_SWITCH}_trials.png'))
+plt.savefig(join(fig_path, 'model_prevaction_opto_block-switch.jpg'), dpi=600)

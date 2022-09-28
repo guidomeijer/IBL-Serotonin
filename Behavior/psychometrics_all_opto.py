@@ -21,16 +21,13 @@ one = ONE()
 PLOT_SINGLE_ANIMALS = True
 fig_path, _ = paths()
 fig_path = join(fig_path, 'Behavior', 'Psychometrics')
-subjects = load_subjects(behavior=True)
+subjects = load_subjects()
 
 bias_df, lapse_df, psy_df, ses_df = pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
 for i, nickname in enumerate(subjects['subject']):
 
     # Query sessions
     eids = query_opto_sessions(nickname, include_ephys=True, one=one)
-
-    # Exclude the first opto sessions
-    #eids = eids[:-1]
 
     # Apply behavioral criterion
     eids = behavioral_criterion(eids, one=one)
@@ -214,7 +211,7 @@ for i, nickname in enumerate(subjects['subject']):
                           color=colors['right'], linestyle='--')
         #ax1.text(-20, 0.75, '80% right', color=colors['right'])
         #ax1.text(20, 0.25, '80% left', color=colors['left'])
-        ax1.set(title='dashed line = opto stim')
+        ax1.set(title=f'{nickname}, SERT: {subjects.loc[i, "sert-cre"]}')
 
         catch_trials = trials[((trials['laser_probability'] == 0.75) & (trials['laser_stimulation'] == 0))
                               | ((trials['laser_probability'] == 0.25) & (trials['laser_stimulation'] == 1))]

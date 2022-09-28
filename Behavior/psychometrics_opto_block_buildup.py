@@ -19,7 +19,8 @@ one = ONE()
 
 # Settings
 N_TRIALS = 20
-_, fig_path, _ = paths()
+MIN_FIT_TRIALS = 20
+_, fig_path = paths()
 fig_path = join(fig_path, 'Behavior', 'Psychometrics')
 subjects = load_subjects()
 
@@ -27,7 +28,7 @@ bias_df, lapse_df, psy_df = pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
 for i, nickname in enumerate(subjects['subject']):
 
     # Query sessions
-    eids = query_opto_sessions(nickname, one=one)
+    eids = query_opto_sessions(nickname, include_ephys=True, one=one)
 
     # Exclude the first opto sessions
     #eids = eids[:-2]
@@ -70,39 +71,43 @@ for i, nickname in enumerate(subjects['subject']):
     for k in [1, 2, 3]:
         these_trials = trials[(trials['probabilityLeft'] == 0.8) & (trials['laser_stimulation'] == 1)
                               & (trials['block_progress'] == k)]
-        pars = fit_psychfunc(np.sort(these_trials['signed_contrast'].unique()),
-                             these_trials.groupby('signed_contrast').size(),
-                             these_trials.groupby('signed_contrast').mean()['right_choice'])
-        psy_df = psy_df.append(pd.DataFrame(index=[len(psy_df)+1], data={
-            'subject': nickname, 'sert-cre': subjects.loc[i, 'sert-cre'], 'opto_stim': 1, 'prob_left': 0.8, 'progress': k,
-            'bias': pars[0], 'threshold': pars[1], 'lapse_l': pars[2], 'lapse_r': pars[3]}))
+        if these_trials.shape[0] > MIN_FIT_TRIALS:
+            pars = fit_psychfunc(np.sort(these_trials['signed_contrast'].unique()),
+                                 these_trials.groupby('signed_contrast').size(),
+                                 these_trials.groupby('signed_contrast').mean()['right_choice'])
+            psy_df = psy_df.append(pd.DataFrame(index=[len(psy_df)+1], data={
+                'subject': nickname, 'sert-cre': subjects.loc[i, 'sert-cre'], 'opto_stim': 1, 'prob_left': 0.8, 'progress': k,
+                'bias': pars[0], 'threshold': pars[1], 'lapse_l': pars[2], 'lapse_r': pars[3]}))
 
         these_trials = trials[(trials['probabilityLeft'] == 0.2) & (trials['laser_stimulation'] == 1)
                               & (trials['block_progress'] == k)]
-        pars = fit_psychfunc(np.sort(these_trials['signed_contrast'].unique()),
-                             these_trials.groupby('signed_contrast').size(),
-                             these_trials.groupby('signed_contrast').mean()['right_choice'])
-        psy_df = psy_df.append(pd.DataFrame(index=[len(psy_df)+1], data={
-            'subject': nickname, 'sert-cre': subjects.loc[i, 'sert-cre'], 'opto_stim': 1, 'prob_left': 0.2, 'progress': k,
-            'bias': pars[0], 'threshold': pars[1], 'lapse_l': pars[2], 'lapse_r': pars[3]}))
+        if these_trials.shape[0] > MIN_FIT_TRIALS:
+            pars = fit_psychfunc(np.sort(these_trials['signed_contrast'].unique()),
+                                 these_trials.groupby('signed_contrast').size(),
+                                 these_trials.groupby('signed_contrast').mean()['right_choice'])
+            psy_df = psy_df.append(pd.DataFrame(index=[len(psy_df)+1], data={
+                'subject': nickname, 'sert-cre': subjects.loc[i, 'sert-cre'], 'opto_stim': 1, 'prob_left': 0.2, 'progress': k,
+                'bias': pars[0], 'threshold': pars[1], 'lapse_l': pars[2], 'lapse_r': pars[3]}))
 
         these_trials = trials[(trials['probabilityLeft'] == 0.8) & (trials['laser_stimulation'] == 0)
                               & (trials['block_progress'] == k)]
-        pars = fit_psychfunc(np.sort(these_trials['signed_contrast'].unique()),
-                             these_trials.groupby('signed_contrast').size(),
-                             these_trials.groupby('signed_contrast').mean()['right_choice'])
-        psy_df = psy_df.append(pd.DataFrame(index=[len(psy_df)+1], data={
-            'subject': nickname, 'sert-cre': subjects.loc[i, 'sert-cre'], 'opto_stim': 0, 'prob_left': 0.8, 'progress': k,
-            'bias': pars[0], 'threshold': pars[1], 'lapse_l': pars[2], 'lapse_r': pars[3]}))
+        if these_trials.shape[0] > MIN_FIT_TRIALS:
+            pars = fit_psychfunc(np.sort(these_trials['signed_contrast'].unique()),
+                                 these_trials.groupby('signed_contrast').size(),
+                                 these_trials.groupby('signed_contrast').mean()['right_choice'])
+            psy_df = psy_df.append(pd.DataFrame(index=[len(psy_df)+1], data={
+                'subject': nickname, 'sert-cre': subjects.loc[i, 'sert-cre'], 'opto_stim': 0, 'prob_left': 0.8, 'progress': k,
+                'bias': pars[0], 'threshold': pars[1], 'lapse_l': pars[2], 'lapse_r': pars[3]}))
 
         these_trials = trials[(trials['probabilityLeft'] == 0.2) & (trials['laser_stimulation'] == 0)
                               & (trials['block_progress'] == k)]
-        pars = fit_psychfunc(np.sort(these_trials['signed_contrast'].unique()),
-                             these_trials.groupby('signed_contrast').size(),
-                             these_trials.groupby('signed_contrast').mean()['right_choice'])
-        psy_df = psy_df.append(pd.DataFrame(index=[len(psy_df)+1], data={
-            'subject': nickname, 'sert-cre': subjects.loc[i, 'sert-cre'], 'opto_stim': 0, 'prob_left': 0.2, 'progress': k,
-            'bias': pars[0], 'threshold': pars[1], 'lapse_l': pars[2], 'lapse_r': pars[3]}))
+        if these_trials.shape[0] > MIN_FIT_TRIALS:
+            pars = fit_psychfunc(np.sort(these_trials['signed_contrast'].unique()),
+                                 these_trials.groupby('signed_contrast').size(),
+                                 these_trials.groupby('signed_contrast').mean()['right_choice'])
+            psy_df = psy_df.append(pd.DataFrame(index=[len(psy_df)+1], data={
+                'subject': nickname, 'sert-cre': subjects.loc[i, 'sert-cre'], 'opto_stim': 0, 'prob_left': 0.2, 'progress': k,
+                'bias': pars[0], 'threshold': pars[1], 'lapse_l': pars[2], 'lapse_r': pars[3]}))
 
 psy_df['bias_abs'] = psy_df['bias'].abs()
 psy_sum_df = psy_df.groupby(['subject', 'opto_stim', 'progress']).sum().reset_index()

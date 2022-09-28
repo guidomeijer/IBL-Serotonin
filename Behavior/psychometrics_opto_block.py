@@ -18,22 +18,20 @@ from one.api import ONE
 one = ONE()
 
 # Settings
+TRIALS_AFTER_SWITCH = 15
 PLOT_SINGLE_ANIMALS = True
 fig_path, _ = paths()
 fig_path = join(fig_path, 'Behavior', 'Psychometrics')
-subjects = load_subjects(behavior=True)
+subjects = load_subjects()
 
 bias_df, lapse_df, psy_df = pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
 for i, nickname in enumerate(subjects['subject']):
 
     # Query sessions
-    eids = query_opto_sessions(nickname, one=one)
-
-    # Exclude the first opto sessions
-    #eids = eids[:-1]
+    eids = query_opto_sessions(nickname, include_ephys=True, one=one)
 
     # Apply behavioral criterion
-    eids = behavioral_criterion(eids, one=one)
+    eids = behavioral_criterion(eids, max_lapse=0.5, max_bias=0.5, min_trials=200, one=one)
     if len(eids) == 0:
         continue
 
@@ -42,18 +40,27 @@ for i, nickname in enumerate(subjects['subject']):
     ses_count = 0
     for j, eid in enumerate(eids):
         try:
-            if subjects.loc[i, 'sert-cre'] == 1:
-                these_trials = load_trials(eid, laser_stimulation=True, one=one)
-            else:
-                these_trials = load_trials(eid, laser_stimulation=True, patch_old_opto=True, one=one)
+            these_trials = load_trials(eid, laser_stimulation=True, patch_old_opto=False, one=one)
         except:
             continue
+        these_trials['opto_block'] = 1
+        these_trials['laser_stim_block'] = these_trials['laser_stimulation'].copy()
+        these_trials.loc[(these_trials['laser_stimulation'] == 0)
+                         & (these_trials['laser_probability'] == 0.75), 'laser_stim_block'] = 1
+        these_trials.loc[(these_trials['laser_stimulation'] == 1)
+                         & (these_trials['laser_probability'] == 0.25), 'laser_stim_block'] = 0
+        opto_block_trans = np.where(np.diff(these_trials['laser_stim_block']) != 0)[0] + 1
+        for s, ind in enumerate(opto_block_trans):
+            these_trials.loc[ind:ind+TRIALS_AFTER_SWITCH, 'opto_block'] = 0
         these_trials['session'] = ses_count
         trials = pd.concat((trials, these_trials), ignore_index=True)
         ses_count = ses_count + 1
 
     if len(trials) == 0:
         continue
+
+    # Select trials in late laser blocks
+    trials = trials[trials['opto_block'] == 1]
 
     # Get bias from fitted curves
     bias_fit_stim = get_bias(trials.loc[(trials['laser_stimulation'] == 1) & (trials['probe_trial'] == 0)])
@@ -213,7 +220,7 @@ for i, nickname in enumerate(subjects['subject']):
                           color=colors['right'], linestyle='--')
         #ax1.text(-20, 0.75, '80% right', color=colors['right'])
         #ax1.text(20, 0.25, '80% left', color=colors['left'])
-        ax1.set(title=f'{nickname}, SERT: {subjects.loc[i, "sert-cre"]}')
+        ax1.set(title='dashed line = opto stim')
 
         catch_trials = trials[((trials['laser_probability'] == 0.75) & (trials['laser_stimulation'] == 0))
                               | ((trials['laser_probability'] == 0.25) & (trials['laser_stimulation'] == 1))]
@@ -255,7 +262,7 @@ for i, nickname in enumerate(subjects['subject']):
         sns.despine(trim=True)
         plt.tight_layout()
 
-        plt.savefig(join(fig_path, '%s_opto_behavior_psycurve.jpg' % nickname), dpi=600)
+        plt.savefig(join(fig_path, '%s_opto_behavior_psycurve_late_opto.png' % nickname), dpi=600)
 
 # %% Plot
 
@@ -342,8 +349,8 @@ ax8.set(xlabel='', xticks=[1, 2], xticklabels=['No stim', 'Stim'], ylabel='Perfo
 
 plt.tight_layout()
 sns.despine(trim=True)
-plt.savefig(join(fig_path, 'summary_psycurve.png'))
-plt.savefig(join(fig_path, 'summary_psycurve.pdf'))
+plt.savefig(join(fig_path, 'summary_psycurve_late_opto.png'))
+plt.savefig(join(fig_path, 'summary_psycurve_late_opto.pdf'))
 
 # %%
 """

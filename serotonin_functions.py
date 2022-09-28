@@ -179,12 +179,10 @@ def query_opto_sessions(subject, include_ephys=False, one=None):
     one = one or ONE()
     if include_ephys:
         sessions = one.alyx.rest('sessions', 'list', subject=subject,
-                                 task_protocol='_iblrig_tasks_opto_',
-                                 project='serotonin_inference')
+                                 task_protocol='_iblrig_tasks_opto_')
     else:
         sessions = one.alyx.rest('sessions', 'list', subject=subject,
-                                 task_protocol='_iblrig_tasks_opto_biasedChoiceWorld',
-                                 project='serotonin_inference')
+                                 task_protocol='_iblrig_tasks_opto_biasedChoiceWorld')
     return [sess['url'][-36:] for sess in sessions]
 
 
@@ -233,7 +231,7 @@ def query_ephys_sessions(aligned=True, behavior_crit=False, n_trials=0, acronym=
 
 
 def load_trials(eid, laser_stimulation=False, invert_choice=False, invert_stimside=False,
-                patch_old_opto=True, one=None):
+                patch_old_opto=False, one=None):
     one = one or ONE()
 
     data = one.load_object(eid, 'trials')
@@ -389,7 +387,7 @@ def get_full_region_name(acronyms):
         return full_region_names
 
 
-def behavioral_criterion(eids, max_lapse=0.3, max_bias=0.4, min_trials=1, return_excluded=False,
+def behavioral_criterion(eids, max_lapse=0.5, max_bias=0.5, min_trials=200, return_excluded=False,
                          one=None):
     if one is None:
         one = ONE()
@@ -449,8 +447,12 @@ def load_exp_smoothing_trials(eids, stimulated=None, rt_cutoff=0.2, after_probe_
     for j, eid in enumerate(eids):
         try:
             # Load in trials vectors
-            trials = load_trials(eid, invert_stimside=True, laser_stimulation=True,
-                                 patch_old_opto=patch_old_opto, one=one)
+            if stimulated is None:
+                trials = load_trials(eid, invert_stimside=True, laser_stimulation=False,
+                                     patch_old_opto=patch_old_opto, one=one)
+            else:
+                trials = load_trials(eid, invert_stimside=True, laser_stimulation=True,
+                                     patch_old_opto=patch_old_opto, one=one)
             if trials.shape[0] < min_trials:
                 continue
             if stimulated == 'all':

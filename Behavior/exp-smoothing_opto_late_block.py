@@ -23,11 +23,10 @@ one = ONE()
 
 # Settings
 TRIALS_AFTER_SWITCH = 20
-PLOT_EXAMPLES = True
-REMOVE_OLD_FIT = True
+REMOVE_OLD_FIT = False
 POSTERIOR = 'posterior_mean'
 STIM = 'block'
-_, fig_path, save_path = paths()
+fig_path, save_path = paths()
 fig_path = join(fig_path, 'Behavior', 'Models')
 
 subjects = load_subjects(behavior=True)
@@ -37,7 +36,7 @@ block_switches = pd.DataFrame()
 for i, nickname in enumerate(subjects['subject']):
 
     # Query sessions
-    eids = query_opto_sessions(nickname, one=one)
+    eids = query_opto_sessions(nickname, include_ephys=True, one=one)
     eids = behavioral_criterion(eids, one=one)
     if len(eids) == 0:
         continue
@@ -45,12 +44,8 @@ for i, nickname in enumerate(subjects['subject']):
         eids = eids[:10]
 
     # Get trial data
-    if subjects.loc[i, 'sert-cre'] == 1:
-        actions, stimuli, stim_side, prob_left, stim_trials, session_uuids = load_exp_smoothing_trials(
-            eids, stimulated=STIM, patch_old_opto=True, one=one)
-    else:
-        actions, stimuli, stim_side, prob_left, stim_trials, session_uuids = load_exp_smoothing_trials(
-            eids, stimulated=STIM, patch_old_opto=False, one=one)
+    actions, stimuli, stim_side, prob_left, stim_trials, session_uuids = load_exp_smoothing_trials(
+        eids, stimulated=STIM, patch_old_opto=False, one=one)
 
     # Make array of after block switch trials
     block_switch = np.ones(prob_left.shape)
@@ -62,38 +57,38 @@ for i, nickname in enumerate(subjects['subject']):
         for s, ind in enumerate(block_trans):
             block_switch[k][ind:ind+TRIALS_AFTER_SWITCH] = 0
 
-    laser_late_block = ((stim_trials == 1) & (block_switch == 1)).astype(int)
+    late_block = (block_switch == 1).astype(int)
 
     # Fit model
     model = exp_prev_action('./model_fit_results/', session_uuids, '%s_late_laser_block' % nickname,
-                            actions, stimuli, stim_side, torch.tensor(laser_late_block))
+                            actions, stimuli, stim_side, torch.tensor(late_block))
     model.load_or_train(nb_steps=2000, remove_old=REMOVE_OLD_FIT)
     param_prevaction = model.get_parameters(parameter_type=POSTERIOR)
     priors_prevaction = model.compute_signal(signal='prior', act=actions, stim=stimuli, side=stim_side)['prior']
 
     # Add to df
     results_df = results_df.append(pd.DataFrame(data={'tau_pa': [1/param_prevaction[0], 1/param_prevaction[1]],
-                                                      'opto_stim': ['no stim', 'stim'],
+                                                      'late_block': ['early', 'late'],
                                                       'sert-cre': subjects.loc[i, 'sert-cre'],
                                                       'subject': nickname}))
 
 # %% Plot
 
 colors, dpi = figure_style()
-colors = [colors['wt'], colors['sert']]
 f, (ax1, ax2) = plt.subplots(1, 2, figsize=(3, 2), dpi=dpi, sharey=False)
 
-for i, subject in enumerate(results_df['subject']):
-    ax1.plot([1, 2], results_df.loc[(results_df['subject'] == subject), 'tau_pa'],
-             color = colors[results_df.loc[results_df['subject'] == subject, 'sert-cre'].unique()[0]],
-             marker='o', ms=2)
+
+sns.lineplot(x='late_block', y='tau_pa', hue='sert-cre', style='subject', estimator=None,
+             data=results_df, dashes=False, markers=['o']*int(results_df.shape[0]/2),
+             hue_order=[1, 0], palette=[colors['sert'], colors['wt']],
+             legend=False, ax=ax1)
 
 handles, labels = ax1.get_legend_handles_labels()
 labels = ['', 'WT', 'SERT']
 ax1.legend(handles[:3], labels[:3], frameon=False, prop={'size': 7}, loc='center left', bbox_to_anchor=(1, .5))
 ax1.set(xlabel='', ylabel='Length of integration window (tau)', title='Previous actions',
-        xticks=[1, 2], xticklabels=['No stim', 'Stim'], ylim=[0, 15])
+        xticks=[0, 1], xticklabels=['Early block', 'Late block'], ylim=[0, 30])
 
 sns.despine(trim=True)
 plt.tight_layout()
-plt.savefig(join(fig_path, 'exp-smoothing_opto_late_laser_block'), dpi=300)
+plt.savefig(join(fig_path, 'exp-smoothing_early_late_block.jpg'), dpi=600)

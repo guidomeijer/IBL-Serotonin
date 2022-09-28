@@ -13,6 +13,7 @@ import numpy as np
 from os.path import join
 import pandas as pd
 import numpy as np
+import torch
 import matplotlib.pyplot as plt
 from datetime import datetime
 import seaborn as sns
@@ -27,7 +28,9 @@ one = ONE()
 # Settings
 REMOVE_OLD_FIT = False
 POSTERIOR = 'posterior_mean'
-_, fig_path, save_path = paths()
+N_SES = 10
+MIN_TRIALS = 400
+fig_path, save_path = paths()
 fig_path = join(fig_path, 'Behavior', 'Models')
 subjects = load_subjects()
 
@@ -36,12 +39,11 @@ accuracy_df = pd.DataFrame()
 for i, nickname in enumerate(subjects['subject']):
 
     # Stimulated sessions
-    eids = query_opto_sessions(nickname, one=one)
-    eids = behavioral_criterion(eids, one=one)
+    eids = query_opto_sessions(nickname, include_ephys=True, one=one)
+    eids = behavioral_criterion(eids, min_trials=MIN_TRIALS, one=one)
     if len(eids) < 2:
         continue
-    if len(eids) > 5:
-        eids = eids[:5]
+    eids = eids[:N_SES]
     details = [one.get_details(i) for i in eids]
     stim_dates = [datetime.strptime(i, '%Y-%m-%d') for i in [j['start_time'][:10] for j in details]]
 
@@ -50,7 +52,7 @@ for i, nickname in enumerate(subjects['subject']):
 
     # Fit optimal bayesian model
     model = opt_bayes('./model_fit_results/', session_uuids, f'{nickname}',
-                      actions, stimuli, stim_side)
+                      torch.tensor(actions), torch.tensor(stimuli), torch.tensor(stim_side))
     model.load_or_train(nb_steps=2000, remove_old=REMOVE_OLD_FIT)
     accuracy_bayes = model.compute_signal(signal='score', act=actions, stim=stimuli, side=stim_side,
                                           parameter_type=POSTERIOR)['accuracy']
@@ -79,15 +81,18 @@ for i, nickname in enumerate(subjects['subject']):
 
     # Non stimulated sessions
     eids = one.search(subject=nickname, task_protocol='_iblrig_tasks_biasedChoiceWorld')
-    eids = behavioral_criterion(eids, one=one)
     details = [one.get_details(i) for i in eids]
     no_stim_dates = [datetime.strptime(i, '%Y-%m-%d') for i in [j['start_time'][:10] for j in details]]
     pre_dates = [i for i in no_stim_dates if i < np.min(stim_dates)]
     eids = one.search(subject=nickname, task_protocol='_iblrig_tasks_biasedChoiceWorld',
-                      date_range=[str(pre_dates[4])[:10], str(pre_dates[0])[:10]])
+                      date_range=[pre_dates[-1], pre_dates[0]])
+    eids = behavioral_criterion(eids, min_trials=MIN_TRIALS, one=one)
+    eids = eids[:N_SES]
 
     # Get trial data
     actions, stimuli, stim_side, prob_left, session_uuids = load_exp_smoothing_trials(eids, one=one)
+    if len(session_uuids) == 0:
+        continue
 
     # Fit optimal bayesian model
     model = opt_bayes('./model_fit_results/', session_uuids, f'{nickname}',
