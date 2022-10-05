@@ -112,7 +112,8 @@ sns.barplot(x='perc_FS_mod', y='full_region', data=summary_df, color=colors['FS'
             order=ordered_regions_FS['full_region'], label='FS')
 #summary_df[['perc_RS_mod', 'perc_FS_mod']].plot(kind='bar', stacked=True)
 
-ax1.set(ylabel='', xlabel='Fraction of modulated neurons')
+ax1.set(ylabel='', xlabel='Fraction of modulated neurons', xticks=[0, 25, 50, 75, 100])
+#ax1.plot([0, 0], ax1.get_ylim(), color=colors['grey'], ls='--')
 """
 ax1.text(95, -1, 'n =', ha='center', va='center', fontsize=6)
 ax1.text(110, -1, 'FS', ha='center', va='center', fontsize=6, fontweight='bold', color=colors['FS'])
@@ -123,7 +124,7 @@ for i, region_name in enumerate(ordered_regions_FS['full_region']):
     ax1.text(125, i, summary_df.loc[summary_df['full_region'] == region_name, 'n_RS'].values[0].astype(int),
              va='center', ha='center', fontsize=6)
 """
-ax1.text(110, -1, 'Mod. neurons', ha='center', va='center', fontsize=6)
+ax1.text(110, -1, 'Mod. neurons (n)', ha='center', va='center', fontsize=6)
 for i, region_name in enumerate(ordered_regions_FS['full_region']):
     ax1.text(110, i, summary_df.loc[summary_df['full_region'] == region_name, 'modulated'].values[0].astype(int),
              va='center', ha='center', fontsize=6)

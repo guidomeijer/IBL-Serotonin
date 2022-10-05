@@ -11,7 +11,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from scipy.stats import wilcoxon
 from os.path import join
-from serotonin_functions import paths, figure_style, load_subjects
+from serotonin_functions import paths, figure_style, load_subjects, combine_regions
 
 # Settings
 MIN_NEURONS = 30
@@ -26,6 +26,7 @@ neuron_type = pd.read_csv(join(save_path, 'neuron_type.csv'))
 neuron_type = neuron_type[neuron_type['type'] != 'Und.']
 neuron_type['neuron_id'] = neuron_type['cluster_id']
 merged_df = pd.merge(light_neurons, neuron_type, on=['neuron_id', 'pid', 'eid', 'probe'])
+merged_df['merged_region'] = combine_regions(merged_df['region'], abbreviate=True)
 
 # Drop root and void
 merged_df = merged_df.reset_index(drop=True)
@@ -58,6 +59,8 @@ per_mouse_df['perc_mod'] = (per_mouse_df['modulated'] / per_mouse_df['n_neurons'
 per_mouse_df['perc_enh'] = (per_mouse_df['enhanced_late'] / per_mouse_df['n_neurons']) * 100
 per_mouse_df['perc_supp'] = (per_mouse_df['suppressed_late'] / per_mouse_df['n_neurons']) * 100
 per_mouse_df = per_mouse_df.reset_index()
+
+
 
 # %%
 colors, dpi = figure_style()
@@ -92,6 +95,7 @@ ax1.set(xticks=[1.5, 3.5], xticklabels=['Enhanced', 'Suppressed'], ylabel='Modul
 sns.despine(trim=False)
 plt.tight_layout()
 plt.savefig(join(fig_path, 'enh_supp_perc.pdf'))
+
 
 
 
