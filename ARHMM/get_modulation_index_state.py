@@ -26,9 +26,9 @@ K = 2    # number of discrete states
 D = 25   # dimension of the observations
 T_BEFORE = 0.5
 PRE_TIME = [0.5, 0]  # for modulation index
-POST_TIME = [0.5, 1]
+POST_TIME = [0, 0.5]
 FM_DIR = '/media/guido/Data2/Facemap/'  # dir with facemap data
-OVERWRITE = False
+OVERWRITE = True
 
 # Get path
 _, save_path = paths()
@@ -49,10 +49,14 @@ for i, path in enumerate(fm_files):
     # Get session data
     subject = path[-40:-31]
     date = path[-30:-20]
-    eid = one.search(subject=subject, date_range=date)[0]
-
-    if eid in state_mod_df['eid'].values:
+    try:
+        eid = one.search(subject=subject, date_range=date)[0]
+    except:
         continue
+
+    if not OVERWRITE:
+        if eid in state_mod_df['eid'].values:
+            continue
 
     print(f'Starting {subject}, {date}')
 
