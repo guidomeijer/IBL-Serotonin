@@ -9,7 +9,9 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
+import seaborn.objects as so
 from os.path import join
+from scipy.stats import pearsonr
 from serotonin_functions import paths, figure_style, combine_regions, load_subjects, high_level_regions
 
 # Settings
@@ -133,4 +135,37 @@ for i, region_name in enumerate(ordered_regions_FS['full_region']):
 sns.despine(trim=True)
 plt.tight_layout()
 plt.savefig(join(fig_path, 'ratio_mod_neurons.pdf'))
+
+# %%
+
+f, (ax1, ax2) = plt.subplots(1, 2, figsize=(3, 2), dpi=dpi)
+
+sns.barplot(x='perc_mod_RS', y='full_region', data=summary_df, color=colors['RS'], ax=ax1,
+            order=ordered_regions_FS['full_region'], label='RS')
+ax1.set(ylabel='', xticks=[0, 25, 50, 75], xlabel='% RS neurons')
+
+sns.barplot(x='perc_mod_FS', y='full_region', data=summary_df, color=colors['FS'], ax=ax2,
+            order=ordered_regions_FS['full_region'], label='FS')
+ax2.set(ylabel='', xticks=[0, 25, 50, 75], yticklabels=[], xlabel='% FS neurons')
+
+sns.despine(trim=True)
+plt.tight_layout()
+
+# %%
+
+f, ax1 = plt.subplots(1, 1, figsize=(1.75, 1.75), dpi=dpi)
+
+(
+     so.Plot(summary_df, x='perc_mod_FS', y='perc_mod_RS')
+     .add(so.Dot(pointsize=2))
+     .add(so.Line(color='k', linewidth=1), so.PolyFit(order=1))
+     .label(x='Narrow/fast spiking (%)', y='Regular spiking (%)')
+     .on(ax1)
+     .plot()
+)
+ax1.set(xticks=[0, 25, 50, 75], yticks=[0, 25, 50, 75])
+r, p = pearsonr(summary_df['perc_mod_FS'], summary_df['perc_mod_RS'])
+
+sns.despine(trim=True)
+plt.tight_layout()
 

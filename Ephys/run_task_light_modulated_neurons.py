@@ -33,6 +33,7 @@ T_BEFORE = 1  # for plotting
 T_AFTER = 2
 PRE_TIME = [0.5, 0]  # for significance testing
 POST_TIME = [0, 0.5]
+STIM_TIME = [0.5, 1]  # time for stimulation testing
 BIN_SIZE = 0.05
 fig_path, save_path = paths()
 fig_path = join(fig_path, 'Ephys', 'SingleNeurons', 'TaskNeurons')
@@ -134,8 +135,8 @@ for i in rec.index.values:
 
     # Determine stimulus evoked light modulated neurons
     roc_auc, neuron_ids = roc_between_two_events(spikes.times, spikes.clusters, trials['goCue_times'],
-                                                 trials['laser_stimulation'], pre_time=POST_TIME[0],
-                                                 post_time=POST_TIME[1])
+                                                 trials['laser_stimulation'], pre_time=-STIM_TIME[0],
+                                                 post_time=STIM_TIME[1])
     roc_stim_mod = 2 * (roc_auc - 0.5)
 
     print(f'Running {ITERATIONS} pseudo block shuffles..')
@@ -149,15 +150,30 @@ for i in rec.index.values:
         pseudo_pre_roc[k, :] = 2 * (this_pseudo_roc - 0.5)
         this_pseudo_roc = roc_between_two_events(spikes.times, spikes.clusters,
                                                  trials['goCue_times'], (pseudo_blocks == 0.2).astype(int),
-                                                 pre_time=POST_TIME[0], post_time=POST_TIME[1])[0]
+                                                 pre_time=-STIM_TIME[0], post_time=STIM_TIME[1])[0]
         pseudo_post_roc[k, :] = 2 * (this_pseudo_roc - 0.5)
 
     # Use shuffled null distribution to get significance
     prior_mod = ((prior_roc > np.percentile(pseudo_pre_roc, 97.5, axis=0))
                  | (prior_roc < np.percentile(pseudo_pre_roc, 2.5, axis=0)))
     print(f'Found {np.sum(prior_mod)} prior modulated neurons')
-    stim_mod = ((roc_stim_mod > np.percentile(pseudo_post_roc, 97.5, axis=0))
-                | (roc_stim_mod < np.percentile(pseudo_post_roc, 2.5, axis=0)))
+    stim_mod_permut = ((roc_stim_mod > np.percentile(pseudo_post_roc, 97.5, axis=0))
+                       | (roc_stim_mod < np.percentile(pseudo_post_roc, 2.5, axis=0)))
+
+    # Do statistic tests to get significance
+    zero_contr_trials = trials[trials['signed_contrast'] == 0]
+    stim_mod_p = differentiate_units(spikes.times, spikes.clusters, zero_contr_trials['goCue_times'],
+                                     zero_contr_trials['laser_stimulation'], pre_time=0, post_time=0.5)[2]
+    stim_mod = stim_mod_p < 0.05
+    stim_mod_p = differentiate_units(spikes.times, spikes.clusters, zero_contr_trials['goCue_times'],
+                                     zero_contr_trials['laser_stimulation'], pre_time=0.5, post_time=1)[2]
+    stim_mod[stim_mod_p < 0.05] = True
+    stim_mod_p = differentiate_units(spikes.times, spikes.clusters, zero_contr_trials['goCue_times'],
+                                     zero_contr_trials['laser_stimulation'], pre_time=1, post_time=1.5)[2]
+    stim_mod[stim_mod_p < 0.05] = True
+    stim_mod_p = differentiate_units(spikes.times, spikes.clusters, zero_contr_trials['goCue_times'],
+                                     zero_contr_trials['laser_stimulation'], pre_time=1.5, post_time=2)[2]
+    stim_mod[stim_mod_p < 0.05] = True
     print(f'Found {np.sum(stim_mod)} opto modulated neurons')
 
     # Add results to df
@@ -169,7 +185,8 @@ for i in rec.index.values:
         'prior_roc': prior_roc,
         'choice_no_stim_roc': choice_no_stim_roc, 'choice_stim_roc': choice_stim_roc,
         'choice_stim_p': choice_stim_p, 'choice_no_stim_p': choice_no_stim_p,
-        'opto_modulated': stim_mod, 'prior_modulated': prior_mod, 'opto_mod_roc': roc_stim_mod})))
+        'opto_mod_permut': stim_mod_permut, 'opto_modulated': stim_mod, 'prior_modulated': prior_mod,
+        'opto_mod_roc': roc_stim_mod})))
 
     if PLOT:
         colors, dpi = figure_style()
@@ -180,14 +197,15 @@ for i in rec.index.values:
             # Plot PSTH
             p, ax = plt.subplots(1, 1, figsize=(1.75, 1.75), dpi=dpi)
             peri_multiple_events_time_histogram(
-                spikes.times, spikes.clusters, trials['goCue_times'], trials['laser_stimulation'],
+                spikes.times, spikes.clusters, zero_contr_trials['goCue_times'],
+                zero_contr_trials['laser_stimulation'],
                 neuron_id, t_before=T_BEFORE, t_after=T_AFTER, bin_size=BIN_SIZE, ax=ax,
                 pethline_kwargs=[{'color': colors['no-stim'], 'lw': 1}, {'color': colors['stim'], 'lw': 1}],
                 errbar_kwargs=[{'color': colors['no-stim'], 'alpha': 0.3}, {'color': colors['stim'], 'alpha': 0.3}],
                 raster_kwargs=[{'color': colors['no-stim'], 'lw': 0.5}, {'color': colors['stim'], 'lw': 0.5}],
                 eventline_kwargs={'lw': 0}, include_raster=True)
             ax.set(ylabel='Firing rate (spikes/s)', xlabel='Time from first lick (s)',
-                   yticks=np.linspace(0, np.round(ax.get_ylim()[1]), 3), xticks=[-1, 0, 1, 2, 3, 4])
+                   yticks=np.linspace(0, np.round(ax.get_ylim()[1]), 3), xticks=[-1, 0, 1, 2])
             if np.round(ax.get_ylim()[1]) % 2 == 0:
                 ax.yaxis.set_major_formatter(FormatStrFormatter('%.0f'))
             else:

@@ -26,7 +26,7 @@ save_path = join(save_path)
 # Load in results
 stim_neurons = pd.read_csv(join(save_path, 'task_modulated_neurons.csv'))
 light_neurons = pd.read_csv(join(save_path, 'light_modulated_neurons.csv'))
-all_neurons = pd.merge(stim_neurons, light_neurons, on=['subject', 'date', 'neuron_id', 'eid', 'region', 'probe'])
+all_neurons = pd.merge(stim_neurons, light_neurons, on=['subject', 'date', 'neuron_id', 'eid', 'region', 'probe', 'pid'])
 all_neurons['high_level_region'] = high_level_regions(all_neurons['region'])
 
 # Add expression
@@ -65,6 +65,16 @@ grouped_df['spont_perc'] = (all_neurons.groupby('subject').sum()['modulated']
 grouped_df['task_perc'] = (all_neurons.groupby('subject').sum()['opto_modulated']
                            / all_neurons.groupby('subject').size()) * 100
 
+all_neurons['task_roc_abs'] = all_neurons['task_roc'].abs()
+grouped_df['mod_choice_roc'] = all_neurons[all_neurons['modulated']].groupby('subject').mean()['task_roc_abs']
+grouped_df['no_mod_choice_roc'] = all_neurons[~all_neurons['modulated']].groupby('subject').mean()['task_roc_abs']
+
+grouped_df['choice_stim_roc'] = all_neurons.groupby('subject').mean()['choice_stim_roc']
+grouped_df['choice_no_stim_roc'] = all_neurons.groupby('subject').mean()['choice_no_stim_roc']
+
+all_neurons['choice_diff'] = all_neurons['choice_no_stim_roc'] - all_neurons['choice_stim_roc']
+grouped_df['choice_diff'] = all_neurons.groupby('subject').mean()['choice_diff']
+
 all_neurons['choice_roc_abs'] = all_neurons['choice_no_stim_roc'].abs()
 grouped_df['choice_mod_roc'] = all_neurons[all_neurons['modulated']].groupby('subject').mean()['choice_roc_abs']
 grouped_df['choice_no_mod_roc'] = all_neurons[~all_neurons['modulated']].groupby('subject').mean()['choice_roc_abs']
@@ -73,6 +83,12 @@ all_neurons['opto_mod_abs'] = all_neurons['opto_mod_roc'].abs()
 grouped_df['spont_opto_mod'] = all_neurons[all_neurons['modulated'] | all_neurons['opto_modulated']].groupby('subject').mean()['mod_index_abs']
 grouped_df['task_opto_mod'] = all_neurons[all_neurons['modulated'] | all_neurons['opto_modulated']].groupby('subject').mean()['opto_mod_abs']
 
+all_neurons['choice_stim_roc_abs'] = all_neurons['choice_stim_roc'].abs()
+all_neurons['choice_no_stim_roc_abs'] = all_neurons['choice_no_stim_roc'].abs()
+grouped_df['choice_stim_roc'] = all_neurons.groupby('subject').mean()['choice_stim_roc']
+grouped_df['choice_no_stim_roc'] = all_neurons.groupby('subject').mean()['choice_no_stim_roc']
+grouped_df['choice_stim_roc_abs'] = all_neurons.groupby('subject').mean()['choice_stim_roc_abs']
+grouped_df['choice_no_stim_roc_abs'] = all_neurons.groupby('subject').mean()['choice_no_stim_roc_abs']
 
 grouped_df = grouped_df.reset_index()
 for i, nickname in enumerate(np.unique(grouped_df['subject'])):
@@ -85,82 +101,39 @@ colors, dpi = figure_style()
 f, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(3.5, 3.5), gridspec_kw={'width_ratios':[1.5,1]}, dpi=dpi)
 ax1.plot([0, 0], [-1, 1], color=[.5, .5, .5], ls='--', zorder=0)
 ax1.plot([-1, 1], [0, 0], color=[.5, .5, .5], ls='--', zorder=0)
+mod_neurons = sert_neurons[sert_neurons['opto_modulated'] | sert_neurons['modulated']]
 (
-     so.Plot(sert_neurons, x='mod_index_late', y='opto_mod_roc')
+     so.Plot(mod_neurons, x='task_roc', y='mod_index_late')
      .add(so.Dot(pointsize=2), color='sig_modulation')
      .add(so.Line(color='k', linewidth=1), so.PolyFit(order=1))
      .limit(x=[-1, 1], y=[-1, 1])
-     .label(x='Spontaneous 5-HT modulation', y='Task evoked 5-TH modulation')
+     .label(x='Task modulation', y='Spontaneous 5-TH modulation')
      .on(ax1)
      .plot()
 )
-r, p = pearsonr(sert_neurons.loc[(sert_neurons['opto_modulated'] | (sert_neurons['modulated'])), 'mod_index_late'],
-                sert_neurons.loc[(sert_neurons['opto_modulated'] | (sert_neurons['modulated'])), 'opto_mod_roc'])
-#ax1.text(0.3, -0.8, f'r = {r:.2f}', fontsize=7)
-ax1.legend(frameon=False, prop={'size': 5}, loc='upper left')
-legend = f.legends.pop(0)
-ax1.legend(legend.legendHandles, [t.get_text() for t in legend.texts], frameon=False,
-           prop={'size': 5}, loc='upper left')
-
+r, p = pearsonr(mod_neurons['task_roc'], mod_neurons['mod_index_late'])
+ax1.text(0.4, -0.9, f'r = {r:.2f}', fontsize=7)
 
 for i in grouped_df[grouped_df['sert-cre'] == 1].index:
-    ax2.plot([1, 2], [grouped_df.loc[i, 'spont_opto_mod'], grouped_df.loc[i, 'task_opto_mod']], '-o',
+    ax2.plot([1, 2], [grouped_df.loc[i, 'choice_stim_roc'], grouped_df.loc[i, 'choice_no_stim_roc']], '-o',
              color=colors['sert'], markersize=2)
 for i in grouped_df[grouped_df['sert-cre'] == 0].index:
-    ax2.plot([1, 2], [grouped_df.loc[i, 'spont_opto_mod'], grouped_df.loc[i, 'task_opto_mod']], '-o',
+    ax2.plot([1, 2], [grouped_df.loc[i, 'choice_stim_roc'], grouped_df.loc[i, 'choice_no_stim_roc']], '-o',
              color=colors['wt'], markersize=2)
-ax2.set(ylabel='Modulation index', xticks=[1, 2], xticklabels=['Spontaneous', 'Task'],
-        yticks=[0, 0.1, 0.2, 0.3, 0.4])
+ax2.set(ylabel='Modulation index', xticks=[1, 2], xticklabels=['Stim', 'No-stim'])
 
-ax3.pie(sert_neurons.groupby('sig_modulation').size(), colors=[sns.color_palette()[2],
-                                                               sns.color_palette()[1],
-                                                               sns.color_palette()[0]])
-
+mod_neurons['choice_diff'] = mod_neurons['choice_no_stim_roc'] - mod_neurons['choice_stim_roc']
+sns.boxplot(y='choice_diff', data=mod_neurons, ax=ax3)
 
 for i in grouped_df[grouped_df['sert-cre'] == 1].index:
-    ax4.plot([1, 2], [grouped_df.loc[i, 'spont_perc'], grouped_df.loc[i, 'task_perc']], '-o',
+    ax4.plot([1, 2], [grouped_df.loc[i, 'mod_choice_roc'], grouped_df.loc[i, 'no_mod_choice_roc']], '-o',
              color=colors['sert'], markersize=2)
 for i in grouped_df[grouped_df['sert-cre'] == 0].index:
-    ax4.plot([1, 2], [grouped_df.loc[i, 'spont_perc'], grouped_df.loc[i, 'task_perc']], '-o',
+    ax4.plot([1, 2], [grouped_df.loc[i, 'mod_choice_roc'], grouped_df.loc[i, 'no_mod_choice_roc']], '-o',
              color=colors['wt'], markersize=2)
-ax4.set(ylabel='Modulated neurons (%)', xticks=[1, 2], xticklabels=['Spontaneous', 'Task'],
-        yticks=[0, 10, 20, 30, 40, 50, 60, 70])
+ax4.set(ylabel='Modulation index', xticks=[1, 2], xticklabels=['Stim', 'No-stim'])
 
-plt.tight_layout()
 sns.despine(trim=True)
-plt.savefig(join(fig_path, 'Ephys', 'stim_vs_light_modulation.png'))
-plt.savefig(join(fig_path, 'Ephys', 'stim_vs_light_modulation.pdf'))
+plt.tight_layout()
 
-# %%
-
-f, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(4, 4), dpi=dpi)
-ax1.plot([0, 0], [-1, 1], color=[.5, .5, .5], ls='--')
-ax1.plot([-1, 1], [0, 0], color=[.5, .5, .5], ls='--')
-
-ax1.scatter(all_neurons.loc[all_neurons['modulated'], 'mod_index_late'],
-            all_neurons.loc[all_neurons['modulated'], 'prior_roc'],
-            color=colors['sert'], s=6)
-ax1.set(ylim=[-1, 1], xlim=[-1, 1], xlabel='5-HT modulation', ylabel='Prior modulation')
-
-ax2.plot([0, 0], [-1, 1], color=[.5, .5, .5], ls='--')
-ax2.plot([-1, 1], [0, 0], color=[.5, .5, .5], ls='--')
-ax2.scatter(all_neurons.loc[all_neurons['modulated'], 'mod_index_late'],
-            all_neurons.loc[all_neurons['modulated'], 'choice_no_stim_roc'],
-            color=colors['sert'], s=6)
-ax2.set(ylim=[-1, 1], xlim=[-1, 1], xlabel='5-HT modulation', ylabel='Choice modulation')
-
-for i in grouped_df[grouped_df['sert-cre'] == 1].index:
-    ax3.plot([1, 2], [grouped_df.loc[i, 'choice_mod_roc'], grouped_df.loc[i, 'choice_no_mod_roc']],
-             color=colors['sert'])
-for i in grouped_df[grouped_df['sert-cre'] == 0].index:
-    ax3.plot([1, 2], [grouped_df.loc[i, 'choice_mod_roc'], grouped_df.loc[i, 'choice_no_mod_roc']],
-             color=colors['wt'])
-
-
-for i in grouped_df[grouped_df['sert-cre'] == 1].index:
-    ax4.plot([1, 2], [grouped_df.loc[i, 'prior_no_opto'], grouped_df.loc[i, 'prior_opto']],
-             color=colors['sert'])
-for i in grouped_df[grouped_df['sert-cre'] == 0].index:
-    ax4.plot([1, 2], [grouped_df.loc[i, 'prior_no_opto'], grouped_df.loc[i, 'prior_opto']],
-             color=colors['wt'])
 

@@ -12,7 +12,10 @@ import matplotlib.pyplot as plt
 from os.path import join
 from serotonin_functions import paths, figure_style, load_subjects, plot_scalar_on_slice
 from ibllib.atlas import AllenAtlas
+from ibllib.atlas.flatmaps import plot_swanson
 ba = AllenAtlas(res_um=10)
+from ibllib.atlas import BrainRegions
+br = BrainRegions()
 
 # %% Settings
 
@@ -87,5 +90,9 @@ cbar.ax.set_yticks([-CLIM, 0, CLIM])
 
 plt.savefig(join(fig_path, 'brain_map_modulation.pdf'))
 
+# %%
 
+f, ax1 = plt.subplots(1, 1, figsize=(3, 3), dpi=dpi)
+plot_swanson(reg_neurons['region'].values, reg_neurons['mod_late'].values, ax=ax1,
+             br=br, cmap=CMAP, empty_color='w')
 

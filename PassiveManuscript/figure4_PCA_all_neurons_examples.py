@@ -32,9 +32,13 @@ fig_path = join(fig_path, 'PaperPassive', 'figure4')
 pca_df = pd.read_csv(join(save_path, 'pca_all_neurons.csv'))
 
 # Create colormap
-blues = cm.get_cmap('Blues_r', 256)(np.linspace(0, 1, 600))[200:500]
+pre = cm.get_cmap('Greys', 256)(np.linspace(0, 1, 100))
+stim = cm.get_cmap('cool', 256)(np.linspace(0, 1, 100))
+post = cm.get_cmap('Wistia_r', 256)(np.linspace(0, 1, 300))
+
 blue = [0.1, 0.4, 0.68, 1]
-color_array = np.vstack([np.tile([.7, .7, .7, 1], (100, 1)), np.tile(blue, (100, 1)), blues])
+#color_array = np.vstack([np.tile([.7, .7, .7, 1], (100, 1)), np.tile(blue, (100, 1)), blues])
+color_array = np.vstack([pre, stim, post])
 newcmp = ListedColormap(color_array)
 
 # Plot
@@ -56,6 +60,9 @@ cb_ax = f.add_axes([0.9, 0.2, 0.01, 0.6])
 cbar = plt.colorbar(sp, cax=cb_ax)
 cbar.ax.set_ylabel('Time (s)', rotation=270, labelpad=10)
 cbar.ax.set_yticks([-1, 0, 1, 2, 3, 4])
+cbar.ax.text(-1.7, 0.5, 'stim', rotation=90, ha='center', va='center')
+cbar.ax.text(-1.7, -0.5, 'pre', rotation=90, ha='center', va='center')
+cbar.ax.text(-1.7, 2.5, 'post', rotation=90, ha='center', va='center')
 
 #plt.colorbar(sp)
 
