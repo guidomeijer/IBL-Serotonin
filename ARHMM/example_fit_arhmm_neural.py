@@ -8,12 +8,13 @@ By: Guido Meijer
 import numpy as np
 import seaborn as sns
 import ssm
-from ssm.plots import gradient_cmap
 import matplotlib.pyplot as plt
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 from serotonin_functions import figure_style, get_neuron_qc, load_passive_opto_times
 from brainbox.io.one import SpikeSortingLoader
+from matplotlib import cm
+from matplotlib.colors import ListedColormap
 from brainbox.singlecell import calculate_peths
 from ibllib.atlas import AllenAtlas
 from one.api import ONE
@@ -63,14 +64,8 @@ zhat = arhmm.most_likely_states(pca_proj[:N_FRAMES, :])
 transition_mat = arhmm.transitions.transition_matrix
 
 # %% Plot
-color_names = [
-    "windows blue",
-    "red",
-    "amber",
-    "faded green"
-    ]
-colors = sns.xkcd_palette(color_names)
-cmap = gradient_cmap(colors)
+color_names = ["faded green", "red", "amber", "windows blue"]
+cmap = ListedColormap(sns.xkcd_palette(color_names))
 colors, dpi = figure_style()
 
 time_ax = np.linspace(0, N_FRAMES/FRAME_RATE, N_FRAMES)
