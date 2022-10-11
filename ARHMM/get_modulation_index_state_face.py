@@ -106,7 +106,7 @@ for i, path in enumerate(fm_files):
             pre_state[j] = 0
         else:
             pre_state[j] = 1
-
+    asdsad
     # Loop over probes
     insertions = one.alyx.rest('insertions', 'list', session=eid)
     pids = [i['id'] for i in insertions]
