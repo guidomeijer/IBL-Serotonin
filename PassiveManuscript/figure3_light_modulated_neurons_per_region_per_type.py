@@ -151,6 +151,8 @@ ax2.set(ylabel='', xticks=[0, 25, 50, 75], yticklabels=[], xlabel='% FS neurons'
 sns.despine(trim=True)
 plt.tight_layout()
 
+plt.savefig(join(fig_path, 'perc_mod_neurons.pdf'))
+
 # %%
 
 f, ax1 = plt.subplots(1, 1, figsize=(1.75, 1.75), dpi=dpi)

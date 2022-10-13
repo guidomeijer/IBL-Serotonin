@@ -172,7 +172,9 @@ for i, eid in enumerate(np.unique(rec['eid'])):
     pca_df = pd.concat((pca_df, pd.DataFrame(data={
         'subject': subject, 'date': date, 'eid': eid, 'time': time, 'n_neurons': pop_opto.shape[1],
         'pca_dist': pca_dist_opto, 'pca_dist_spont': pca_dist_spont, 'pop_dist_opto': pop_dist_opto,
-        'pca1': pca_opto[:, 0], 'pca2': pca_opto[:, 1], 'pca3': pca_opto[:, 2]})), ignore_index=True)
+        'pca1': pca_opto[:, 0], 'pca2': pca_opto[:, 1], 'pca3': pca_opto[:, 2],
+        'pca1_spont': pca_spont[:, 0], 'pca2_spont': pca_spont[:, 1], 'pca3_spont': pca_spont[:,2]})),
+        ignore_index=True)
 
     pca_df.to_csv(join(save_path, 'pca_all_neurons.csv'), index=False)
 

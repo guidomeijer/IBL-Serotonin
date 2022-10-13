@@ -43,7 +43,8 @@ newcmp = ListedColormap(color_array)
 
 # Plot
 colors, dpi = figure_style()
-f, (ax1, ax2, ax_cb) = plt.subplots(1, 3, figsize=(4, 1.75), gridspec_kw={'width_ratios': [1, 1, 0.15]}, dpi=dpi)
+f, (ax1, ax2, ax3, ax_cb) = plt.subplots(1, 4, figsize=(5.25, 1.75),
+                                         gridspec_kw={'width_ratios': [1, 1, 1, 0.15]}, dpi=dpi)
 
 df_slice = pca_df[(pca_df['subject'] == SERT_SUB) & (pca_df['date'] == SERT_DATE)]
 sp = ax1.scatter(df_slice['pca1'], df_slice['pca2'], c=df_slice['time'], cmap=newcmp)
@@ -54,6 +55,11 @@ df_slice = pca_df[(pca_df['subject'] == WT_SUB) & (pca_df['date'] == WT_DATE)]
 sp = ax2.scatter(df_slice['pca1'], df_slice['pca2'], c=df_slice['time'], cmap=newcmp)
 ax2.axis('off')
 ax2.set(xlabel='PC 1', ylabel='PC 2', title='WT')
+
+df_slice = pca_df[(pca_df['subject'] == SERT_SUB) & (pca_df['date'] == SERT_DATE)]
+sp = ax3.scatter(df_slice['pca1_spont'], df_slice['pca2_spont'], c=df_slice['time'], cmap=newcmp)
+ax3.axis('off')
+ax3.set(xlabel='PC 1', ylabel='PC 2', title='Spontaneous')
 
 ax_cb.axis('off')
 cb_ax = f.add_axes([0.9, 0.2, 0.01, 0.6])
