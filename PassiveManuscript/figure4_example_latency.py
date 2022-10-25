@@ -65,9 +65,9 @@ sl = SpikeSortingLoader(pid=pid, one=one, atlas=ba)
 spikes, clusters, channels = sl.load_spike_sorting()
 clusters = sl.merge_clusters(spikes, clusters, channels)
 
-# Plot PSTH
+# %% Plot PSTH
 colors, dpi = figure_style()
-p, ax = plt.subplots(1, 1, figsize=(2, 2), dpi=dpi)
+p, ax = plt.subplots(1, 1, figsize=(1.75, 2), dpi=dpi)
 ax.add_patch(Rectangle((0, 0), 1, 100, color='royalblue', alpha=0.25, lw=0))
 ax.add_patch(Rectangle((0, 0), 1, -100, color='royalblue', alpha=0.25, lw=0))
 

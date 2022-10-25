@@ -16,15 +16,14 @@ from serotonin_functions import paths, figure_style, combine_regions, load_subje
 MIN_NEURONS_POOLED = 5
 MIN_NEURONS_PER_MOUSE = 12
 MIN_MOD_NEURONS = 10
-MIN_REC = 2
+MIN_REC = 1
 
 # Paths
 fig_path, save_path = paths(dropbox=True)
-fig_path = join(fig_path, 'PaperPassive', 'figure2')
+fig_path = join(fig_path, 'PaperPassive', 'figureX')
 
 # Load in results
-light_neurons = pd.read_csv(join(save_path, 'light_modulated_neurons.csv'))
-mod_idx_df = pd.read_pickle(join(save_path, 'mod_over_time.pickle'))
+light_neurons = pd.read_csv(join(save_path, 'light_modulated_neurons_anesthesia.csv'))
 
 # Add expression
 subjects = load_subjects()

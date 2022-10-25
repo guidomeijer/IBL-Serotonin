@@ -28,5 +28,9 @@ for i, ins in enumerate(all_ins):
         print('More than one alignment found!')
         continue
     align_qc = AlignmentQC(ins_id, one=one)
-    align_qc.resolve_manual(list(alignment_keys)[0])
+    try:
+        align_qc.resolve_manual(list(alignment_keys)[0])
+    except Exception as err:
+        print(err)
+        pass
 

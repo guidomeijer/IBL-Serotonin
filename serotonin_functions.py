@@ -43,11 +43,13 @@ DATE_LIGHT_SHIELD = '2021-06-08'
 DATE_OPTO_RAMP = '2022-02-14'
 
 
-def load_subjects(behavior=None):
+def load_subjects(anesthesia=None, behavior=None):
     subjects = pd.read_csv(join(pathlib.Path(__file__).parent.resolve(), 'subjects.csv'))
     subjects = subjects[~((subjects['expression'] == 0) & (subjects['sert-cre'] == 1))]
     if behavior:
         subjects = subjects[subjects['include_behavior'] == 1]
+    if anesthesia:
+        subjects = subjects[subjects['anesthesia'] == 1]
     subjects = subjects.reset_index(drop=True)
     return subjects
 
@@ -76,24 +78,25 @@ def figure_style():
     sns.set(style="ticks", context="paper",
             font="Arial",
             rc={"font.size": 7,
-                 "axes.titlesize": 7,
-                 "axes.labelsize": 7,
-                 "axes.linewidth": 0.5,
-                 "lines.linewidth": 1,
-                 "lines.markersize": 3,
-                 "xtick.labelsize": 7,
-                 "ytick.labelsize": 7,
-                 "savefig.transparent": True,
-                 "xtick.major.size": 2.5,
-                 "ytick.major.size": 2.5,
-                 "xtick.major.width": 0.5,
-                 "ytick.major.width": 0.5,
-                 "xtick.minor.size": 2,
-                 "ytick.minor.size": 2,
-                 "xtick.minor.width": 0.5,
-                 "ytick.minor.width": 0.5,
-                 'legend.fontsize': 7,
-                 'legend.title_fontsize': 7
+                "figure.titlesize": 7,
+                "axes.titlesize": 7,
+                "axes.labelsize": 7,
+                "axes.linewidth": 0.5,
+                "lines.linewidth": 1,
+                "lines.markersize": 3,
+                "xtick.labelsize": 7,
+                "ytick.labelsize": 7,
+                "savefig.transparent": True,
+                "xtick.major.size": 2.5,
+                "ytick.major.size": 2.5,
+                "xtick.major.width": 0.5,
+                "ytick.major.width": 0.5,
+                "xtick.minor.size": 2,
+                "ytick.minor.size": 2,
+                "xtick.minor.width": 0.5,
+                "ytick.minor.width": 0.5,
+                'legend.fontsize': 7,
+                'legend.title_fontsize': 7
                  })
     matplotlib.rcParams['pdf.fonttype'] = 42
     matplotlib.rcParams['ps.fonttype'] = 42
@@ -101,8 +104,8 @@ def figure_style():
               'grey': [0.75, 0.75, 0.75],
               'sert': sns.color_palette('Dark2')[0],
               'wt': [0.75, 0.75, 0.75],
-              'left': sns.color_palette('colorblind')[1],
-              'right': sns.color_palette('colorblind')[0],
+              'awake': sns.color_palette('colorblind')[1],
+              'anesthesia': sns.color_palette('colorblind')[0],
               'enhanced': sns.color_palette('colorblind')[3],
               'suppressed': sns.color_palette('colorblind')[0],
               'stim': sns.color_palette('colorblind')[9],
@@ -168,7 +171,7 @@ def remove_artifact_neurons(df):
             df[column] = df[column].astype('boolean')
     if 'pid' in df.columns:
         df = pd.merge(df, artifact_neurons, indicator=True, how='outer',
-                      on=['pid', 'neuron_id']).query('_merge=="left_only"').drop('_merge', axis=1)
+                      on=['pid', 'neuron_id', 'subject', 'probe', 'date']).query('_merge=="left_only"').drop('_merge', axis=1)
     else:
         df = pd.merge(df, artifact_neurons, indicator=True, how='outer',
                       on=['subject', 'probe', 'date', 'neuron_id']).query('_merge=="left_only"').drop('_merge', axis=1)
@@ -186,7 +189,8 @@ def query_opto_sessions(subject, include_ephys=False, one=None):
     return [sess['url'][-36:] for sess in sessions]
 
 
-def query_ephys_sessions(aligned=True, behavior_crit=False, n_trials=0, acronym=None, one=None):
+def query_ephys_sessions(aligned=True, behavior_crit=False, n_trials=0, anesthesia=False,
+                         acronym=None, one=None):
     if one is None:
         one = ONE()
 
@@ -216,7 +220,7 @@ def query_ephys_sessions(aligned=True, behavior_crit=False, n_trials=0, acronym=
             ins = ins + one.alyx.rest('insertions', 'list', django=DJANGO_STR, atlas_acronym=ac)
 
     # Only include subjects from subjects.csv
-    incl_subjects = load_subjects()
+    incl_subjects = load_subjects(anesthesia=anesthesia)
     ins = [i for i in ins if i['session_info']['subject'] in incl_subjects['subject'].values]
 
     # Get list of eids and probes
@@ -310,9 +314,9 @@ def combine_regions(acronyms, split_thalamus=False, abbreviate=False):
         regions[np.in1d(acronyms, ['PAG'])] = 'PAG'
         regions[np.in1d(acronyms, ['RL', 'IF', 'IPN', 'CLI', 'DR'])] = 'Raphe'
         regions[np.in1d(acronyms, ['SSp-bfd'])] = 'BC'
-        regions[np.in1d(acronyms, ['LGv', 'LGd'])] = 'LG'
+        #regions[np.in1d(acronyms, ['LGv', 'LGd'])] = 'LG'
         regions[np.in1d(acronyms, ['PIR'])] = 'Pir'
-        regions[np.in1d(acronyms, ['SNr', 'SNc', 'SNl'])] = 'SN'
+        #regions[np.in1d(acronyms, ['SNr', 'SNc', 'SNl'])] = 'SN'
         regions[np.in1d(acronyms, ['VISa', 'VISam'])] = 'PPC'
         regions[np.in1d(acronyms, ['MEA', 'CEA', 'BLA', 'COAa'])] = 'Amyg'
         regions[np.in1d(acronyms, ['AON', 'TTd', 'DP'])] = 'OLF'
@@ -339,9 +343,9 @@ def combine_regions(acronyms, split_thalamus=False, abbreviate=False):
         regions[np.in1d(acronyms, ['PAG'])] = 'Periaqueductal gray'
         regions[np.in1d(acronyms, ['RL', 'IF', 'IPN', 'CLI', 'DR'])] = 'Raphe nucleus'
         regions[np.in1d(acronyms, ['SSp-bfd'])] = 'Barrel cortex'
-        regions[np.in1d(acronyms, ['LGv', 'LGd'])] = 'Lateral geniculate'
+        #regions[np.in1d(acronyms, ['LGv', 'LGd'])] = 'Lateral geniculate'
         regions[np.in1d(acronyms, ['PIR'])] = 'Piriform'
-        regions[np.in1d(acronyms, ['SNr', 'SNc', 'SNl'])] = 'Substantia nigra'
+        #regions[np.in1d(acronyms, ['SNr', 'SNc', 'SNl'])] = 'Substantia nigra'
         regions[np.in1d(acronyms, ['VISa', 'VISam'])] = 'Posterior parietal cortex'
         regions[np.in1d(acronyms, ['MEA', 'CEA', 'BLA', 'COAa'])] = 'Amygdala'
         regions[np.in1d(acronyms, ['CP', 'STR', 'STRd', 'STRv'])] = 'Tail of the striatum'
@@ -519,7 +523,7 @@ def load_exp_smoothing_trials(eids, stimulated=None, rt_cutoff=0.2, after_probe_
         return actions, stimuli, stim_side, prob_left, session_uuids
 
 
-def load_passive_opto_times(eid, one=None, force_rerun=False):
+def load_passive_opto_times(eid, one=None, force_rerun=False, anesthesia=False):
     """
     Load in the time stamps of the optogenetic stimulation at the end of the recording, after the
     taks and the spontaneous activity. Or when it's a long stimulation session with different
@@ -535,11 +539,23 @@ def load_passive_opto_times(eid, one=None, force_rerun=False):
     if one is None:
         one = ONE()
 
+    # See if this is an anesthesia session
+    anesthesia_sub = load_subjects(anesthesia=True)
+    subject = one.get_details(eid)['subject']
+    if subject in anesthesia_sub['subject'].values:
+        anesthesia_ses = True
+    else:
+        anesthesia_ses = False
+
     # Load in pulses from disk if already extracted
     session_path = one.eid2path(eid)
-    if isfile(join(session_path, 'opto_train_times.npy')) & ~force_rerun:
+    if isfile(join(session_path, 'opto_train_times.npy')) & ~force_rerun & ~anesthesia:
         opto_train_times = np.load(join(session_path, 'opto_train_times.npy'))
         opto_on_times = np.load(join(session_path, 'opto_on_times.npy'))
+        return opto_train_times, opto_on_times
+    elif isfile(join(session_path, 'opto_train_times_anesthesia.npy')) & ~force_rerun & anesthesia:
+        opto_train_times = np.load(join(session_path, 'opto_train_times_anesthesia.npy'))
+        opto_on_times = np.load(join(session_path, 'opto_on_times_anesthesia.npy'))
         return opto_train_times, opto_on_times
     else:
         # Load in laser pulses
@@ -553,9 +569,15 @@ def load_passive_opto_times(eid, one=None, force_rerun=False):
                 '_spikeglx_ephysData_g1_t0.nidq.ch'], download_only=True)
         nidq_file = glob(str(session_path.joinpath('raw_ephys_data/_spikeglx_ephysData_g*_t0.nidq.cbin')))[-1]
         sr = spikeglx.Reader(nidq_file)
-        offset = int((sr.shape[0] / sr.fs - 720) * sr.fs)
-        opto_trace = sr.read_sync_analog(slice(offset, sr.shape[0]))[:, 1]
-        opto_times = np.arange(offset, sr.shape[0]) / sr.fs
+        if anesthesia_ses & ~anesthesia:
+            offset = int(300 * sr.fs)
+            end = int(1020 * sr.fs)
+            opto_trace = sr.read_sync_analog(slice(offset, end))[:, 1]
+            opto_times = np.arange(offset, end) / sr.fs
+        else:
+            offset = int((sr.shape[0] / sr.fs - 720) * sr.fs)
+            opto_trace = sr.read_sync_analog(slice(offset, sr.shape[0]))[:, 1]
+            opto_times = np.arange(offset, sr.shape[0]) / sr.fs
 
         # Get start times of pulse trains
         opto_on_times = opto_times[np.concatenate((np.diff(opto_trace), [0])) > 1]
@@ -616,8 +638,12 @@ def load_passive_opto_times(eid, one=None, force_rerun=False):
             opto_on_times = np.concatenate(opto_on_times)
 
             # Save extracted pulses to disk
-            np.save(join(session_path, 'opto_train_times.npy'), opto_train_times)
-            np.save(join(session_path, 'opto_on_times.npy'), opto_on_times)
+            if anesthesia:
+                np.save(join(session_path, 'opto_train_times_anesthesia.npy'), opto_train_times)
+                np.save(join(session_path, 'opto_on_times_anesthesia.npy'), opto_on_times)
+            else:
+                np.save(join(session_path, 'opto_train_times.npy'), opto_train_times)
+                np.save(join(session_path, 'opto_on_times.npy'), opto_on_times)
 
             return opto_train_times, opto_on_times
 
@@ -633,8 +659,12 @@ def load_passive_opto_times(eid, one=None, force_rerun=False):
         opto_on_times = opto_on_times[first_pulse:]
 
         # Save extracted pulses to disk
-        np.save(join(session_path, 'opto_train_times.npy'), opto_train_times)
-        np.save(join(session_path, 'opto_on_times.npy'), opto_on_times)
+        if anesthesia:
+            np.save(join(session_path, 'opto_train_times_anesthesia.npy'), opto_train_times)
+            np.save(join(session_path, 'opto_on_times_anesthesia.npy'), opto_on_times)
+        else:
+            np.save(join(session_path, 'opto_train_times.npy'), opto_train_times)
+            np.save(join(session_path, 'opto_on_times.npy'), opto_on_times)
 
         return opto_train_times, opto_on_times
 

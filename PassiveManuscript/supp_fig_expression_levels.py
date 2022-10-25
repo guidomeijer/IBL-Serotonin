@@ -18,7 +18,7 @@ from ibllib.atlas import AllenAtlas
 ba = AllenAtlas()
 
 # Settings
-RAW_DATA_PATH = '/media/guido/Data2/FlatIron/mainenlab/Subjects/'
+RAW_DATA_PATH = 'E:\\Flatiron\\mainenlab\\Subjects'
 AP_EXT = [-4400, -4600]
 EXP_WIN_XY = [190, 130]  # top left point
 CTRL_WIN_XY = [190, 85]
@@ -33,7 +33,7 @@ subjects = rec['subject'].unique()
 subject_info = load_subjects()
 
 colors, dpi = figure_style()
-f, axs = plt.subplots(3, int(np.ceil(len(subjects)/3)), figsize=(7, 4), dpi=dpi)
+f, axs = plt.subplots(3, int(np.ceil(len(subjects)/3)) + 1, figsize=(7, 4), dpi=dpi)
 axs = np.concatenate(axs)
 expr_df = pd.DataFrame()
 for i, subject in enumerate(subjects):
@@ -83,12 +83,15 @@ for i, subject in enumerate(subjects):
     expr_df = pd.concat((expr_df, pd.DataFrame(index=[expr_df.shape[0]+1], data={
         'subject': subject, 'sert-cre': sert_cre, 'rel_fluo': rel_fluo})))
 
+for i in range(i+1, len(axs)-1):
+    axs[i].axis('off')
+
 # Save output
 expr_df.to_csv(join(save_path, 'expression_levels.csv'))
 
 # Plot overview plot
 
-f.subplots_adjust(bottom=0.3, left=0.32, right=0.88, top=0.9, ax=axs[-1])
+f.subplots_adjust(bottom=0.3, left=0.32, right=0.88, top=0.9)
 sns.swarmplot(x='sert-cre', y='rel_fluo', data=expr_df, order=[1, 0], size=3,
               palette=[colors['sert'], colors['wt']], ax=axs[-1])
 axs[-1].set(xticklabels=['SERT', 'WT'], ylabel='Relative fluoresence (%)', xlabel='',

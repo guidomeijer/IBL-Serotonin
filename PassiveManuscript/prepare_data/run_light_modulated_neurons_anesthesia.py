@@ -22,23 +22,22 @@ ba = AllenAtlas()
 one = ONE()
 
 # Settings
-OVERWRITE = False
+OVERWRITE = True
 NEURON_QC = True
 PRE_TIME = [0.5, 0]  # for modulation index
 POST_TIME_EARLY = [0, 0.5]
 POST_TIME_LATE = [0.5, 1]
 BIN_SIZE = 0.05
 MIN_FR = 0.1
-fig_path, save_path = paths()
-fig_path = join(fig_path, 'Ephys', 'SingleNeurons', 'LightModNeurons')
+_, save_path = paths()
 
 # Query sessions
-rec = query_ephys_sessions(one=one)
+rec = query_ephys_sessions(anesthesia=True, one=one)
 
 if OVERWRITE:
     light_neurons = pd.DataFrame()
 else:
-    light_neurons = pd.read_csv(join(save_path, 'light_modulated_neurons.csv'))
+    light_neurons = pd.read_csv(join(save_path, 'light_modulated_neurons_anesthesia.csv'))
     rec = rec[~rec['eid'].isin(light_neurons['eid'])]
 
 for i in rec.index.values:
@@ -51,7 +50,7 @@ for i in rec.index.values:
 
     # Load in laser pulse times
     try:
-        opto_train_times, _ = load_passive_opto_times(eid, one=one)
+        opto_train_times, _ = load_passive_opto_times(eid, anesthesia=True, one=one)
     except:
         print('Session does not have passive laser pulses')
         continue
@@ -186,11 +185,11 @@ for i in rec.index.values:
         'latency_peak': latency_peak, 'latency_peak_onset': latency_peak_onset})))
 
     # Save output for this insertion
-    light_neurons.to_csv(join(save_path, 'light_modulated_neurons.csv'), index=False)
+    light_neurons.to_csv(join(save_path, 'light_modulated_neurons_anesthesia.csv'), index=False)
     print('Saved output to disk')
-
+    
 # Remove artifact neurons
 light_neurons = remove_artifact_neurons(light_neurons)
 
 # Save output
-light_neurons.to_csv(join(save_path, 'light_modulated_neurons.csv'), index=False)
+light_neurons.to_csv(join(save_path, 'light_modulated_neurons_anesthesia.csv'), index=False)

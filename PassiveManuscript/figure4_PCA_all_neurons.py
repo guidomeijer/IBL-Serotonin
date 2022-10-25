@@ -54,9 +54,9 @@ plt.savefig(join(fig_path, 'PCA_opto_all_neurons.pdf'))
 f, ax1 = plt.subplots(1, 1, figsize=(1.75, 1.75), dpi=dpi)
 ax1.add_patch(Rectangle((0, 0), 1, 100, color='royalblue', alpha=0.25, lw=0))
 sns.lineplot(x='time', y='pca_dist_spont', ax=ax1, legend='brief', errorbar='se',
-             data=pca_df[pca_df['sert-cre'] == 1], color=colors['wt'], label='Spont.')
+             data=pca_df[pca_df['sert-cre'] == 1], color=colors['wt'], label='Control')
 sns.lineplot(x='time', y='pca_dist', ax=ax1, legend='brief', errorbar='se',
-             data=pca_df[pca_df['sert-cre'] == 1], color=colors['sert'], label='Opto')
+             data=pca_df[pca_df['sert-cre'] == 1], color=colors['sert'], label='5-HT stim')
 ax1.set(xlim=[-1, 4], xlabel='Time (s)', ylabel='PCA trajectory distance\nfrom baseline (a.u.)',
         xticks=[-1, 0, 1, 2, 3, 4], ylim=[4, 14], yticks=[4, 14])
 leg = ax1.legend(prop={'size': 5}, loc='upper right', title='')

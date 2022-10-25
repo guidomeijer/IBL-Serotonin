@@ -37,18 +37,20 @@ for i, region in enumerate(np.unique(mod_idx_df['full_region'])):
         continue
     for ind in mod_idx_df[mod_idx_df['full_region'] == region].index.values:
         mod_long_df = pd.concat((mod_long_df, pd.DataFrame(data={
-            'time': time_ax, 'abs_mod_idx': np.abs(mod_idx_df.loc[ind, 'mod_idx']),
+            'time': time_ax, 'mod_idx': mod_idx_df.loc[ind, 'mod_idx'],
             'region': region})), ignore_index=True)
 
 # %% Plot
 colors, dpi = figure_style()
 f, ax1 = plt.subplots(1, 1, figsize=(2, 1.75), dpi=dpi)
 ax1.add_patch(Rectangle((0, 0), 1, 1, color='royalblue', alpha=0.25, lw=0))
-sns.lineplot(x='time', y='abs_mod_idx', data=mod_long_df, hue='region', ci=68, ax=ax1,
+sns.lineplot(x='time', y='mod_idx', data=mod_long_df[(mod_long_df['region'] == 'Frontal')],
+             hue='region', errorbar='se', ax=ax1, legend=None,
              palette=colors)
-ax1.set(xlim=[-1, 4], ylim=[0.05, 0.26], ylabel='Absolute modulation index', xlabel='Time (s)')
-leg = ax1.legend(title='', bbox_to_anchor=(0.9, 0.45, 0.2, 0.4), prop={'size': 5})
-leg.get_frame().set_linewidth(0.0)
+ax1.set(xlim=[-1, 3], ylim=[0, 0.125], ylabel='Modulation index', xlabel='Time (s)',
+        title='Frontal cortex')
+#leg = ax1.legend(title='', bbox_to_anchor=(0.9, 0.45, 0.2, 0.4), prop={'size': 5})
+#leg.get_frame().set_linewidth(0.0)
 
 sns.despine(trim=True)
 plt.tight_layout()

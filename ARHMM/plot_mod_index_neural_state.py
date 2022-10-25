@@ -56,3 +56,4 @@ ax3.set(ylabel='Modulation index', xticks=[0, 1], xticklabels=['Low', 'High'], x
 
 sns.despine(trim=True)
 plt.tight_layout()
+plt.savefig(join(fig_path, 'mod_index_neural_state.jpg'), dpi=600)

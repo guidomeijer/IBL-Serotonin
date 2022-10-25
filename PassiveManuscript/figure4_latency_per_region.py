@@ -8,6 +8,7 @@ By: Guido Meijer
 import numpy as np
 import pandas as pd
 import seaborn as sns
+import seaborn.objects as so
 import matplotlib.pyplot as plt
 from os.path import join
 from serotonin_functions import (paths, figure_style, load_subjects, plot_scalar_on_slice,
@@ -31,8 +32,6 @@ for i, nickname in enumerate(np.unique(subjects['subject'])):
 
 # Only modulated neurons in sert-cre mice
 sert_neurons = all_neurons[(all_neurons['sert-cre'] == 1) & (all_neurons['modulated'] == 1)]
-
-# Transform to ms
 sert_neurons['latency'] = sert_neurons['latency_peak_onset']
 
 # Get percentage modulated per region
@@ -56,6 +55,13 @@ ordered_regions = sert_neurons.groupby('full_region').median().sort_values('late
 # Convert to log scale
 sert_neurons['log_latency'] = np.log10(sert_neurons['latency'])
 
+# Get absolute
+sert_neurons['mod_index_abs'] = sert_neurons['mod_index_late'].abs()
+
+# Group by region
+grouped_df = sert_neurons.groupby('full_region').median(numeric_only=True)
+grouped_df['latency'] = grouped_df['latency'] * 1000
+
 # %%
 
 colors, dpi = figure_style()
@@ -76,4 +82,33 @@ for i, region in enumerate(ordered_regions['full_region']):
 plt.tight_layout()
 sns.despine(trim=True, offset=3)
 plt.savefig(join(fig_path, 'modulation_latency_per_region.pdf'))
+
+# %% 
+
+f, (ax1, ax2) = plt.subplots(1, 2, figsize=(3.5, 1.75), dpi=dpi)
+(
+     so.Plot(grouped_df, x='mod_index_late', y='latency')
+     .add(so.Dot(pointsize=2.5))
+     .add(so.Line(color='k', linewidth=1), so.PolyFit(order=1))
+     .label(x='Modulation index', y='Modulation latency (ms)')
+     .on(ax1)
+     .plot()
+)
+ax1.set(yticks=[0, 200, 400, 600], xticks=[-0.4, -0.2, 0, 0.2])
+
+(
+     so.Plot(grouped_df, x='mod_index_abs', y='latency')
+     .add(so.Dot(pointsize=2.5))
+     .add(so.Line(color='k', linewidth=1), so.PolyFit(order=1))
+     .label(x='Absolute modulation index', y='Modulation latency (ms)')
+     .on(ax2)
+     .plot()
+)
+ax2.set(yticks=[0, 200, 400, 600], xticks=[0, 0.25, 0.5])
+
+sns.despine(offset=2, trim=True)
+plt.tight_layout()
+plt.savefig(join(fig_path, 'modulation_latency_vs_index.pdf'))
+
+
 
