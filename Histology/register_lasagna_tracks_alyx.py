@@ -26,20 +26,10 @@ from ibllib.pipes import histology
 # ======== EDIT FOR USERS ====
 
 # Edit so as to reflect the directory containing your electrode tracks
-path_tracks = "E:\\Histology\\ZFM-03320\\tracks"
-
-EXAMPLE_OVERWRITE = False  # Put to False when wanting to run the script on your data
-
-# ALYX_URL = "https://dev.alyx.internationalbrainlab.org"  # FOR TESTING
-ALYX_URL = "https://alyx.internationalbrainlab.org"  # UNCOMMENT WHEN READY
+path_tracks = "/home/guido/Histology/ZFM-04083/tracks/new"
 
 # ======== DO NOT EDIT BELOW ====
+ALYX_URL = "https://alyx.internationalbrainlab.org"
 one = ONE(base_url=ALYX_URL)
-
-if EXAMPLE_OVERWRITE:
-    # TODO Olivier : Function to download examples folder
-    cachepath = Path(one.alyx.cache_dir)
-    path_tracks = cachepath.joinpath('examples', 'histology', 'tracks_to_add')
-
 histology.register_track_files(path_tracks=path_tracks, one=one, overwrite=True)
 histology.detect_missing_histology_tracks(path_tracks=path_tracks, one=one)

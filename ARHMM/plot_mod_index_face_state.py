@@ -14,7 +14,7 @@ from serotonin_functions import paths, load_subjects, figure_style
 fig_path, data_path = paths()
 
 # Load data
-state_mod_neurons = pd.read_csv(join(data_path, 'neural_state_modulation.csv'))
+state_mod_neurons = pd.read_csv(join(data_path, 'state_modulation.csv'))
 opto_mod_neurons = pd.read_csv(join(data_path, 'light_modulated_neurons.csv'))
 all_neurons = pd.merge(state_mod_neurons, opto_mod_neurons, on=['eid', 'pid', 'subject', 'date',
                                                                 'neuron_id', 'region'])

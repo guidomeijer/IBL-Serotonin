@@ -24,7 +24,8 @@ one = ONE()
 
 K = 2    # number of discrete states
 D = 25   # dimension of the observations
-T_BEFORE = 0.5
+T_BEFORE = 0  # for state classification
+T_AFTER = 0.5
 PRE_TIME = [0.5, 0]  # for modulation index
 POST_TIME = [0, 0.5]
 FM_DIR = '/media/guido/Data2/Facemap/'  # dir with facemap data
@@ -101,12 +102,12 @@ for i, path in enumerate(fm_files):
     # Get state per stimulation onset
     pre_state = np.empty(opto_times.shape)
     for j, opto_time in enumerate(opto_times):
-        pre_zhat = zhat[(fm_times > opto_time - T_BEFORE) & (fm_times <= opto_time)]
+        pre_zhat = zhat[(fm_times > opto_time - T_BEFORE) & (fm_times <= opto_time + T_AFTER)]
         if np.sum(pre_zhat == 0) > np.sum(pre_zhat == 1):
             pre_state[j] = 0
         else:
             pre_state[j] = 1
-    asdsad
+
     # Loop over probes
     insertions = one.alyx.rest('insertions', 'list', session=eid)
     pids = [i['id'] for i in insertions]
