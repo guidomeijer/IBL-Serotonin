@@ -50,7 +50,7 @@ for i in rec.index.values:
 
     # Load in laser pulse times
     try:
-        opto_train_times, _ = load_passive_opto_times(eid, anesthesia=True, one=one)
+        opto_train_times, _ = load_passive_opto_times(eid, anesthesia=False, one=one)
     except:
         print('Session does not have passive laser pulses')
         continue
@@ -187,7 +187,7 @@ for i in rec.index.values:
     # Save output for this insertion
     light_neurons.to_csv(join(save_path, 'light_modulated_neurons_anesthesia.csv'), index=False)
     print('Saved output to disk')
-    
+
 # Remove artifact neurons
 light_neurons = remove_artifact_neurons(light_neurons)
 
