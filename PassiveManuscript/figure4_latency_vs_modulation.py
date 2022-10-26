@@ -131,17 +131,21 @@ plt.savefig(join(fig_path, 'modulation_vs_latency_hippocampus.pdf'))
 f, (ax1, ax2) = plt.subplots(1, 2, figsize=(3.5, 1.75), dpi=dpi)
 
 (
-     so.Plot(sert_neurons[sert_neurons['full_region'] == 'Medial prefrontal cortex'],
+     so.Plot(sert_neurons[(sert_neurons['full_region'] == 'Medial prefrontal cortex')
+                          & (sert_neurons['type'] != 'Und.')],
              x='mod_index_late', y='latency')
      .add(so.Dot(pointsize=2), color='type')
      .add(so.Line(color='k', linewidth=1), so.PolyFit(order=1))
+     .scale(color=[colors['RS'], colors['FS']])
      .limit(x=[-1, 1], y=[-15, 1000])
-     .label(x='Modulation index', y='Modulation latency (ms)',
-            title='Medial prefrontal cortex')
+     .label(x='Modulation index', y='Modulation latency (ms)')
      .on(ax1)
      .plot()
 )
 ax1.set(title='Medial prefrontal cortex')
+legend = f.legends.pop(0)
+ax1.legend(legend.legendHandles, ['RS', 'NS'], frameon=False,
+           prop={'size': 6}, handletextpad=0, bbox_to_anchor=[0.3, 1])
 
 (
      so.Plot(sert_neurons[sert_neurons['full_region'] == 'Medial prefrontal cortex'],
