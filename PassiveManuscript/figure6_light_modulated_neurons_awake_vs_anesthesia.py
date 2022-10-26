@@ -20,7 +20,7 @@ MIN_REC = 1
 
 # Paths
 fig_path, save_path = paths(dropbox=True)
-fig_path = join(fig_path, 'PaperPassive', 'figureX')
+fig_path = join(fig_path, 'PaperPassive', 'figure6')
 
 # Load in results
 light_neurons = pd.read_csv(join(save_path, 'light_modulated_neurons_anesthesia.csv'))
@@ -164,3 +164,5 @@ ax1.set(ylabel='', xlabel='Modulation index', xlim=[-1.05, 1.05], xticklabels=[-
 plt.tight_layout()
 sns.despine(trim=True)
 plt.savefig(join(fig_path, 'light_modulation_per_neuron_per_region.pdf'))
+
+

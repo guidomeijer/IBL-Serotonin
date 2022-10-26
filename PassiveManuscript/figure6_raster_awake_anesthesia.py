@@ -20,7 +20,7 @@ ba = AllenAtlas()
 
 # Paths
 fig_path, save_path = paths(dropbox=True)
-fig_path = join(fig_path, 'PaperPassive', 'figureX')
+fig_path = join(fig_path, 'PaperPassive', 'figure6')
 
 # Recording
 SUBJECT = 'ZFM-04820'

@@ -40,7 +40,7 @@ reg_neurons = ((all_neurons.groupby('region').sum()['modulated'] / all_neurons.g
 reg_neurons = reg_neurons.rename({0: 'percentage'}, axis=1)
 reg_neurons['mod_early'] = all_neurons.groupby('region').median()['mod_index_early']
 reg_neurons['mod_late'] = all_neurons.groupby('region').median()['mod_index_late']
-reg_neurons['latency'] = all_neurons[all_neurons['modulated'] == 1].groupby('region').median()['latency_peak_hw'] * 1000
+reg_neurons['latency'] = all_neurons[all_neurons['modulated'] == 1].groupby('region').median()['latency_peak_onset'] * 1000
 reg_neurons['n_neurons'] = all_neurons.groupby(['region']).size()
 reg_neurons['n_mod_neurons'] = all_neurons[all_neurons['modulated'] == 1].groupby(['region']).size()
 reg_neurons = reg_neurons.loc[reg_neurons['n_neurons'] >= MIN_NEURONS]

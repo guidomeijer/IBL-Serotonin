@@ -60,7 +60,10 @@ sert_neurons['mod_index_abs'] = sert_neurons['mod_index_late'].abs()
 
 # Group by region
 grouped_df = sert_neurons.groupby('full_region').median(numeric_only=True)
+
+# Convert to ms
 grouped_df['latency'] = grouped_df['latency'] * 1000
+sert_neurons['latency'] = sert_neurons['latency'] * 1000
 
 # %%
 
@@ -74,11 +77,11 @@ sns.violinplot(x='latency', y='full_region', data=sert_neurons, order=ordered_re
                color=colors['grey'], linewidth=0, ax=ax1)
 sns.stripplot(x='latency', y='full_region', data=sert_neurons, order=ordered_regions['full_region'],
                color='k', size=1, ax=ax1)
-ax1.set(xlabel='Modulation onset latency (s)', ylabel='', xticks=[0, 0.5, 1], xlim=[-0.15, 1.15])
+ax1.set(xlabel='Modulation onset latency (ms)', ylabel='', xticks=[0, 500, 1000], xlim=[-150, 1150])
 #plt.xticks(rotation=90)
 for i, region in enumerate(ordered_regions['full_region']):
     this_lat = ordered_regions.loc[ordered_regions['full_region'] == region, 'latency'].values[0] * 1000
-    ax1.text(1.2, i+0.25, f'{this_lat:.0f} ms', fontsize=5)
+    ax1.text(1200, i+0.25, f'{this_lat:.0f} ms', fontsize=5)
 plt.tight_layout()
 sns.despine(trim=True, offset=3)
 plt.savefig(join(fig_path, 'modulation_latency_per_region.pdf'))
