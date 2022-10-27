@@ -82,7 +82,7 @@ per_mouse_df = per_mouse_df.groupby('full_region').filter(lambda x: len(x) >= MI
 per_mouse_df = per_mouse_df.reset_index()
 
 # Get ordered regions per mouse
-ordered_regions_pm = per_mouse_df.groupby('full_region').mean().sort_values('perc_mod', ascending=False).reset_index()
+ordered_regions_pm = per_mouse_df.groupby('full_region').mean(numeric_only=True).sort_values('perc_mod', ascending=False).reset_index()
 
 # %% Plot percentage modulated neurons per region
 
@@ -108,7 +108,7 @@ plt.savefig(join(fig_path, 'perc_light_modulated_neurons_per_region_pooled.pdf')
 colors, dpi = figure_style()
 f, ax1 = plt.subplots(1, 1, figsize=(2.5, 2), dpi=dpi)
 sns.barplot(x='perc_mod', y='full_region', data=per_mouse_df, order=ordered_regions_pm['full_region'],
-            color=colors['sert'], ax=ax1, ci=None)
+            color=colors['sert'], ax=ax1, errorbar=None)
 sns.swarmplot(x='perc_mod', y='full_region', data=per_mouse_df, order=ordered_regions_pm['full_region'],
               color=colors['grey'], ax=ax1, size=2)
 ax1.set(xlabel='Modulated neurons (%)', ylabel='', xlim=[0, 82], xticks=np.arange(0, 81, 20))

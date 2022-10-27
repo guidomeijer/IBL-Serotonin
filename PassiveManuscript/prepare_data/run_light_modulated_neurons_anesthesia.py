@@ -50,7 +50,7 @@ for i in rec.index.values:
 
     # Load in laser pulse times
     try:
-        opto_train_times, _ = load_passive_opto_times(eid, anesthesia=False, one=one)
+        opto_train_times, _ = load_passive_opto_times(eid, anesthesia=True, one=one)
     except:
         print('Session does not have passive laser pulses')
         continue

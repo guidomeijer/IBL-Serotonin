@@ -41,8 +41,9 @@ pca_dist_df = pca_dist_df.groupby(['subject', 'time', 'region']).median().reset_
 
 # Smooth traces (this is ugly I know)
 for i, subject in enumerate(pca_dist_df['subject'].unique()):
-    for r, region in enumerate(REGIONS):
-        if pca_dist_df.loc[(pca_dist_df['subject'] == subject) & (pca_dist_df['region'] == region)].shape[0] > 0:
+    for r, region in enumerate(np.unique(pca_dist_df.loc[pca_dist_df['subject'] == subject, 'region'])):
+        if ((pca_dist_df.loc[(pca_dist_df['subject'] == subject) & (pca_dist_df['region'] == region)].shape[0] > 0)
+            & (np.sum(np.isnan(pca_dist_df.loc[(pca_dist_df['subject'] == subject) & (pca_dist_df['region'] == region), 'pca_dist'])) < 150)):
             pca_dist_df.loc[(pca_dist_df['subject'] == subject) & (pca_dist_df['region'] == region), 'pca_dist_smooth'] = (
                 smooth_interpolate_signal_sg(pca_dist_df.loc[(pca_dist_df['subject'] == subject)
                                                              & (pca_dist_df['region'] == region), 'pca_dist'], window=15))
@@ -58,7 +59,7 @@ for i in pca_table_df.index.values:
 colors, dpi = figure_style()
 f, ax1 = plt.subplots(1, 1, figsize=(1.75, 1.75), dpi=dpi)
 ax1.add_patch(Rectangle((0, 0), 1, 4, color='royalblue', alpha=0.25, lw=0))
-sns.lineplot(x='time', y='pca_dist_smooth', ax=ax1, legend='brief', hue='region', ci=68,
+sns.lineplot(x='time', y='pca_dist_smooth', ax=ax1, legend='brief', hue='region', errorbar='se',
              data=pca_dist_df, units='subject', estimator=None,
              hue_order=REGIONS, palette=[colors[i] for i in REGIONS])
 #ax1.plot(pca_table_df.loc[(pca_table_df['p_value'] < 0.05) & (pca_table_df['time'] < 1), 'time'],
@@ -75,7 +76,7 @@ plt.savefig(join(fig_path, 'PCA_traj_distance_per_subject.pdf'))
 # %%
 f, ax1 = plt.subplots(1, 1, figsize=(1.75, 1.75), dpi=dpi)
 ax1.add_patch(Rectangle((0, 0), 1, 4, color='royalblue', alpha=0.25, lw=0))
-sns.lineplot(x='time', y='pca_dist_smooth', ax=ax1, legend='brief', hue='region', ci=68,
+sns.lineplot(x='time', y='pca_dist_smooth', ax=ax1, legend='brief', hue='region', errorbar='se',
              data=pca_dist_df, hue_order=REGIONS, palette=[colors[i] for i in REGIONS])
 #ax1.plot(pca_table_df.loc[(pca_table_df['p_value'] < 0.05) & (pca_table_df['time'] < 1), 'time'],
 #         np.ones(pca_table_df[(pca_table_df['p_value'] < 0.05) & (pca_table_df['time'] < 1)].shape[0])*4, color='k')

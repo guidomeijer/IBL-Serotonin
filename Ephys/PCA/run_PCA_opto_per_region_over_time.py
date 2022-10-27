@@ -11,9 +11,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 from brainbox.singlecell import calculate_peths
-from brainbox.metrics.single_units import spike_sorting_metrics
 from serotonin_functions import figure_style
-from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from brainbox.io.one import SpikeSortingLoader
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
@@ -33,7 +31,8 @@ BASELINE = [-0.5, 0]
 BIN_SIZE = 0.02
 SMOOTHING = 0.02
 MIN_FR = 0.1
-PLOT = True
+PLOT = False
+OVERWRITE = True
 fig_path, save_path = paths()
 fig_path = join(fig_path, 'Ephys', 'PCA')
 
@@ -43,10 +42,16 @@ BIN_CENTERS = np.arange(-T_BEFORE, T_AFTER, BIN_SIZE) + (BIN_SIZE / 2)
 # Query sessions
 rec = query_ephys_sessions(one=one)
 
-pca_df = pd.DataFrame()
-pca_dist_df = pd.DataFrame()
+if OVERWRITE:
+    pca_df = pd.DataFrame()
+    pca_dist_df = pd.DataFrame()
+    rec_ind = rec.index.values
+else:
+    pca_df = pd.read_csv(join(save_path, 'pca_regions.csv'))
+    pca_dist_df = pd.read_csv(join(save_path, 'pca_regions.csv'))
+    rec_ind = [i for i in rec.index.values if rec.loc[i, 'pid'] not in pca_df['pid'].values]
 artifact_neurons = get_artifact_neurons()
-for i in rec.index.values:
+for i in rec_ind:
 
     # Get session details
     pid, eid, probe = rec.loc[i, 'pid'], rec.loc[i, 'eid'], rec.loc[i, 'probe']

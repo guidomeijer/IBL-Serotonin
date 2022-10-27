@@ -61,7 +61,7 @@ rendering.rotating_video(join(fig_path, 'rotation_brain_insertions.webm'), fig)
 
 # %%
 colors, dpi = figure_style()
-f, ax = plt.subplots(1, 1, figsize=(1.5, 1), dpi=dpi)
+f, ax = plt.subplots(1, 1, figsize=(2, 1), dpi=dpi)
 sns.heatmap([np.arange(len(subjects))], cmap=CMAP, cbar=False, ax=ax)
 ax.set(yticks=[], xticks=np.arange(len(subjects))+0.5, xticklabels=np.arange(len(subjects)) + 1)
 ax.set_xlabel('Mice', labelpad=2)

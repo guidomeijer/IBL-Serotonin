@@ -9,7 +9,6 @@ import numpy as np
 import seaborn as sns
 from os.path import join
 import ssm
-from ssm.plots import gradient_cmap
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 from brainbox.task.closed_loop import roc_single_event

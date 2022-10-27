@@ -6,18 +6,15 @@ By: Guido Meijer
 """
 
 import numpy as np
-import seaborn as sns
 from os.path import join
 import ssm
-from ssm.plots import gradient_cmap
-import matplotlib.pyplot as plt
 from brainbox.task.closed_loop import roc_single_event
 import pandas as pd
 from brainbox.singlecell import calculate_peths
 from brainbox.io.one import SpikeSortingLoader
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
-from serotonin_functions import (figure_style, load_passive_opto_times, get_neuron_qc, remap, paths,
+from serotonin_functions import (load_passive_opto_times, get_neuron_qc, remap, paths,
                                  query_ephys_sessions)
 from one.api import ONE
 from ibllib.atlas import AllenAtlas
