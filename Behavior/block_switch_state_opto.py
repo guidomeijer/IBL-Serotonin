@@ -108,8 +108,7 @@ for i, subject in enumerate(glmhmm_subjects):
         sns.despine(trim=True)
         plt.tight_layout()
         plt.savefig(join(figure_dir, f'block_switch_{subject}.jpg'), dpi=300)
-        asd
-
+        
 # %%
 
 per_animal_df = switch_df.groupby(['subject', 'trial', 'opto']).mean().reset_index()

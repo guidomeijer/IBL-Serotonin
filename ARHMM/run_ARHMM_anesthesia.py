@@ -11,7 +11,6 @@ import ssm
 import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
-from matplotlib.ticker import FormatStrFormatter
 from brainbox.singlecell import calculate_peths
 from brainbox.plot import peri_event_time_histogram
 from brainbox.io.one import SpikeSortingLoader
@@ -26,10 +25,10 @@ one = ONE()
 
 # Settings
 K = 2    # number of discrete states
-BIN_SIZE = 0.3
-SMOOTHING = 0.2
+BIN_SIZE = 0.4
+SMOOTHING = 0.1
 do_PCA = True
-D = 10   # dimensions of PCA
+D = 5   # dimensions of PCA
 OVERWRITE = True
 T_BEFORE = 1  # for PSTH
 T_AFTER = 4

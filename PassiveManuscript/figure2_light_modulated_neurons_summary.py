@@ -8,6 +8,7 @@ By: Guido Meijer
 import numpy as np
 import pandas as pd
 import seaborn as sns
+import seaborn.objects as so
 import matplotlib.pyplot as plt
 from os.path import join
 from scipy.stats import pearsonr
@@ -71,9 +72,14 @@ colors, dpi = figure_style()
 f, ax1 = plt.subplots(1, 1, figsize=(1.2, 1), dpi=dpi)
 
 f.subplots_adjust(bottom=0.3, left=0.32, right=0.88, top=0.9)
-sns.regplot(x='rel_fluo', y='perc_mod', data=merged_df,
-            ci=0, scatter_kws={'color': colors['sert'], 'linewidths': 0}, line_kws={'color': 'k'})
-ax1.set(ylabel='Mod. neurons (%)', ylim=[0, 51], yticks=[0, 25, 50],
+(
+ so.Plot(merged_df, x='rel_fluo', y='perc_mod')
+ .add(so.Line(color='k', linewidth=1), so.PolyFit(order=1))
+ .add(so.Dot(pointsize=2, color=colors['sert']))
+ .on(ax1)
+ .plot()
+ )
+ax1.set(ylabel='Mod. neurons (%)', ylim=[0, 52], yticks=[0, 25, 50],
         xticks=[0, 200, 400])
 ax1.tick_params(axis='x', which='major', pad=2)
 ax1.set_xlabel('Rel. expression (%)', rotation=0, labelpad=2)

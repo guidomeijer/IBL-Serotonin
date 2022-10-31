@@ -10,6 +10,7 @@ import seaborn as sns
 import ssm
 import matplotlib.pyplot as plt
 from os.path import join
+from brainbox.processing import bincount2D
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 from serotonin_functions import figure_style, get_neuron_qc, load_passive_opto_times, paths
@@ -23,9 +24,9 @@ ba = AllenAtlas()
 
 K = 2    # number of discrete states
 do_PCA = True
-D = 10   # dimensions of PCA
-BIN_SIZE = 0.3
-SMOOTHING = 0.2
+D = 5   # dimensions of PCA
+BIN_SIZE = 0.4
+SMOOTHING = 0.1
 PID = '04954136-75a8-4a20-9054-37b0bffd3b8b'
 fig_path, _ = paths()
 
@@ -41,13 +42,15 @@ clusters = sl.merge_clusters(spikes, clusters, channels)
 qc_metrics = get_neuron_qc(PID, one=one, ba=ba)
 clusters_pass = np.where(qc_metrics['label'] == 1)[0]
 spikes.times = spikes.times[np.isin(spikes.clusters, clusters_pass)]
+spikes.depths = spikes.depths[np.isin(spikes.clusters, clusters_pass)]
 spikes.clusters = spikes.clusters[np.isin(spikes.clusters, clusters_pass)]
 
 # Get smoothed firing rates
 peth, _ = calculate_peths(spikes.times, spikes.clusters, np.unique(spikes.clusters),
-                          [opto_times[0]-1], pre_time=0, post_time=(opto_times[-1] - opto_times[0])+1,
+                          [opto_times[0]-300], pre_time=0, post_time=300,
                           bin_size=BIN_SIZE, smoothing=SMOOTHING)
 tscale = peth['tscale'] - peth['tscale'][0]
+time_ax = peth['tscale'] + opto_times[0]-300
 pop_act = peth['means'].T
 
 # Do PCA
@@ -70,6 +73,9 @@ else:
 
 # Get transition matrix
 transition_mat = arhmm.transitions.transition_matrix
+
+# Get spike raster
+R, times, depths = bincount2D(spikes.times, spikes.depths, xbin=0.01, ybin=20, weights=None)
 
 # %% Plot
 color_names = ["faded green", "amber"]
@@ -94,4 +100,25 @@ cbar_ax = fig.add_axes([0.955, 0.25, 0.01, 0.6])
 fig.colorbar(im, cax=cbar_ax)
 
 plt.tight_layout()
-plt.savefig(join(fig_path), 'Ephys', 'Anesthesia')
+plt.savefig(join(fig_path, 'Ephys', 'Anesthesia', 'up_down_classification.jpg'), dpi=600)
+
+# %%
+
+f, (ax1, ax2) = plt.subplots(2, 1, figsize=(5, 5), dpi=dpi)
+
+ax1.imshow(R, aspect='auto', cmap='binary', vmin=0, vmax=np.std(R),
+           extent=np.r_[times[[0, -1]], depths[[0, -1]]], origin='upper')
+ax1.set(xlim=[time_ax[0], time_ax[0] + 100], ylim=[0, 4000],
+        xlabel='Time since start of recording (s)', ylabel='Depth (um)')
+ax1.invert_yaxis()
+
+ax2.imshow(R, aspect='auto', cmap='binary', vmin=0, vmax=np.std(R),
+           extent=np.r_[times[[0, -1]], depths[[0, -1]]], origin='upper')
+ax2.imshow(zhat[None,:], aspect="auto", extent=[time_ax[0], time_ax[-1], 0, 4000],
+           cmap=cmap, vmin=0, vmax=K-1, alpha=0.25)
+ax2.set(xlim=[time_ax[0], time_ax[0] + 100], ylim=[0, 4000],
+        xlabel='Time since start of recording (s)', ylabel='Depth (um)')
+ax2.invert_yaxis()
+
+plt.tight_layout()
+plt.savefig(join(fig_path, 'Ephys', 'Anesthesia', 'up_down_raster.jpg'), dpi=600)
