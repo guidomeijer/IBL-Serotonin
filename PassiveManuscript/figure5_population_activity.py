@@ -30,7 +30,7 @@ T_AFTER = 2
 BIN_SIZE = 0.1
 SMOOTHING = 0.1
 fig_path, save_path = paths(dropbox=True)
-fig_path = join(fig_path, 'PaperPassive', 'figure6')
+fig_path = join(fig_path, 'PaperPassive', 'figure5')
 
 # Load in light modulated neurons
 light_neurons = pd.read_csv(join(save_path, 'light_modulated_neurons.csv'))

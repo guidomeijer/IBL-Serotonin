@@ -26,15 +26,16 @@ TITLES = ['Secondary motor', 'Orbitofrontal', 'Medial prefrontal']
 
 # Paths
 fig_path, save_path = paths(dropbox=True)
-fig_path = join(fig_path, 'PaperPassive', 'figure6')
+fig_path = join(fig_path, 'PaperPassive', 'figure5')
 
 # Load in data
 pca_df = pd.read_csv(join(save_path, 'pca_regions.csv'))
 
 # Create colormap
-blues = cm.get_cmap('Blues_r', 256)(np.linspace(0, 1, 400))[150:350]
-blue = [0.1, 0.4, 0.68, 1]
-color_array = np.vstack([np.tile([.7, .7, .7, 1], (100, 1)), np.tile(blue, (100, 1)), blues])
+pre = cm.get_cmap('Greys', 256)(np.linspace(0, 1, 100))
+stim = cm.get_cmap('cool', 256)(np.linspace(0, 1, 100))
+post = cm.get_cmap('Wistia_r', 256)(np.linspace(0, 1, 200))
+color_array = np.vstack([pre, stim, post])
 newcmp = ListedColormap(color_array)
 
 colors, dpi = figure_style()

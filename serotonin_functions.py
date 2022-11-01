@@ -104,8 +104,8 @@ def figure_style():
               'grey': [0.75, 0.75, 0.75],
               'sert': sns.color_palette('Dark2')[0],
               'wt': [0.75, 0.75, 0.75],
-              'awake': sns.color_palette('colorblind')[1],
-              'anesthesia': sns.color_palette('colorblind')[0],
+              'awake': sns.color_palette('Dark2')[2],
+              'anesthesia': sns.color_palette('Dark2')[3],
               'enhanced': sns.color_palette('colorblind')[3],
               'suppressed': sns.color_palette('colorblind')[0],
               'stim': sns.color_palette('colorblind')[9],
@@ -353,15 +353,20 @@ def combine_regions(acronyms, split_thalamus=False, abbreviate=False):
     return regions
 
 
-def high_level_regions(acronyms, abbreviate=False):
+def high_level_regions(acronyms, merge_cortex=False):
     first_level_regions = combine_regions(acronyms, abbreviate=True)
+    cosmos_regions = remap(acronyms, dest='Cosmos')
     regions = np.array(['root'] * len(first_level_regions), dtype=object)
-    regions[np.in1d(first_level_regions, ['mPFC', 'OFC'])] = 'Frontal'
-    regions[np.in1d(first_level_regions, ['Pir', 'BC', 'PPC'])] = 'Sensory'
-    regions[np.in1d(first_level_regions, ['Raphe', 'MRN', 'SN', 'PAG', 'SC'])] = 'Midbrain'
-    regions[np.in1d(first_level_regions, ['Hipp'])] = 'Hippocampus'
-    regions[np.in1d(first_level_regions, ['Thal'])] = 'Thalamus'
+    if merge_cortex:
+        regions[cosmos_regions == 'Isocortex'] = 'Cortex'
+    else:
+        regions[np.in1d(first_level_regions, ['mPFC', 'OFC'])] = 'Frontal'
+        regions[np.in1d(first_level_regions, ['Pir', 'BC', 'PPC'])] = 'Sensory'
+    regions[cosmos_regions == 'MB'] = 'Midbrain'
+    regions[cosmos_regions == 'HPF'] = 'Hippocampus'
+    regions[cosmos_regions == 'TH'] = 'Thalamus'
     regions[np.in1d(first_level_regions, ['Amyg'])] = 'Amygdala'
+    regions[np.in1d(acronyms, ['CP', 'ACB', 'FS'])] = 'Striatum'
     return regions
 
 

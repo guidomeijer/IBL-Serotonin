@@ -11,10 +11,11 @@ import seaborn as sns
 import seaborn.objects as so
 import matplotlib.pyplot as plt
 from os.path import join
+from scipy.stats import wilcoxon
 from serotonin_functions import paths, figure_style, combine_regions, load_subjects
 
 # Settings
-MIN_NEURONS_POOLED = 1
+MIN_NEURONS_POOLED = 5
 MIN_NEURONS_PER_MOUSE = 1
 MIN_MOD_NEURONS = 1
 MIN_REC = 1
@@ -46,23 +47,32 @@ light_neurons = light_neurons.drop(index=[i for i, j in enumerate(light_neurons[
 # Get modulated neurons
 mod_neurons = light_neurons[(light_neurons['sert-cre'] == 1)
                             & ((light_neurons['modulated_x'] == 1) | (light_neurons['modulated_y'] == 1))]
-#mod_neurons = mod_neurons.groupby('full_region').filter(lambda x: len(x) >= MIN_MOD_NEURONS)
+mod_neurons = mod_neurons.groupby('full_region').filter(lambda x: len(x) >= MIN_MOD_NEURONS)
 
+# Get region statistics
+per_region = mod_neurons.groupby('full_region').median(numeric_only=True)
 
 # %% Plot percentage modulated neurons per region
 
 colors, dpi = figure_style()
 f, ax1 = plt.subplots(1, 1, figsize=(1.75, 1.75), dpi=dpi)
+ax1.plot([-0.3, 0.3], [-0.3, 0.3], color='k', ls='--', zorder=0)
 (
- so.Plot(mod_neurons, x='mod_index_late_x', y='mod_index_late_y')
-     .add(so.Dot(pointsize=2))
-     .add(so.Line(color='k', linewidth=1), so.PolyFit(order=1))
-     .label(x='Modulation index awake', y='Modulation index anesthesia')
-     .limit(x=[-1, 1], y=[-1, 1])
-     .on(ax1)
-     .plot()
+ so.Plot(per_region, x='mod_index_late_x', y='mod_index_late_y')
+ .add(so.Dot(pointsize=3))
+ .label(x='Modulation index awake', y='Modulation index anesthesia')
+ .on(ax1)
+ .plot()
  )
+_, p = wilcoxon(per_region['mod_index_late_x'], per_region['mod_index_late_y'])
+if p < 0.01:
+    ax1.text(0, 0.25, '**', fontsize=12, ha='center', va='center')
+elif p < 0.05:
+    ax1.text(0, 0.25, '*', fontsize=12, ha='center', va='center')
+ax1.set(xticks=np.arange(-0.3, 0.4, 0.3), yticks=np.arange(-0.3, 0.4, 0.3))
 sns.despine(trim=True)
 plt.tight_layout()
-plt.savefig(join(fig_path, 'mod_index_awake_vs_anesthesia.pdf'))
+plt.savefig(join(fig_path, 'per_region_mod_index_awake_vs_anesthesia.pdf'))
+
+
 

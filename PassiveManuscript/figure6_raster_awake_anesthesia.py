@@ -50,33 +50,38 @@ spikes_times = spikes_times[np.isin(spikes_clusters, clusters_pass)]
 spikes_clusters = spikes_clusters[np.isin(spikes_clusters, clusters_pass)]
 """
 
+# Convert to mm
+spikes_depths = spikes_depths / 1000
+
 # Get spike raster
-R, times, depths = bincount2D(spikes_times, spikes_depths, xbin=0.01, ybin=20, weights=None)
+R, times, depths = bincount2D(spikes_times, spikes_depths, xbin=0.01, ybin=0.02, weights=None)
 
 # %% Plot figure
 colors, dpi = figure_style()
-f, (ax1, ax2) = plt.subplots(1, 2, figsize=(5, 2.5), dpi=600)
+f, (ax1, ax2) = plt.subplots(1, 2, figsize=(7, 1.75), sharey=True, dpi=dpi)
 
-ax1.add_patch(Rectangle((opto_times_awake[0], 0), 1, 4000, color='royalblue', alpha=0.25, lw=0))
-ax1.add_patch(Rectangle((opto_times_awake[1], 0), 1, 4000, color='royalblue', alpha=0.25, lw=0))
-ax1.add_patch(Rectangle((opto_times_awake[2], 0), 1, 4000, color='royalblue', alpha=0.25, lw=0))
-ax1.add_patch(Rectangle((opto_times_awake[3], 0), 1, 4000, color='royalblue', alpha=0.25, lw=0))
-ax1.imshow(R, aspect='auto', cmap='binary', vmin=0, vmax=np.std(R) * 2,
+for i in range(opto_times_anes.shape[0]):
+    ax1.add_patch(Rectangle((opto_times_awake[i], 0), 1, 4, color='royalblue', alpha=0.25, lw=0))
+ax1.imshow(R, aspect='auto', cmap='binary', vmin=0, vmax=np.std(R),
            extent=np.r_[times[[0, -1]], depths[[0, -1]]], origin='upper')
-ax1.set(xlim=[opto_times_awake[0] - 5, opto_times_awake[0] + 25], ylim=[0, 4000], title='Awake',
-        xlabel='Time since start of recording (s)', ylabel='Depth (um)')
+ax1.set(xlim=[opto_times_awake[0] - 5, opto_times_awake[0] + 30], ylim=[0, 4], ylabel='Depth (mm)')
+ax1.set_title('Awake', color=colors['awake'], fontweight='bold')
+ax1.set(xticks=[ax1.get_xlim()[0] + 1, ax1.get_xlim()[0] + 6])
+ax1.text(ax1.get_xlim()[0] + 3.5, 4.4, '5s', ha='center', va='center')
+ax1.axes.get_xaxis().set_visible(False)
 ax1.invert_yaxis()
 
-ax2.add_patch(Rectangle((opto_times_anes[0], 0), 1, 4000, color='royalblue', alpha=0.25, lw=0))
-ax2.add_patch(Rectangle((opto_times_anes[1], 0), 1, 4000, color='royalblue', alpha=0.25, lw=0))
-ax2.add_patch(Rectangle((opto_times_anes[2], 0), 1, 4000, color='royalblue', alpha=0.25, lw=0))
-ax2.add_patch(Rectangle((opto_times_anes[3], 0), 1, 4000, color='royalblue', alpha=0.25, lw=0))
-ax2.imshow(R, aspect='auto', cmap='binary', vmin=0, vmax=np.std(R) * 2,
+for i in range(opto_times_anes.shape[0]):
+    ax2.add_patch(Rectangle((opto_times_anes[i], 0), 1, 4, color='royalblue', alpha=0.25, lw=0))
+ax2.imshow(R, aspect='auto', cmap='binary', vmin=0, vmax=np.std(R),
            extent=np.r_[times[[0, -1]], depths[[0, -1]]], origin='upper')
-ax2.set(xlim=[opto_times_anes[0] - 5, opto_times_anes[0] + 25], ylim=[0, 4000], title='Anesthesia',
-        xlabel='Time since start of recording (s)')
+ax2.set(xlim=[opto_times_anes[6] - 5, opto_times_anes[6] + 30], ylim=[0, 4])
+ax2.set_title('Anesthesia', color=colors['anesthesia'], fontweight='bold')
+ax2.set(xticks=[ax2.get_xlim()[0] + 1, ax2.get_xlim()[0] + 6])
+ax2.text(ax2.get_xlim()[0] + 3.5, 4.4, '5s', ha='center', va='center')
+ax2.axes.get_xaxis().set_visible(False)
 ax2.invert_yaxis()
 
 plt.tight_layout()
-sns.despine(trim=True, offset=4)
+sns.despine(trim=True, offset=2)
 plt.savefig(join(fig_path, 'raster_awake_anesthesia.pdf'))

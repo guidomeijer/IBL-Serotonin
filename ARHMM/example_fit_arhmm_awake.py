@@ -28,11 +28,11 @@ do_PCA = True
 D = 5   # dimensions of PCA
 BIN_SIZE = 0.4
 SMOOTHING = 0.1
-PID = '04954136-75a8-4a20-9054-37b0bffd3b8b'
+PID = 'cf08dda8-478f-4292-a06f-4c4dae9f8755'
 fig_path, _ = paths()
 
 # Load in opto times
-opto_times, _ = load_passive_opto_times(one.pid2eid(PID)[0], anesthesia=True, one=one)
+opto_times, _ = load_passive_opto_times(one.pid2eid(PID)[0], one=one)
 
 # Load in neural data
 sl = SpikeSortingLoader(pid=PID, one=one, atlas=ba)
@@ -106,7 +106,7 @@ cbar_ax = fig.add_axes([0.955, 0.25, 0.01, 0.6])
 fig.colorbar(im, cax=cbar_ax)
 
 plt.tight_layout()
-plt.savefig(join(fig_path, 'Ephys', 'Anesthesia', 'up_down_classification.jpg'), dpi=600)
+plt.savefig(join(fig_path, 'Ephys', 'UpDownStates', 'up_down_classification_awake.jpg'), dpi=600)
 
 # %%
 
@@ -127,4 +127,4 @@ ax2.set(xlim=[time_ax[0], time_ax[0] + 100], ylim=[0, 4000],
 ax2.invert_yaxis()
 
 plt.tight_layout()
-plt.savefig(join(fig_path, 'Ephys', 'Anesthesia', 'up_down_raster.jpg'), dpi=600)
+plt.savefig(join(fig_path, 'Ephys', 'UpDownStates', 'up_down_raster_awake.jpg'), dpi=600)

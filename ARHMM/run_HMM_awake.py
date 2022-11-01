@@ -17,7 +17,8 @@ from brainbox.io.one import SpikeSortingLoader
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 from serotonin_functions import (load_passive_opto_times, get_neuron_qc, paths, query_ephys_sessions,
-                                 figure_style, load_subjects, remap)
+                                 figure_style, load_subjects, remap, high_level_regions,
+                                 get_artifact_neurons)
 from one.api import ONE
 from ibllib.atlas import AllenAtlas
 ba = AllenAtlas()
@@ -39,13 +40,13 @@ MIN_NEURONS = 10
 fig_path, save_path = paths()
 
 # Query sessions
-rec = query_ephys_sessions(anesthesia=True, one=one)
+rec = query_ephys_sessions(one=one)
 subjects = load_subjects()
 
 if OVERWRITE:
     up_down_state_df = pd.DataFrame()
 else:
-    up_down_state_df = pd.read_csv(join(save_path, 'up_down_states_anesthesia.csv'))
+    up_down_state_df = pd.read_csv(join(save_path, 'up_down_states_awake.csv'))
 
 for i in rec.index.values:
 
@@ -59,23 +60,27 @@ for i in rec.index.values:
         if pid in up_down_state_df['pid'].values:
             continue
 
-    # Load opto times
-    opto_times, _ = load_passive_opto_times(eid, anesthesia=True, one=one)
+    # Load in artifact neurons
+    artifact_neurons = get_artifact_neurons()
 
+    # Load opto times
+    opto_times, _ = load_passive_opto_times(eid, one=one, force_rerun=True)
 
     # Load in neural data
     sl = SpikeSortingLoader(pid=pid, one=one, atlas=ba)
     spikes, clusters, channels = sl.load_spike_sorting()
     clusters = sl.merge_clusters(spikes, clusters, channels)
 
-    # Filter neurons that pass QC
+    # Filter neurons that pass QC and are not artifact neurons
     qc_metrics = get_neuron_qc(pid, one=one, ba=ba)
     clusters_pass = np.where(qc_metrics['label'] == 1)[0]
+    clusters_pass = clusters_pass[~np.isin(clusters_pass, artifact_neurons.loc[
+        artifact_neurons['pid'] == pid, 'neuron_id'].values)]
     spikes.times = spikes.times[np.isin(spikes.clusters, clusters_pass)]
     spikes.clusters = spikes.clusters[np.isin(spikes.clusters, clusters_pass)]
 
-    # Remap to Cosmos atlas
-    clusters.regions = remap(clusters.acronym, dest='Cosmos')
+    # Remap to high level regions
+    clusters.regions = high_level_regions(clusters.acronym, merge_cortex=True)
 
     for j, region in enumerate(np.unique(clusters.regions)):
 
@@ -100,18 +105,18 @@ for i in rec.index.values:
             pca_proj = pca.fit_transform(pop_vector_norm)
 
             # Make an hmm and sample from it
-            arhmm = ssm.HMM(K, pca_proj.shape[1], observations="ar")
+            arhmm = ssm.HMM(K, pca_proj.shape[1], observations="gaussian")
             arhmm.fit(pca_proj)
             zhat = arhmm.most_likely_states(pca_proj)
 
         else:
             # Make an hmm and sample from it
-            arhmm = ssm.HMM(K, pop_act.shape[1], observations="ar")
+            arhmm = ssm.HMM(K, pop_act.shape[1], observations="gaussian")
             arhmm.fit(pop_act)
             zhat = arhmm.most_likely_states(pop_act)
 
             # Make an hmm and sample from it
-            arhmm = ssm.HMM(K, pop_act.shape[1], observations="ar")
+            arhmm = ssm.HMM(K, pop_act.shape[1], observations="gaussian")
             arhmm.fit(pop_act)
             zhat = arhmm.most_likely_states(pop_act)
 
@@ -133,35 +138,40 @@ for i in rec.index.values:
 
         # Add to df
         up_down_state_df = pd.concat((up_down_state_df, pd.DataFrame(data={
-            'subject': subject, 'date': date, 'eid': eid, 'sert-cre': sert_cre, 'region': region,
+            'subject': subject, 'date': date, 'eid': eid, 'pid': pid, 'sert-cre': sert_cre, 'region': region,
             'to_down_peths': to_down_peths['means'][0], 'to_up_peths': to_up_peths['means'][0],
             'time': to_down_peths['tscale']})))
 
 
         if PLOT:
-            colors, dpi = figure_style()
-            f, ax = plt.subplots(1, 1, figsize=(2, 2), dpi=dpi)
-            ax.add_patch(Rectangle((0, 0), 1, 100, color='royalblue', alpha=0.25, lw=0))
-            ax.add_patch(Rectangle((0, 0), 1, -100, color='royalblue', alpha=0.25, lw=0))
-            peri_event_time_histogram(to_down, np.ones(to_down.shape[0]), opto_times, 1,
-                                      t_before=T_BEFORE, t_after=T_AFTER, bin_size=BIN_SIZE,
-                                      smoothing=SMOOTHING, include_raster=True,
-                                      error_bars='sem', pethline_kwargs={'color': colors['suppressed'], 'lw': 1},
-                                      errbar_kwargs={'color': colors['suppressed'], 'alpha': 0.3},
-                                      raster_kwargs={'color': colors['suppressed'], 'lw': 0.5},
-                                      eventline_kwargs={'lw': 0}, ax=ax)
-            peri_event_time_histogram(to_up, np.ones(to_up.shape[0]), opto_times, 1,
-                                      t_before=T_BEFORE, t_after=T_AFTER, bin_size=BIN_SIZE,
-                                      smoothing=SMOOTHING, include_raster=True,
-                                      error_bars='sem', pethline_kwargs={'color': colors['enhanced'], 'lw': 1},
-                                      errbar_kwargs={'color': colors['enhanced'], 'alpha': 0.3},
-                                      raster_kwargs={'color': colors['enhanced'], 'lw': 0.5},
-                                      eventline_kwargs={'lw': 0}, ax=ax)
-            ax.set(ylabel='State change rate (changes/s)', xlabel='Time (s)',
-                   yticks=[0, 0.4, 0.8, 1.2], xticks=[-1, 0, 1, 2, 3, 4])
-            # ax.plot([0, 1], [0, 0], lw=2.5, color='royalblue')
-            plt.tight_layout()
-            plt.savefig(join(fig_path, 'Ephys', 'Anesthesia', 'UpDownStates',
-                             f'{region}_{subject}_{date}_{probe}.jpg'), dpi=600)
-            plt.close(f)
-
+            try:
+                colors, dpi = figure_style()
+                f, ax = plt.subplots(1, 1, figsize=(2, 2), dpi=dpi)
+                ax.add_patch(Rectangle((0, 0), 1, 100, color='royalblue', alpha=0.25, lw=0))
+                ax.add_patch(Rectangle((0, 0), 1, -100, color='royalblue', alpha=0.25, lw=0))
+                peri_event_time_histogram(to_down, np.ones(to_down.shape[0]), opto_times, 1,
+                                          t_before=T_BEFORE, t_after=T_AFTER, bin_size=BIN_SIZE,
+                                          smoothing=SMOOTHING, include_raster=True,
+                                          error_bars='sem', pethline_kwargs={'color': colors['suppressed'], 'lw': 1},
+                                          errbar_kwargs={'color': colors['suppressed'], 'alpha': 0.3},
+                                          raster_kwargs={'color': colors['suppressed'], 'lw': 0.5},
+                                          eventline_kwargs={'lw': 0}, ax=ax)
+                peri_event_time_histogram(to_up, np.ones(to_up.shape[0]), opto_times, 1,
+                                          t_before=T_BEFORE, t_after=T_AFTER, bin_size=BIN_SIZE,
+                                          smoothing=SMOOTHING, include_raster=True,
+                                          error_bars='sem', pethline_kwargs={'color': colors['enhanced'], 'lw': 1},
+                                          errbar_kwargs={'color': colors['enhanced'], 'alpha': 0.3},
+                                          raster_kwargs={'color': colors['enhanced'], 'lw': 0.5},
+                                          eventline_kwargs={'lw': 0}, ax=ax)
+                ax.set(ylabel='State change rate (changes/s)', xlabel='Time (s)',
+                       yticks=[0, 0.4, 0.8, 1.2], xticks=[-1, 0, 1, 2, 3, 4])
+                # ax.plot([0, 1], [0, 0], lw=2.5, color='royalblue')
+                plt.tight_layout()
+                plt.savefig(join(fig_path, 'Ephys', 'UpDownStates', 'Awake',
+                                 f'{region}_{subject}_{date}_{probe}.jpg'), dpi=600)
+                plt.close(f)
+            except Exception as err:
+                print(err)
+                
+    # Save output
+    up_down_state_df.to_csv(join(save_path, 'up_down_states_awake.csv'))

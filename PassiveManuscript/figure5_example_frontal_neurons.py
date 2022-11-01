@@ -44,7 +44,7 @@ POST_TIME = [0, 1]
 BIN_SIZE = 0.05
 SMOOTHING = 0.025
 fig_path, save_path = paths(dropbox=True)
-fig_path = join(fig_path, 'PaperPassive', 'figure6')
+fig_path = join(fig_path, 'PaperPassive', 'figure5')
 
 for (subject, date, probe, neuron) in zip(SUBJECTS, DATES, PROBES, NEURONS):
     # Get session details

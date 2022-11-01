@@ -13,7 +13,7 @@ from os.path import join
 from serotonin_functions import paths, figure_style, combine_regions, load_subjects
 
 # Settings
-MIN_NEURONS_POOLED = 1
+MIN_NEURONS_POOLED = 5
 MIN_NEURONS_PER_MOUSE = 1
 MIN_MOD_NEURONS = 1
 MIN_REC = 1
