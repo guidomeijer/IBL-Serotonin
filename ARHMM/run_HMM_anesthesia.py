@@ -32,7 +32,7 @@ D = 5   # dimensions of PCA
 OVERWRITE = True
 T_BEFORE = 1  # for PSTH
 T_AFTER = 4
-PLOT = True
+PLOT = False
 MIN_NEURONS = 10
 
 # Get path
@@ -43,9 +43,11 @@ rec = query_ephys_sessions(anesthesia=True, one=one)
 subjects = load_subjects()
 
 if OVERWRITE:
+    state_trans_df = pd.DataFrame()
     up_down_state_df = pd.DataFrame()
 else:
-    up_down_state_df = pd.read_csv(join(save_path, 'up_down_states_anesthesia.csv'))
+    up_down_state_df = pd.read_csv(join(save_path, 'up_down_states.csv'))
+    state_trans_df = pd.read_csv(join(save_path, 'up_down_state_transitions.csv'))
 
 for i in rec.index.values:
 
@@ -86,9 +88,9 @@ for i in rec.index.values:
 
         # Get smoothed firing rates
         peth, _ = calculate_peths(region_spikes, region_clusters, np.unique(region_clusters),
-                                  [opto_times[0]-1], pre_time=0, post_time=(opto_times[-1] - opto_times[0])+1,
+                                  [opto_times[0]-300], pre_time=0, post_time=(opto_times[-1] - opto_times[0])+1,
                                   bin_size=BIN_SIZE, smoothing=SMOOTHING)
-        tscale = peth['tscale'] + (opto_times[0]-1)
+        tscale = peth['tscale'] + (opto_times[0]-300)
         pop_act = peth['means'].T
 
         # Do PCA
@@ -131,11 +133,14 @@ for i in rec.index.values:
                                          opto_times, T_BEFORE, T_AFTER, BIN_SIZE, SMOOTHING)
 
         # Add to df
-        up_down_state_df = pd.concat((up_down_state_df, pd.DataFrame(data={
+        state_trans_df = pd.concat((state_trans_df, pd.DataFrame(data={
             'subject': subject, 'date': date, 'eid': eid, 'sert-cre': sert_cre, 'region': region,
             'to_down_peths': to_down_peths['means'][0], 'to_up_peths': to_up_peths['means'][0],
             'time': to_down_peths['tscale']})))
 
+        up_down_state_df = pd.concat((up_down_state_df, pd.DataFrame(data={
+            'subject': subject, 'date': date, 'eid': eid, 'sert-cre': sert_cre, 'region': region,
+            'state': zhat, 'time': tscale, 'opto': tscale >= opto_times[0]})))
 
         if PLOT:
             colors, dpi = figure_style()
@@ -164,3 +169,7 @@ for i in rec.index.values:
                              f'{region}_{subject}_{date}_{probe}.jpg'), dpi=600)
             plt.close(f)
 
+    # Save data
+    state_trans_df.to_csv(join(save_path, 'up_down_state_transitions.csv'))
+    up_down_state_df.to_csv(join(save_path, 'up_down_states.csv'))
+    print('Saved results to disk')

@@ -43,12 +43,12 @@ opto_times_anes, _ = load_passive_opto_times(eid, anesthesia=True, one=one)
 spikes_times = one.load_dataset(eid, 'spikes.times.npy', collection=f'alf/{PROBE}/pykilosort')
 spikes_clusters = one.load_dataset(eid, 'spikes.clusters.npy', collection=f'alf/{PROBE}/pykilosort')
 spikes_depths = one.load_dataset(eid, 'spikes.depths.npy', collection=f'alf/{PROBE}/pykilosort')
-"""
+
 qc_metrics = get_neuron_qc(pid, one=one, ba=ba)
 clusters_pass = np.where(qc_metrics['label'] == 1)[0]
 spikes_times = spikes_times[np.isin(spikes_clusters, clusters_pass)]
+spikes_depths = spikes_depths[np.isin(spikes_clusters, clusters_pass)]
 spikes_clusters = spikes_clusters[np.isin(spikes_clusters, clusters_pass)]
-"""
 
 # Convert to mm
 spikes_depths = spikes_depths / 1000
