@@ -11,6 +11,7 @@ import seaborn as sns
 import seaborn.objects as so
 import matplotlib.pyplot as plt
 from os.path import join
+from matplotlib.colors import ListedColormap
 from serotonin_functions import (paths, figure_style, load_subjects, plot_scalar_on_slice,
                                  combine_regions)
 
@@ -23,7 +24,8 @@ fig_path = join(fig_path, 'PaperPassive', 'figure4')
 
 # Load in results
 all_neurons = pd.read_csv(join(save_path, 'light_modulated_neurons.csv'))
-all_neurons['full_region'] = combine_regions(all_neurons['region'], split_thalamus=False)
+all_neurons['full_region'] = combine_regions(all_neurons['region'])
+all_neurons['abr_region'] = combine_regions(all_neurons['region'], abbreviate=True)
 
 # Add genotype
 subjects = load_subjects()
@@ -59,11 +61,12 @@ sert_neurons['log_latency'] = np.log10(sert_neurons['latency'])
 sert_neurons['mod_index_abs'] = sert_neurons['mod_index_late'].abs()
 
 # Group by region
-grouped_df = sert_neurons.groupby('full_region').median(numeric_only=True)
+grouped_df = sert_neurons.groupby(['abr_region', 'full_region']).median(numeric_only=True).reset_index().reset_index()
 
 # Convert to ms
 grouped_df['latency'] = grouped_df['latency'] * 1000
 sert_neurons['latency'] = sert_neurons['latency'] * 1000
+
 
 # %%
 
@@ -88,15 +91,58 @@ plt.savefig(join(fig_path, 'modulation_latency_per_region.pdf'))
 
 # %% 
 
+# Add colormap
+grouped_df['color'] = [colors[i] for i in grouped_df['full_region']]
+newcmp = ListedColormap(grouped_df['color'])
+
+# Add text alignment
+grouped_df['ha'] = 'right'
+grouped_df.loc[grouped_df['abr_region'] == 'Amyg', 'ha'] = 'left'
+grouped_df.loc[grouped_df['abr_region'] == 'mPFC', 'ha'] = 'left'
+grouped_df.loc[grouped_df['abr_region'] == 'RSP', 'ha'] = 'left'
+grouped_df.loc[grouped_df['abr_region'] == 'Str', 'ha'] = 'left'
+grouped_df.loc[grouped_df['abr_region'] == 'MRN', 'ha'] = 'left'
+grouped_df.loc[grouped_df['abr_region'] == 'PPC', 'ha'] = 'center'
+grouped_df.loc[grouped_df['abr_region'] == 'SC', 'ha'] = 'center'
+grouped_df['va'] = 'bottom'
+grouped_df.loc[grouped_df['abr_region'] == 'M2', 'va'] = 'top'
+grouped_df.loc[grouped_df['abr_region'] == 'RSP', 'va'] = 'top'
+grouped_df.loc[grouped_df['abr_region'] == 'Amyg', 'va'] = 'top'
+grouped_df.loc[grouped_df['abr_region'] == 'Str', 'va'] = 'center'
+grouped_df['x_offset'] = 0
+grouped_df.loc[grouped_df['abr_region'] == 'Amyg', 'x_offset'] = 0.01
+grouped_df.loc[grouped_df['abr_region'] == 'Str', 'x_offset'] = 0.01
+grouped_df.loc[grouped_df['abr_region'] == 'mPFC', 'x_offset'] = 0.01
+grouped_df.loc[grouped_df['abr_region'] == 'MRN', 'x_offset'] = 0.01
+grouped_df.loc[grouped_df['abr_region'] == 'RSP', 'x_offset'] = 0.01
+grouped_df.loc[grouped_df['abr_region'] == 'PPC', 'x_offset'] = 0.015
+grouped_df.loc[grouped_df['abr_region'] == 'PAG', 'x_offset'] = -0.01
+grouped_df.loc[grouped_df['abr_region'] == 'Thal', 'x_offset'] = -0.01
+grouped_df.loc[grouped_df['abr_region'] == 'Pir', 'x_offset'] = -0.01
+grouped_df.loc[grouped_df['abr_region'] == 'Hipp', 'x_offset'] = -0.01
+grouped_df.loc[grouped_df['abr_region'] == 'M2', 'x_offset'] = -0.01
+grouped_df['y_offset'] = 0
+grouped_df.loc[grouped_df['abr_region'] == 'PPC', 'y_offset'] = 5
+grouped_df.loc[grouped_df['abr_region'] == 'SC', 'y_offset'] = 5
+grouped_df.loc[grouped_df['abr_region'] == 'RSP', 'y_offset'] = -5
+
+
 f, (ax1, ax2) = plt.subplots(1, 2, figsize=(3.5, 1.75), dpi=dpi)
 (
-     so.Plot(grouped_df, x='mod_index_late', y='latency')
-     .add(so.Dot(pointsize=2.5))
-     .add(so.Line(color='k', linewidth=1), so.PolyFit(order=1))
+     so.Plot(grouped_df, x='mod_index_late', y='latency', color='index')
+     #.add(so.Line(color='k', linewidth=1), so.PolyFit(order=1))
+     .add(so.Dot(pointsize=3, edgecolor='w', edgewidth=0.5))
+     .scale(color=newcmp)
      .label(x='Modulation index', y='Modulation latency (ms)')
      .on(ax1)
      .plot()
 )
+for i in grouped_df.index:
+    ax1.text(grouped_df.loc[i, 'mod_index_late'] + grouped_df.loc[i, 'x_offset'],
+             grouped_df.loc[i, 'latency'] + grouped_df.loc[i, 'y_offset'],
+             grouped_df.loc[i, 'abr_region'],
+             ha=grouped_df.loc[i, 'ha'], va=grouped_df.loc[i, 'va'],
+             color=grouped_df.loc[i, 'color'], fontsize=4.5)
 ax1.set(yticks=[0, 200, 400, 600], xticks=[-0.4, -0.2, 0, 0.2])
 
 (
