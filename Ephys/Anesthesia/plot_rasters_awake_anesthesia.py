@@ -52,36 +52,52 @@ for i in rec.index.values:
 
     # Get spike raster
     R, times, depths = bincount2D(spikes_times, spikes_depths, xbin=0.01, ybin=20, weights=None)
+    depths = depths / 1000
 
     # %% Plot figure
     colors, dpi = figure_style()
-    f, (ax1, ax2) = plt.subplots(1, 2, figsize=(5, 2.5), dpi=600)
+    f, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(7, 2.5), sharey=True, dpi=600)
 
-    ax1.add_patch(Rectangle((opto_times_awake[0], 0), 1, 4000, color='royalblue', alpha=0.25, lw=0))
-    ax1.add_patch(Rectangle((opto_times_awake[1], 0), 1, 4000, color='royalblue', alpha=0.25, lw=0))
-    ax1.add_patch(Rectangle((opto_times_awake[2], 0), 1, 4000, color='royalblue', alpha=0.25, lw=0))
-    ax1.add_patch(Rectangle((opto_times_awake[3], 0), 1, 4000, color='royalblue', alpha=0.25, lw=0))
+    ax1.add_patch(Rectangle((opto_times_awake[0], 0), 1, 4, color='royalblue', alpha=0.25, lw=0))
+    ax1.add_patch(Rectangle((opto_times_awake[1], 0), 1, 4, color='royalblue', alpha=0.25, lw=0))
+    ax1.add_patch(Rectangle((opto_times_awake[2], 0), 1, 4, color='royalblue', alpha=0.25, lw=0))
+    ax1.add_patch(Rectangle((opto_times_awake[3], 0), 1, 4, color='royalblue', alpha=0.25, lw=0))
     ax1.imshow(R, aspect='auto', cmap='binary', vmin=0, vmax=np.std(R) * 2,
                extent=np.r_[times[[0, -1]], depths[[0, -1]]], origin='upper')
-    ax1.set(xlim=[opto_times_awake[0] - 5, opto_times_awake[0] + 25], ylim=[0, 4000], title='Awake',
-            xlabel='Time since start of recording (s)', ylabel='Depth (um)')
+    ax1.set(xlim=[opto_times_awake[0] - 5, opto_times_awake[0] + 25], ylim=[0, 4], title='Awake',
+            ylabel='Depth (um)', yticks=[0, 1, 2, 3, 4])
+    ax1.invert_yaxis()
+    ax1.set(xticks=[ax1.get_xlim()[0] + 1, ax1.get_xlim()[0] + 6])
+    ax1.text(ax1.get_xlim()[0] + 3.5, 4.3, '5s', ha='center', va='center')
+    ax1.axes.get_xaxis().set_visible(False)
     ax1.invert_yaxis()
 
-    ax2.add_patch(Rectangle((opto_times_anes[0], 0), 1, 4000, color='royalblue', alpha=0.25, lw=0))
-    ax2.add_patch(Rectangle((opto_times_anes[1], 0), 1, 4000, color='royalblue', alpha=0.25, lw=0))
-    ax2.add_patch(Rectangle((opto_times_anes[2], 0), 1, 4000, color='royalblue', alpha=0.25, lw=0))
-    ax2.add_patch(Rectangle((opto_times_anes[3], 0), 1, 4000, color='royalblue', alpha=0.25, lw=0))
+    ax2.add_patch(Rectangle((opto_times_anes[0], 0), 1, 4, color='royalblue', alpha=0.25, lw=0))
+    ax2.add_patch(Rectangle((opto_times_anes[1], 0), 1, 4, color='royalblue', alpha=0.25, lw=0))
+    ax2.add_patch(Rectangle((opto_times_anes[2], 0), 1, 4, color='royalblue', alpha=0.25, lw=0))
+    ax2.add_patch(Rectangle((opto_times_anes[3], 0), 1, 4, color='royalblue', alpha=0.25, lw=0))
     ax2.imshow(R, aspect='auto', cmap='binary', vmin=0, vmax=np.std(R) * 2,
                extent=np.r_[times[[0, -1]], depths[[0, -1]]], origin='upper')
-    ax2.set(xlim=[opto_times_anes[0] - 5, opto_times_anes[0] + 25], ylim=[0, 4000], title='Anesthesia',
-            xlabel='Time since start of recording (s)')
+    ax2.set(xlim=[opto_times_anes[0] - 5, opto_times_anes[0] + 25], ylim=[0, 4], title='Anesthesia')
+    ax2.set(xticks=[ax2.get_xlim()[0] + 1, ax2.get_xlim()[0] + 6])
+    ax2.text(ax2.get_xlim()[0] + 3.5, 4.3, '5s', ha='center', va='center')
+    ax2.axes.get_xaxis().set_visible(False)
     ax2.invert_yaxis()
 
-    ch_depths = np.flip(channels['axial_um']) + 60
+    ax3.imshow(R, aspect='auto', cmap='binary', vmin=0, vmax=np.std(R) * 2,
+               extent=np.r_[times[[0, -1]], depths[[0, -1]]], origin='upper')
+    ax3.set(xlim=[opto_times_anes[0] - 35, opto_times_anes[0] - 5], ylim=[0, 4], title='Anesthesia')
+    ax3.set(xticks=[ax3.get_xlim()[0] + 1, ax3.get_xlim()[0] + 6])
+    ax3.text(ax3.get_xlim()[0] + 3.5, 4.3, '5s', ha='center', va='center')
+    ax3.axes.get_xaxis().set_visible(False)
+    ax3.invert_yaxis()
+
+    ch_depths = (np.flip(channels['axial_um']) + 60) / 1000
     for k in range(0, channels['acronym'].shape[0], 20):
-        ax2.text(ax2.get_xlim()[1]+5, ch_depths[k], channels['acronym'][k], fontsize=5)
+        ax3.text(ax3.get_xlim()[1]+5, ch_depths[k], channels['acronym'][k], fontsize=5)
 
     plt.tight_layout()
     sns.despine(trim=True, offset=4)
-    plt.savefig(join(fig_path, f'{subject}_{date}_{probe}.pdf'))
+
+    plt.savefig(join(fig_path, f'{subject}_{date}_{probe}.jpg'), dpi=600)
     plt.close(f)

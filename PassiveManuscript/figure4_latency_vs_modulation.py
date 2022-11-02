@@ -109,7 +109,7 @@ f, (ax1, ax2) = plt.subplots(1, 2, figsize=(3.5, 1.75), dpi=dpi)
      .on(ax1)
      .plot()
 )
-ax1.set(title='Hippocampus')
+ax1.set_title('Hippocampus', color=colors['Hippocampus'], fontweight='bold')
 
 (
      so.Plot(sert_neurons[sert_neurons['full_region'] == 'Hippocampus'],
@@ -142,7 +142,7 @@ f, (ax1, ax2) = plt.subplots(1, 2, figsize=(3.5, 1.75), dpi=dpi)
      .on(ax1)
      .plot()
 )
-ax1.set(title='Medial prefrontal cortex')
+ax1.set_title('Medial prefrontal cortex', color=colors['Medial prefrontal cortex'], fontweight='bold')
 legend = f.legends.pop(0)
 ax1.legend(legend.legendHandles, ['RS', 'NS'], frameon=False,
            prop={'size': 6}, handletextpad=0, bbox_to_anchor=[0.3, 1])

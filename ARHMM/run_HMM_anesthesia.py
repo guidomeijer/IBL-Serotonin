@@ -25,14 +25,14 @@ one = ONE()
 
 # Settings
 K = 2    # number of discrete states
-BIN_SIZE = 0.4
-SMOOTHING = 0.1
+BIN_SIZE = 0.2
+SMOOTHING = 0.2
 do_PCA = True
 D = 5   # dimensions of PCA
 OVERWRITE = True
 T_BEFORE = 1  # for PSTH
 T_AFTER = 4
-PLOT = False
+PLOT = True
 MIN_NEURONS = 10
 
 # Get path
@@ -55,7 +55,7 @@ for i in rec.index.values:
     pid, eid, probe = rec.loc[i, 'pid'], rec.loc[i, 'eid'], rec.loc[i, 'probe']
     subject, date = rec.loc[i, 'subject'], rec.loc[i, 'date']
     sert_cre = subjects.loc[subjects['subject'] == subject, 'sert-cre'].values[0]
-    print(f'\nStarting {subject}, {date} ({i+1} of {len(rec)})')
+    print(f'\nStarting {subject}, {date}, {probe} ({i+1} of {len(rec)})')
 
     if not OVERWRITE:
         if pid in up_down_state_df['pid'].values:
@@ -88,7 +88,7 @@ for i in rec.index.values:
 
         # Get smoothed firing rates
         peth, _ = calculate_peths(region_spikes, region_clusters, np.unique(region_clusters),
-                                  [opto_times[0]-300], pre_time=0, post_time=(opto_times[-1] - opto_times[0])+1,
+                                  [opto_times[0]-300], pre_time=0, post_time=(opto_times[-1] - opto_times[0])+301,
                                   bin_size=BIN_SIZE, smoothing=SMOOTHING)
         tscale = peth['tscale'] + (opto_times[0]-300)
         pop_act = peth['means'].T
@@ -134,12 +134,12 @@ for i in rec.index.values:
 
         # Add to df
         state_trans_df = pd.concat((state_trans_df, pd.DataFrame(data={
-            'subject': subject, 'date': date, 'eid': eid, 'sert-cre': sert_cre, 'region': region,
+            'subject': subject, 'date': date, 'eid': eid, 'pid': pid, 'sert-cre': sert_cre, 'region': region,
             'to_down_peths': to_down_peths['means'][0], 'to_up_peths': to_up_peths['means'][0],
             'time': to_down_peths['tscale']})))
 
         up_down_state_df = pd.concat((up_down_state_df, pd.DataFrame(data={
-            'subject': subject, 'date': date, 'eid': eid, 'sert-cre': sert_cre, 'region': region,
+            'subject': subject, 'date': date, 'eid': eid, 'pid': pid, 'sert-cre': sert_cre, 'region': region,
             'state': zhat, 'time': tscale, 'opto': tscale >= opto_times[0]})))
 
         if PLOT:

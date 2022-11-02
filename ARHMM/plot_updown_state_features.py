@@ -25,12 +25,15 @@ bin_size = np.round(up_down_df['time'].values[1] - up_down_df['time'].values[0],
 
 # Get state feature data
 state_feat_df = pd.DataFrame()
-for i, subject in enumerate(np.unique(up_down_df['subject'])):
-    for k, region in enumerate(np.unique(up_down_df['region'])):
+for i, pid in enumerate(np.unique(up_down_df['pid'])):
+    for k, region in enumerate(np.unique(up_down_df.loc[up_down_df['pid'] == pid, 'region'])):
+
+        # Get subject
+        subject = up_down_df.loc[up_down_df['pid'] == pid, 'subject'].values[0]
 
         # Get pre-opto state features
         state = up_down_df.loc[(up_down_df['region'] == region) & (up_down_df['opto'] == 0)
-                               & (up_down_df['subject'] == subject), 'state'].values
+                               & (up_down_df['pid'] == pid), 'state'].values
         state_changes = np.concatenate((np.zeros(1), np.diff(state)))
         change_inds = np.where(state_changes != 0)[0]
 
@@ -43,11 +46,11 @@ for i, subject in enumerate(np.unique(up_down_df['subject'])):
             # Add to df
             state_feat_df = pd.concat((state_feat_df, pd.DataFrame(index=[state_feat_df.shape[0]+1], data={
                 'subject': subject, 'region': region, 'state': this_state, 'state_dur': state_dur,
-                'opto': 0})))
+                'pid': pid, 'opto': 0})))
 
         # Get opto state features
         state = up_down_df.loc[(up_down_df['region'] == region) & (up_down_df['opto'] == 1)
-                               & (up_down_df['subject'] == subject), 'state'].values
+                               & (up_down_df['pid'] == pid), 'state'].values
         state_changes = np.concatenate((np.zeros(1), np.diff(state)))
         change_inds = np.where(state_changes != 0)[0]
 
@@ -60,10 +63,10 @@ for i, subject in enumerate(np.unique(up_down_df['subject'])):
             # Add to df
             state_feat_df = pd.concat((state_feat_df, pd.DataFrame(index=[state_feat_df.shape[0]+1], data={
                 'subject': subject, 'region': region, 'state': this_state, 'state_dur': state_dur,
-                'opto': 1})))
+                'pid': pid, 'opto': 1})))
 
 # Do some data cleaning
-#state_feat_df = state_feat_df[(state_feat_df['state_dur'] > 0.6) & (state_feat_df['state_dur'] < 4)]
+state_feat_df = state_feat_df[state_feat_df['state_dur'] > 0.25]
 #state_feat_df = state_feat_df[(state_feat_df['state_dur'] > 0.6) & (state_feat_df['state_dur'] < 4)]
 
 # %% Plot
@@ -72,22 +75,22 @@ colors, dpi = figure_style()
 f, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4, figsize=(7, 1.75), dpi=dpi)
 
 sns.histplot(x='state_dur', hue='opto', ax=ax1, element='step', palette=[colors['stim'], colors['no-stim']],
-             data=state_feat_df[(state_feat_df['region'] == 'Isocortex') & (state_feat_df['state'] == 0)],
+             data=state_feat_df[(state_feat_df['region'] == 'Cortex') & (state_feat_df['state'] == 0)],
              hue_order=[1, 0], stat="density", common_norm=False, legend=False)
 ax1.set(xlim=[0, 4], xlabel='Down state duration', title='Cortex')
 
 sns.histplot(x='state_dur', hue='opto', ax=ax2, element='step', palette=[colors['stim'], colors['no-stim']],
-             data=state_feat_df[(state_feat_df['region'] == 'Isocortex') & (state_feat_df['state'] == 1)],
+             data=state_feat_df[(state_feat_df['region'] == 'Cortex') & (state_feat_df['state'] == 1)],
              hue_order=[1, 0], stat="density", common_norm=False, legend=False)
 ax2.set(xlim=[0, 4], xlabel='Up state duration')
 
 sns.histplot(x='state_dur', hue='opto', ax=ax3, element='step', palette=[colors['stim'], colors['no-stim']],
-             data=state_feat_df[(state_feat_df['region'] == 'CNU') & (state_feat_df['state'] == 0)],
+             data=state_feat_df[(state_feat_df['region'] == 'Striatum') & (state_feat_df['state'] == 0)],
              hue_order=[1, 0], stat="density", common_norm=False, legend=False)
 ax3.set(xlim=[0, 4], xlabel='Down state duration', title='Striatum')
 
 sns.histplot(x='state_dur', hue='opto', ax=ax4, element='step', palette=[colors['stim'], colors['no-stim']],
-             data=state_feat_df[(state_feat_df['region'] == 'CNU') & (state_feat_df['state'] == 1)],
+             data=state_feat_df[(state_feat_df['region'] == 'Striatum') & (state_feat_df['state'] == 1)],
              hue_order=[1, 0], stat="density", common_norm=False, legend=False)
 ax4.set(xlim=[0, 4], xlabel='Up state duration')
 
@@ -97,61 +100,90 @@ plt.tight_layout()
 # %%
 f, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4, figsize=(7, 1.75), dpi=dpi)
 
-sns.boxplot(x='state', y='state_dur', hue='opto', data=state_feat_df[state_feat_df['region'] == 'Isocortex'],
+sns.boxplot(x='state', y='state_dur', hue='opto', data=state_feat_df[state_feat_df['region'] == 'Cortex'],
             ax=ax1, palette=[colors['stim'], colors['no-stim']], hue_order=[1, 0], fliersize=0)
-_, pd = mannwhitneyu(state_feat_df.loc[(state_feat_df['region'] == 'Isocortex') & (state_feat_df['opto'] == 0) & (state_feat_df['state'] == 0), 'state_dur'],
-                     state_feat_df.loc[(state_feat_df['region'] == 'Isocortex') & (state_feat_df['opto'] == 1) & (state_feat_df['state'] == 0), 'state_dur'])
-_, pu = mannwhitneyu(state_feat_df.loc[(state_feat_df['region'] == 'Isocortex') & (state_feat_df['opto'] == 0) & (state_feat_df['state'] == 1), 'state_dur'],
-                     state_feat_df.loc[(state_feat_df['region'] == 'Isocortex') & (state_feat_df['opto'] == 1) & (state_feat_df['state'] == 1), 'state_dur'])
+_, pd = mannwhitneyu(state_feat_df.loc[(state_feat_df['region'] == 'Cortex') & (state_feat_df['opto'] == 0) & (state_feat_df['state'] == 0), 'state_dur'],
+                     state_feat_df.loc[(state_feat_df['region'] == 'Cortex') & (state_feat_df['opto'] == 1) & (state_feat_df['state'] == 0), 'state_dur'])
+_, pu = mannwhitneyu(state_feat_df.loc[(state_feat_df['region'] == 'Cortex') & (state_feat_df['opto'] == 0) & (state_feat_df['state'] == 1), 'state_dur'],
+                     state_feat_df.loc[(state_feat_df['region'] == 'Cortex') & (state_feat_df['opto'] == 1) & (state_feat_df['state'] == 1), 'state_dur'])
 if pd < 0.05:
     ax2.text(0, 4, '*', ha='center', va='center', fontsize=12)
 if pu < 0.05:
-    ax2.text(1, 4, '*', ha='center', va='center')
+    ax2.text(1, 4, '*', ha='center', va='center', fontsize=12)
 ax1.set(xticks=[0, 1], xticklabels=['Down', 'Up'], xlabel='State', title='Cortex', ylabel='State duration (s)',
         ylim=[0, 6])
 ax1.legend().set_visible(False)
 
-sns.boxplot(x='state', y='state_dur', hue='opto', data=state_feat_df[state_feat_df['region'] == 'CNU'],
+sns.boxplot(x='state', y='state_dur', hue='opto', data=state_feat_df[state_feat_df['region'] == 'Striatum'],
             ax=ax2, palette=[colors['stim'], colors['no-stim']], hue_order=[1, 0], fliersize=0)
-_, pd = mannwhitneyu(state_feat_df.loc[(state_feat_df['region'] == 'CNU') & (state_feat_df['opto'] == 0) & (state_feat_df['state'] == 0), 'state_dur'],
-                     state_feat_df.loc[(state_feat_df['region'] == 'CNU') & (state_feat_df['opto'] == 1) & (state_feat_df['state'] == 0), 'state_dur'])
-_, pu = mannwhitneyu(state_feat_df.loc[(state_feat_df['region'] == 'CNU') & (state_feat_df['opto'] == 0) & (state_feat_df['state'] == 1), 'state_dur'],
-                     state_feat_df.loc[(state_feat_df['region'] == 'CNU') & (state_feat_df['opto'] == 1) & (state_feat_df['state'] == 1), 'state_dur'])
+_, pd = mannwhitneyu(state_feat_df.loc[(state_feat_df['region'] == 'Striatum') & (state_feat_df['opto'] == 0) & (state_feat_df['state'] == 0), 'state_dur'],
+                     state_feat_df.loc[(state_feat_df['region'] == 'Striatum') & (state_feat_df['opto'] == 1) & (state_feat_df['state'] == 0), 'state_dur'])
+_, pu = mannwhitneyu(state_feat_df.loc[(state_feat_df['region'] == 'Striatum') & (state_feat_df['opto'] == 0) & (state_feat_df['state'] == 1), 'state_dur'],
+                     state_feat_df.loc[(state_feat_df['region'] == 'Striatum') & (state_feat_df['opto'] == 1) & (state_feat_df['state'] == 1), 'state_dur'])
 if pd < 0.05:
-    ax2.text(0, 4, '*', ha='center', va='center', fontsize=12)
+    ax2.text(0, 15, '*', ha='center', va='center', fontsize=12)
 if pu < 0.05:
-    ax2.text(1, 4, '*', ha='center', va='center')
+    ax2.text(1, 15, '*', ha='center', va='center', fontsize=12)
 ax2.set(xticks=[0, 1], xticklabels=['Down', 'Up'], xlabel='State', title='Striatum', ylabel='State duration (s)',
-        ylim=[0, 6])
+        ylim=[0, 16])
 ax2.legend().set_visible(False)
 
-sns.boxplot(x='state', y='state_dur', hue='opto', data=state_feat_df[state_feat_df['region'] == 'TH'],
+sns.boxplot(x='state', y='state_dur', hue='opto', data=state_feat_df[state_feat_df['region'] == 'Thalamus'],
             ax=ax3, palette=[colors['stim'], colors['no-stim']], hue_order=[1, 0], fliersize=0)
-_, pd = mannwhitneyu(state_feat_df.loc[(state_feat_df['region'] == 'TH') & (state_feat_df['opto'] == 0) & (state_feat_df['state'] == 0), 'state_dur'],
-                     state_feat_df.loc[(state_feat_df['region'] == 'TH') & (state_feat_df['opto'] == 1) & (state_feat_df['state'] == 0), 'state_dur'])
-_, pu = mannwhitneyu(state_feat_df.loc[(state_feat_df['region'] == 'TH') & (state_feat_df['opto'] == 0) & (state_feat_df['state'] == 1), 'state_dur'],
-                     state_feat_df.loc[(state_feat_df['region'] == 'TH') & (state_feat_df['opto'] == 1) & (state_feat_df['state'] == 1), 'state_dur'])
+_, pd = mannwhitneyu(state_feat_df.loc[(state_feat_df['region'] == 'Thalamus') & (state_feat_df['opto'] == 0) & (state_feat_df['state'] == 0), 'state_dur'],
+                     state_feat_df.loc[(state_feat_df['region'] == 'Thalamus') & (state_feat_df['opto'] == 1) & (state_feat_df['state'] == 0), 'state_dur'])
+_, pu = mannwhitneyu(state_feat_df.loc[(state_feat_df['region'] == 'Thalamus') & (state_feat_df['opto'] == 0) & (state_feat_df['state'] == 1), 'state_dur'],
+                     state_feat_df.loc[(state_feat_df['region'] == 'Thalamus') & (state_feat_df['opto'] == 1) & (state_feat_df['state'] == 1), 'state_dur'])
 if pd < 0.05:
-    ax3.text(0, 4, '*', ha='center', va='center', fontsize=12)
+    ax3.text(0, 3.5, '*', ha='center', va='center', fontsize=12)
 if pu < 0.05:
-    ax3.text(1, 4, '*', ha='center', va='center')
+    ax3.text(1, 3.5, '*', ha='center', va='center', fontsize=12)
 ax3.set(xticks=[0, 1], xticklabels=['Down', 'Up'], xlabel='State', title='Thalamus', ylabel='State duration (s)',
-        ylim=[0, 6])
+        ylim=[0, 4])
 ax3.legend().set_visible(False)
 
-sns.boxplot(x='state', y='state_dur', hue='opto', data=state_feat_df[state_feat_df['region'] == 'CTXsp'],
+"""
+sns.boxplot(x='state', y='state_dur', hue='opto', data=state_feat_df[state_feat_df['region'] == 'Midbrain'],
             ax=ax4, palette=[colors['stim'], colors['no-stim']], hue_order=[1, 0], fliersize=0)
-_, pd = mannwhitneyu(state_feat_df.loc[(state_feat_df['region'] == 'CTXsp') & (state_feat_df['opto'] == 0) & (state_feat_df['state'] == 0), 'state_dur'],
-                     state_feat_df.loc[(state_feat_df['region'] == 'CTXsp') & (state_feat_df['opto'] == 1) & (state_feat_df['state'] == 0), 'state_dur'])
-_, pu = mannwhitneyu(state_feat_df.loc[(state_feat_df['region'] == 'CTXsp') & (state_feat_df['opto'] == 0) & (state_feat_df['state'] == 1), 'state_dur'],
-                     state_feat_df.loc[(state_feat_df['region'] == 'CTXsp') & (state_feat_df['opto'] == 1) & (state_feat_df['state'] == 1), 'state_dur'])
+_, pd = mannwhitneyu(state_feat_df.loc[(state_feat_df['region'] == 'Midbrain') & (state_feat_df['opto'] == 0) & (state_feat_df['state'] == 0), 'state_dur'],
+                     state_feat_df.loc[(state_feat_df['region'] == 'Midbrain') & (state_feat_df['opto'] == 1) & (state_feat_df['state'] == 0), 'state_dur'])
+_, pu = mannwhitneyu(state_feat_df.loc[(state_feat_df['region'] == 'Midbrain') & (state_feat_df['opto'] == 0) & (state_feat_df['state'] == 1), 'state_dur'],
+                     state_feat_df.loc[(state_feat_df['region'] == 'Midbrain') & (state_feat_df['opto'] == 1) & (state_feat_df['state'] == 1), 'state_dur'])
 if pd < 0.05:
     ax4.text(0, 4, '*', ha='center', va='center', fontsize=12)
 if pu < 0.05:
     ax4.text(1, 4, '*', ha='center', va='center')
-ax4.set(xticks=[0, 1], xticklabels=['Down', 'Up'], xlabel='State', title='Amygdala', ylabel='State duration (s)',
+ax4.set(xticks=[0, 1], xticklabels=['Down', 'Up'], xlabel='State', title='Midbrain', ylabel='State duration (s)',
         ylim=[0, 6])
 ax4.legend().set_visible(False)
+"""
 
 sns.despine(trim=True)
 plt.tight_layout()
+
+# %%
+f, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4, figsize=(7, 1.75), dpi=dpi)
+
+region_df = state_feat_df.groupby(['pid', 'opto', 'state', 'region']).median(numeric_only=True).reset_index()
+
+sns.lineplot(x='opto', y='state_dur', data=region_df[region_df['region'] == 'Cortex'],
+             hue='state', estimator=None, units='pid', style='pid',
+             palette=[colors['sert'], colors['wt']], legend=None, dashes=False,
+             markers=['o']*int(region_df[region_df['region'] == 'Cortex'].shape[0]/2), ax=ax1)
+
+sns.lineplot(x='opto', y='state_dur', data=region_df[region_df['region'] == 'Striatum'],
+             hue='state', estimator=None, units='pid', style='pid',
+             palette=[colors['sert'], colors['wt']], legend=None, dashes=False,
+             markers=['o']*int(region_df[region_df['region'] == 'Cortex'].shape[0]/2), ax=ax2)
+
+sns.lineplot(x='opto', y='state_dur', data=region_df[region_df['region'] == 'Thalamus'],
+             hue='state', estimator=None, units='pid', style='pid',
+             palette=[colors['sert'], colors['wt']], legend=None, dashes=False,
+             markers=['o']*int(region_df[region_df['region'] == 'Cortex'].shape[0]/2), ax=ax3)
+
+sns.lineplot(x='opto', y='state_dur', data=region_df[region_df['region'] == 'Amygdala'],
+             hue='state', estimator=None, units='pid', style='pid',
+             palette=[colors['sert'], colors['wt']], legend=None, dashes=False,
+             markers=['o']*int(region_df[region_df['region'] == 'Cortex'].shape[0]/2), ax=ax4)
+
+

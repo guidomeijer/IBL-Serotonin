@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import seaborn.objects as so
+from scipy.stats import pearsonr
 import matplotlib.pyplot as plt
 from os.path import join
 from matplotlib.colors import ListedColormap
@@ -89,7 +90,7 @@ plt.tight_layout()
 sns.despine(trim=True, offset=3)
 plt.savefig(join(fig_path, 'modulation_latency_per_region.pdf'))
 
-# %% 
+# %%
 
 # Add colormap
 grouped_df['color'] = [colors[i] for i in grouped_df['full_region']]
@@ -144,6 +145,8 @@ for i in grouped_df.index:
              ha=grouped_df.loc[i, 'ha'], va=grouped_df.loc[i, 'va'],
              color=grouped_df.loc[i, 'color'], fontsize=4.5)
 ax1.set(yticks=[0, 200, 400, 600], xticks=[-0.4, -0.2, 0, 0.2])
+r, p = pearsonr(grouped_df['mod_index_late'], grouped_df['latency'])
+ax1.text(-0.35, 520, f'r = {r:.2f}', fontsize=6)
 
 (
      so.Plot(grouped_df, x='mod_index_abs', y='latency')

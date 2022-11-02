@@ -26,8 +26,8 @@ ba = AllenAtlas()
 K = 2    # number of discrete states
 do_PCA = True
 D = 5   # dimensions of PCA
-BIN_SIZE = 0.4
-SMOOTHING = 0.1
+BIN_SIZE = 0.2
+SMOOTHING = 0.2
 PID = '04954136-75a8-4a20-9054-37b0bffd3b8b'
 fig_path, _ = paths()
 
