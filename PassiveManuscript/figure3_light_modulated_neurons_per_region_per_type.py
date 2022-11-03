@@ -146,7 +146,7 @@ ax1.set(ylabel='', xticks=[0, 25, 50, 75], xlabel='% RS neurons')
 
 sns.barplot(x='perc_mod_FS', y='full_region', data=summary_df, color=colors['FS'], ax=ax2,
             order=ordered_regions_FS['full_region'], label='FS')
-ax2.set(ylabel='', xticks=[0, 25, 50, 75], yticklabels=[], xlabel='% FS neurons')
+ax2.set(ylabel='', xticks=[0, 25, 50, 75], yticklabels=[], xlabel='% NS neurons')
 
 sns.despine(trim=True)
 plt.tight_layout()

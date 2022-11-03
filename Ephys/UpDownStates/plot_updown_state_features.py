@@ -210,24 +210,35 @@ f, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4, figsize=(7, 1.75), dpi=dpi)
 region_df = state_feat_df.groupby(['pid', 'opto', 'state', 'region']).median(numeric_only=True).reset_index()
 
 sns.lineplot(x='opto', y='state_dur', data=region_df[region_df['region'] == 'Cortex'],
-             hue='state', estimator=None, units='pid', style='pid',
-             palette=[colors['sert'], colors['wt']], legend=None, dashes=False,
+             hue='state', estimator=None, units='pid', style='pid', hue_order=[1, 0],
+             palette=[colors['enhanced'], colors['suppressed']], legend=None, dashes=False,
              markers=['o']*int(region_df[region_df['region'] == 'Cortex'].shape[0]/2), ax=ax1)
+ax1.set(ylabel='State duration (s)', xticks=[0, 1], xticklabels=['Spontaneous', 'Opto stim'],
+        title='Cortex', xlabel='')
 
 sns.lineplot(x='opto', y='state_dur', data=region_df[region_df['region'] == 'Striatum'],
-             hue='state', estimator=None, units='pid', style='pid',
-             palette=[colors['sert'], colors['wt']], legend=None, dashes=False,
+             hue='state', estimator=None, units='pid', style='pid', hue_order=[1, 0],
+             palette=[colors['enhanced'], colors['suppressed']], legend=None, dashes=False,
              markers=['o']*int(region_df[region_df['region'] == 'Cortex'].shape[0]/2), ax=ax2)
+ax2.set(ylabel='State duration (s)', xticks=[0, 1], xticklabels=['Spontaneous', 'Opto stim'],
+        title='Striatum', xlabel='')
 
 sns.lineplot(x='opto', y='state_dur', data=region_df[region_df['region'] == 'Thalamus'],
-             hue='state', estimator=None, units='pid', style='pid',
-             palette=[colors['sert'], colors['wt']], legend=None, dashes=False,
+             hue='state', estimator=None, units='pid', style='pid', hue_order=[1, 0],
+             palette=[colors['enhanced'], colors['suppressed']], legend=None, dashes=False,
              markers=['o']*int(region_df[region_df['region'] == 'Cortex'].shape[0]/2), ax=ax3)
+ax3.set(ylabel='State duration (s)', xticks=[0, 1], xticklabels=['Spontaneous', 'Opto stim'],
+        title='Thalamus', xlabel='')
 
 sns.lineplot(x='opto', y='state_dur', data=region_df[region_df['region'] == 'Amygdala'],
-             hue='state', estimator=None, units='pid', style='pid',
-             palette=[colors['sert'], colors['wt']], legend=None, dashes=False,
+             hue='state', estimator=None, units='pid', style='pid', hue_order=[1, 0],
+             palette=[colors['enhanced'], colors['suppressed']], legend=None, dashes=False,
              markers=['o']*int(region_df[region_df['region'] == 'Cortex'].shape[0]/2), ax=ax4)
+ax4.set(ylabel='State duration (s)', xticks=[0, 1], xticklabels=['Spontaneous', 'Opto stim'],
+        title='Amygdala', xlabel='')
+
+sns.despine(trim=True)
+plt.tight_layout()
 
 
 

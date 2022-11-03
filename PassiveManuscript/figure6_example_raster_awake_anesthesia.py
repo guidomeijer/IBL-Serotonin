@@ -58,7 +58,7 @@ R, times, depths = bincount2D(spikes_times, spikes_depths, xbin=0.01, ybin=0.02,
 
 # %% Plot figure
 colors, dpi = figure_style()
-f, (ax1, ax2) = plt.subplots(1, 2, figsize=(7, 1.75), sharey=True, dpi=dpi)
+f, (ax1, ax2) = plt.subplots(1, 2, figsize=(6.5, 1.5), sharey=True, dpi=dpi)
 
 for i in range(opto_times_anes.shape[0]):
     ax1.add_patch(Rectangle((opto_times_awake[i], 0), 1, 4, color='royalblue', alpha=0.25, lw=0))

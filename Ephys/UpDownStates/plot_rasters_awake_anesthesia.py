@@ -65,7 +65,7 @@ for i in rec.index.values:
     ax1.imshow(R, aspect='auto', cmap='binary', vmin=0, vmax=np.std(R) * 2,
                extent=np.r_[times[[0, -1]], depths[[0, -1]]], origin='upper')
     ax1.set(xlim=[opto_times_awake[0] - 5, opto_times_awake[0] + 25], ylim=[0, 4], title='Awake',
-            ylabel='Depth (um)', yticks=[0, 1, 2, 3, 4])
+            ylabel='Depth (mm)', yticks=[0, 1, 2, 3, 4])
     ax1.invert_yaxis()
     ax1.set(xticks=[ax1.get_xlim()[0] + 1, ax1.get_xlim()[0] + 6])
     ax1.text(ax1.get_xlim()[0] + 3.5, 4.3, '5s', ha='center', va='center')
