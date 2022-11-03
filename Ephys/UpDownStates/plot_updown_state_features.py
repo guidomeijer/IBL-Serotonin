@@ -10,6 +10,13 @@ from os.path import join
 import pandas as pd
 import seaborn as sns
 from scipy.stats import mannwhitneyu
+
+from statsmodels.stats.oneway import anova_oneway
+from statsmodels.formula.api import ols
+import statsmodels.api as sm
+from statsmodels.stats.multicomp import pairwise_tukeyhsd, MultiComparison
+
+
 import matplotlib.pyplot as plt
 from serotonin_functions import (load_passive_opto_times, get_neuron_qc, paths, query_ephys_sessions,
                                  figure_style, load_subjects, remap)
@@ -125,7 +132,7 @@ if pd < 0.05:
 if pu < 0.05:
     ax2.text(1, 15, '*', ha='center', va='center', fontsize=12)
 ax2.set(xticks=[0, 1], xticklabels=['Down', 'Up'], xlabel='State', title='Striatum', ylabel='State duration (s)',
-        ylim=[0, 16])
+        ylim=[0, 8])
 ax2.legend().set_visible(False)
 
 sns.boxplot(x='state', y='state_dur', hue='opto', data=state_feat_df[state_feat_df['region'] == 'Thalamus'],
@@ -162,6 +169,42 @@ sns.despine(trim=True)
 plt.tight_layout()
 
 # %%
+f, (ax1, ax2) = plt.subplots(1, 2, figsize=(3.5, 1.75), dpi=dpi)
+
+# Do ANOVA
+no_opto_df = state_feat_df[(state_feat_df['opto'] == 0) & (state_feat_df['region'] != 'Hippocampus')
+                           & (state_feat_df['region'] != 'Midbrain')]
+mod = ols('state_dur ~ region', data=no_opto_df[no_opto_df['state'] == 1]).fit()
+aov_table = sm.stats.anova_lm(mod, typ=2)
+mc = MultiComparison(no_opto_df.loc[no_opto_df['state'] == 1, 'state_dur'],
+                     no_opto_df.loc[no_opto_df['state'] == 1, 'region'])
+tukey_upstate = mc.tukeyhsd(alpha=0.05)
+print(f'\nANOVA up state p = {aov_table.loc["region", "PR(>F)"]}\n')
+print(tukey_upstate)
+
+mod = ols('state_dur ~ region', data=no_opto_df[no_opto_df['state'] == 0]).fit()
+aov_table = sm.stats.anova_lm(mod, typ=2)
+mc = MultiComparison(no_opto_df.loc[no_opto_df['state'] == 0, 'state_dur'],
+                     no_opto_df.loc[no_opto_df['state'] == 0, 'region'])
+tukey_downstate = mc.tukeyhsd(alpha=0.05)
+print(f'\nANOVA down state p = {aov_table.loc["region", "PR(>F)"]}\n')
+print(tukey_downstate)
+
+
+sns.boxplot(x='region', y='state_dur', data=no_opto_df[no_opto_df['state'] == 1],
+            ax=ax1, fliersize=0, color=colors['enhanced'])
+ax1.set(ylim=[0, 10], title='Up states', xlabel='', ylabel='State duration (s)')
+ax1.set_xticklabels(ax1.get_xticklabels(), rotation=30, ha='right')
+
+sns.boxplot(x='region', y='state_dur', data=no_opto_df[no_opto_df['state'] == 0],
+            ax=ax2, fliersize=0, color=colors['suppressed'])
+ax2.set(ylim=[0, 10], title='Down states', xlabel='', ylabel='')
+ax2.set_xticklabels(ax2.get_xticklabels(), rotation=30, ha='right')
+
+sns.despine(trim=True)
+plt.tight_layout()
+
+# %%
 f, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4, figsize=(7, 1.75), dpi=dpi)
 
 region_df = state_feat_df.groupby(['pid', 'opto', 'state', 'region']).median(numeric_only=True).reset_index()
@@ -185,5 +228,6 @@ sns.lineplot(x='opto', y='state_dur', data=region_df[region_df['region'] == 'Amy
              hue='state', estimator=None, units='pid', style='pid',
              palette=[colors['sert'], colors['wt']], legend=None, dashes=False,
              markers=['o']*int(region_df[region_df['region'] == 'Cortex'].shape[0]/2), ax=ax4)
+
 
 
