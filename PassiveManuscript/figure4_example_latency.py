@@ -75,7 +75,7 @@ peri_event_time_histogram(spikes.times, spikes.clusters, opto_train_times,
                           NEURON, t_before=T_BEFORE, t_after=T_AFTER, smoothing=SMOOTHING,
                           bin_size=BIN_SIZE, include_raster=True, error_bars='sem', ax=ax,
                           pethline_kwargs={'color': 'black', 'lw': 1},
-                          errbar_kwargs={'color': 'black', 'alpha': 0.3},
+                          errbar_kwargs={'color': 'black', 'alpha': 0.3, 'lw': 0},
                           raster_kwargs={'color': 'black', 'lw': 0.3},
                           eventline_kwargs={'lw': 0})
 ax.set(ylabel='Firing rate (spks/s)', xlabel='Time (s)', title=TITLE,

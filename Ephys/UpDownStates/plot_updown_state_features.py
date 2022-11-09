@@ -105,7 +105,7 @@ sns.despine(trim=True)
 plt.tight_layout()
 
 # %%
-f, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4, figsize=(7, 1.75), dpi=dpi)
+f, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(5.25, 1.75), dpi=dpi)
 
 sns.boxplot(x='state', y='state_dur', hue='opto', data=state_feat_df[state_feat_df['region'] == 'Cortex'],
             ax=ax1, palette=[colors['stim'], colors['no-stim']], hue_order=[1, 0], fliersize=0)
@@ -132,7 +132,7 @@ if pd < 0.05:
 if pu < 0.05:
     ax2.text(1, 15, '*', ha='center', va='center', fontsize=12)
 ax2.set(xticks=[0, 1], xticklabels=['Down', 'Up'], xlabel='State', title='Striatum', ylabel='State duration (s)',
-        ylim=[0, 8])
+        ylim=[0, 6])
 ax2.legend().set_visible(False)
 
 sns.boxplot(x='state', y='state_dur', hue='opto', data=state_feat_df[state_feat_df['region'] == 'Thalamus'],
@@ -146,7 +146,7 @@ if pd < 0.05:
 if pu < 0.05:
     ax3.text(1, 3.5, '*', ha='center', va='center', fontsize=12)
 ax3.set(xticks=[0, 1], xticklabels=['Down', 'Up'], xlabel='State', title='Thalamus', ylabel='State duration (s)',
-        ylim=[0, 4])
+        ylim=[0, 6])
 ax3.legend().set_visible(False)
 
 """
@@ -167,6 +167,7 @@ ax4.legend().set_visible(False)
 
 sns.despine(trim=True)
 plt.tight_layout()
+plt.savefig(join(fig_path, 'Ephys', 'Anesthesia', 'UpDownState_comparison.jpg'), dpi=600)
 
 # %%
 f, (ax1, ax2) = plt.subplots(1, 2, figsize=(3.5, 1.75), dpi=dpi)

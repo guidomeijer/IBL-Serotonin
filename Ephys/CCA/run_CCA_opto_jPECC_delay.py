@@ -24,7 +24,7 @@ cca = CCA(n_components=1, max_iter=5000)
 pca = PCA(n_components=10)
 
 # Settings
-OVERWRITE = True  # whether to overwrite existing runs
+OVERWRITE = False  # whether to overwrite existing runs
 NEURON_QC = True  # whether to use neuron qc to exclude bad units
 PCA = True  # whether to use PCA on neural activity before CCA
 N_PC = 10  # number of PCs to use
@@ -35,7 +35,7 @@ POST_TIME = 3.5  # time after stim onset in s
 SMOOTHING = 0.1  # smoothing of psth
 MAX_DELAY = 0.5  # max delay shift
 SUBTRACT_MEAN = False  # whether to subtract the mean PSTH from each trial
-DIV_BASELINE = False  # whether to divide over baseline + 1 spk/s
+DIV_BASELINE = True  # whether to divide over baseline + 1 spk/s
 K_FOLD = 5  # k in k-fold
 K_FOLD_BOOTSTRAPS = 100  # how often to repeat the random trial selection
 MIN_FR = 0.5  # minimum firing rate over the whole recording
@@ -45,12 +45,18 @@ fig_path, save_path = paths()
 
 # Initialize some things
 """
-REGION_PAIRS = [['M2', 'mPFC'], ['M2', 'ORB'], ['mPFC', 'Amyg'], ['ORB', 'Amyg'], ['M2', 'Amyg'],
-                ['Hipp', 'PPC'], ['Hipp', 'Thal'], ['ORB', 'mPFC'], ['PPC', 'Thal'], ['MRN', 'SC'],
+REGION_PAIRS = [['M2', 'mPFC'], ['M2', 'OFC'], ['mPFC', 'Amyg'], ['OFC', 'Amyg'], ['M2', 'Amyg'],
+                ['Hipp', 'PPC'], ['Hipp', 'Thal'], ['OFC', 'mPFC'], ['PPC', 'Thal'], ['MRN', 'SC'],
                 ['RSP', 'SC'], ['BC', 'Str'], ['MRN', 'RSP'], ['MRN', 'SN'], ['Pir', 'Str'],
                 ['SC', 'SN']]
 """
+
+REGION_PAIRS = [['M2', 'mPFC'], ['M2', 'OFC'], ['Hipp', 'Thal'], ['Hipp', 'PPC'], ['PPC', 'Thal']]
+
+"""
 REGION_PAIRS = [['M2', 'mPFC'], ['M2', 'OFC']]
+"""
+
 np.random.seed(42)  # fix random seed for reproducibility
 n_time_bins = int((PRE_TIME + POST_TIME) / WIN_SIZE)
 kfold = KFold(n_splits=K_FOLD, shuffle=True)
@@ -59,8 +65,8 @@ if SMOOTHING > 0:
     window = gaussian(w, std=SMOOTHING / WIN_SIZE)
     window /= np.sum(window)
 
-# Query sessions with frontal and amygdala
-rec = query_ephys_sessions(one=one, acronym=['MOs'])
+# Query sessions with frontal
+rec = query_ephys_sessions(one=one, acronym=['MOs', 'CA1'])
 
 # Load in artifact neurons
 artifact_neurons = get_artifact_neurons()

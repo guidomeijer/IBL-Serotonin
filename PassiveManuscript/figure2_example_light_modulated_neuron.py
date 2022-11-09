@@ -43,11 +43,7 @@ SUBJECT = 'ZFM-02600'
 DATE = '2021-08-25'
 PROBE = 'probe00'
 NEURON = 442
-# frontal cortex enhancement
-SUBJECT = 'ZFM-03330'
-DATE = '2022-02-15'
-PROBE = 'probe00'
-NEURON = 323
+
 SUBJECT = 'ZFM-01802'
 DATE = '2021-03-11'
 PROBE = 'probe00'
@@ -64,12 +60,19 @@ PROBE = 'probe00'
 NEURON = 47
 """
 
+# frontal cortex enhancement
+SUBJECT = 'ZFM-03330'
+DATE = '2022-02-15'
+PROBE = 'probe00'
+NEURON = 323
+
+"""
 # Good example CA1
 SUBJECT = 'ZFM-01802'
 DATE = '2021-03-09'
 PROBE = 'probe00'
 NEURON = 550
-
+"""
 
 T_BEFORE = 1  # for plotting
 T_AFTER = 2
@@ -147,7 +150,7 @@ peri_event_time_histogram(spikes.times, spikes.clusters, opto_train_times,
                           NEURON, t_before=T_BEFORE, t_after=T_AFTER, bin_size=BIN_SIZE,
                           smoothing=SMOOTHING,  include_raster=True, error_bars='sem', ax=ax,
                           pethline_kwargs={'color': 'black', 'lw': 1},
-                          errbar_kwargs={'color': 'black', 'alpha': 0.3},
+                          errbar_kwargs={'color': 'black', 'alpha': 0.3, 'lw': 0},
                           raster_kwargs={'color': 'black', 'lw': 0.3},
                           eventline_kwargs={'lw': 0})
 ax.set(ylim=[ax.get_ylim()[0], ax.get_ylim()[1] + ax.get_ylim()[1] * 0.2])

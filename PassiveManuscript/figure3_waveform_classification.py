@@ -7,7 +7,6 @@ By: Guido Meijer
 
 from os.path import join
 from serotonin_functions import paths, figure_style
-from sklearn.cluster import KMeans
 from scipy.stats import kstest
 import numpy as np
 import seaborn as sns
@@ -15,18 +14,12 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 from matplotlib.lines import Line2D
 from sklearn.mixture import GaussianMixture
-from sklearn.manifold import TSNE
 import pandas as pd
 
 # Settings
 fig_dir, data_dir = paths(dropbox=True)
 fig_dir = join(fig_dir, 'PaperPassive', 'figure3')
-CLUSTERING = 'gaussian'  # gaussian or k-means
-#FEATURES = ['spike_width', 'rp_slope', 'pt_ratio', 'rc_slope', 'spike_amp']
 FEATURES = ['spike_width', 'pt_ratio']
-#FEATURES = ['spike_width', 'rp_slope', 'rc_slope', 'pt_ratio']
-#FEATURES = ['spike_width', 'rp_slope', 'rc_slope', 'pt_ratio', 'peak_to_trough', 'firing_rate']
-#FEATURES = ['spike_width', 'firing_rate']
 
 
 def fix_hist_step_vertical_line_at_end(ax):
@@ -43,14 +36,9 @@ excl_df = waveforms_df[waveforms_df['pt_subtract'] > -0.05]
 waveforms_df = waveforms_df[waveforms_df['pt_subtract'] <= -0.05]
 waveforms_df = waveforms_df.reset_index(drop=True)
 
-if CLUSTERING == 'k-means':
-    # K-means clustering
-    kmeans = KMeans(n_clusters=2, random_state=42, n_init=100).fit(waveforms_df[FEATURES].to_numpy())
-    waveforms_df['type'] = kmeans.labels_
-elif CLUSTERING == 'gaussian':
-    # Mixture of Gaussians clustering
-    gauss_mix = GaussianMixture(n_components=2).fit(waveforms_df[FEATURES].to_numpy())
-    waveforms_df['type'] = gauss_mix.predict(waveforms_df[FEATURES].to_numpy())
+# Mixture of Gaussians clustering
+gauss_mix = GaussianMixture(n_components=2).fit(waveforms_df[FEATURES].to_numpy())
+waveforms_df['type'] = gauss_mix.predict(waveforms_df[FEATURES].to_numpy())
 
 # Get the RS and FS labels right
 if (waveforms_df.loc[waveforms_df['type'] == 0, 'firing_rate'].mean()

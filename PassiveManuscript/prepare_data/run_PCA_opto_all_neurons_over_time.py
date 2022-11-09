@@ -32,7 +32,6 @@ T_AFTER = 4
 BASELINE = [-1, 0]
 BIN_SIZE = 0.02
 SMOOTHING = 0.02
-MIN_FR = 0.1
 PLOT = True
 fig_path, save_path = paths()
 fig_path = join(fig_path, 'Ephys', 'PCA', 'AllNeurons')
@@ -44,7 +43,6 @@ BIN_CENTERS = np.arange(-T_BEFORE, T_AFTER, BIN_SIZE) + (BIN_SIZE / 2)
 rec = query_ephys_sessions(one=one)
 
 pca_df = pd.DataFrame()
-pca_dist_df = pd.DataFrame()
 artifact_neurons = get_artifact_neurons()
 for i, eid in enumerate(np.unique(rec['eid'])):
 
