@@ -37,6 +37,7 @@ for i, nickname in enumerate(np.unique(subjects['subject'])):
 
 # Get full region names
 light_neurons['full_region'] = combine_regions(light_neurons['region'])
+light_neurons['abr_region'] = combine_regions(light_neurons['region'], abbreviate=True)
 
 # Drop root and void
 light_neurons = light_neurons.reset_index(drop=True)
@@ -50,13 +51,14 @@ mod_neurons = light_neurons[(light_neurons['sert-cre'] == 1)
 mod_neurons = mod_neurons.groupby('full_region').filter(lambda x: len(x) >= MIN_MOD_NEURONS)
 
 # Get region statistics
-per_region = mod_neurons.groupby('full_region').median(numeric_only=True)
+per_region = mod_neurons.groupby(['full_region', 'abr_region']).median(numeric_only=True).reset_index()
 
 # %% Plot percentage modulated neurons per region
 
 colors, dpi = figure_style()
 f, ax1 = plt.subplots(1, 1, figsize=(1.75, 1.75), dpi=dpi)
 ax1.plot([-0.3, 0.3], [-0.3, 0.3], color='k', ls='--', zorder=0)
+#ax1.plot([-0.3, 0.3], [0, 0], color='k', ls='--', zorder=0)
 (
  so.Plot(per_region, x='mod_index_late_x', y='mod_index_late_y')
  .add(so.Dot(pointsize=3))
@@ -70,6 +72,39 @@ if p < 0.01:
 elif p < 0.05:
     ax1.text(0, 0.25, '*', fontsize=12, ha='center', va='center')
 ax1.set(xticks=np.arange(-0.3, 0.4, 0.3), yticks=np.arange(-0.3, 0.4, 0.3))
+sns.despine(trim=True)
+plt.tight_layout()
+plt.savefig(join(fig_path, 'per_region_mod_index_awake_vs_anesthesia_dots.pdf'))
+
+# %% Plot percentage modulated neurons per region
+
+# Add colormap
+per_region['color'] = [colors[i] for i in per_region['full_region']]
+
+colors, dpi = figure_style()
+f, ax1 = plt.subplots(1, 1, figsize=(1.75, 1.75), dpi=dpi)
+ax1.plot([-0.3, 0.3], [-0.3, 0.3], color='k', ls='--', zorder=0)
+(
+ so.Plot(per_region, x='mod_index_late_x', y='mod_index_late_y')
+ .add(so.Dot(pointsize=0))
+ .on(ax1)
+ .plot()
+ )
+for i in per_region.index:
+    ax1.text(per_region.loc[i, 'mod_index_late_x'],
+             per_region.loc[i, 'mod_index_late_y'],
+             per_region.loc[i, 'abr_region'],
+             ha='center', va='center',
+             color=per_region.loc[i, 'color'], fontsize=4.5, fontweight='bold')
+_, p = wilcoxon(per_region['mod_index_late_x'], per_region['mod_index_late_y'])
+if p < 0.01:
+    ax1.text(0, 0.25, '**', fontsize=12, ha='center', va='center')
+elif p < 0.05:
+    ax1.text(0, 0.25, '*', fontsize=12, ha='center', va='center')
+ax1.set(xticks=np.arange(-0.3, 0.4, 0.3), yticks=np.arange(-0.3, 0.4, 0.3),
+        xlabel='Modulation index awake', ylabel='Modulation index anesthesia')
+
+
 sns.despine(trim=True)
 plt.tight_layout()
 plt.savefig(join(fig_path, 'per_region_mod_index_awake_vs_anesthesia.pdf'))

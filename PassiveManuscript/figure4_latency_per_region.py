@@ -134,8 +134,8 @@ grouped_df.loc[grouped_df['abr_region'] == 'RSP', 'y_offset'] = -5
 f, (ax1, ax2) = plt.subplots(1, 2, figsize=(3.5, 1.75), dpi=dpi)
 (
      so.Plot(grouped_df, x='mod_index_late', y='latency', color='index')
-     #.add(so.Line(color='k', linewidth=1), so.PolyFit(order=1))
-     .add(so.Dot(pointsize=3, edgecolor='w', edgewidth=0.5))
+     .add(so.Dot(pointsize=2, edgecolor='w', edgewidth=0.5))
+     .add(so.Line(color='k', linewidth=1, linestyle='--'), so.PolyFit(order=1))
      .scale(color=newcmp)
      .label(x='Modulation index', y='Modulation latency (ms)')
      .on(ax1)
@@ -146,7 +146,7 @@ for i in grouped_df.index:
              grouped_df.loc[i, 'latency'] + grouped_df.loc[i, 'y_offset'],
              grouped_df.loc[i, 'abr_region'],
              ha=grouped_df.loc[i, 'ha'], va=grouped_df.loc[i, 'va'],
-             color=grouped_df.loc[i, 'color'], fontsize=4.5)
+             color=grouped_df.loc[i, 'color'], fontsize=4.5, fontweight='bold')
 ax1.set(yticks=[0, 200, 400, 600], xticks=[-0.4, -0.2, 0, 0.2])
 r, p = pearsonr(grouped_df['mod_index_late'], grouped_df['latency'])
 ax1.text(-0.35, 520, f'r = {r:.2f}', fontsize=6)
@@ -183,7 +183,7 @@ for i in grouped_df.index:
     ax1.text(grouped_df.loc[i, 'mod_index_late'] ,
              grouped_df.loc[i, 'latency'],
              grouped_df.loc[i, 'abr_region'],
-             ha=grouped_df.loc[i, 'ha'], va=grouped_df.loc[i, 'va'],
+             ha='center', va='center',
              color=grouped_df.loc[i, 'color'], fontsize=4.5, fontweight='bold')
 ax1.set(yticks=[0, 200, 400, 600], xticks=[-0.4, -0.2, 0, 0.2],
         ylabel='Modulation latency (ms)', xlabel='Modulation index')
