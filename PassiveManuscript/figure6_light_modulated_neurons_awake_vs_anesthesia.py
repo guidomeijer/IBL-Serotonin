@@ -45,7 +45,7 @@ light_neurons = light_neurons.drop(index=[i for i, j in enumerate(light_neurons[
 
 # Get modulated neurons
 mod_neurons = light_neurons[(light_neurons['sert-cre'] == 1)
-                            & ((light_neurons['modulated_x'] == 1) | (light_neurons['modulated_y'] == 1))]
+                            & ((light_neurons['modulated_x'] == 1) & (light_neurons['modulated_y'] == 1))]
 #mod_neurons = mod_neurons.groupby('full_region').filter(lambda x: len(x) >= MIN_MOD_NEURONS)
 
 

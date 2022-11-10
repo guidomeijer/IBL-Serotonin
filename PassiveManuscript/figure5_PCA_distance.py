@@ -46,7 +46,7 @@ for i, subject in enumerate(pca_dist_df['subject'].unique()):
             & (np.sum(np.isnan(pca_dist_df.loc[(pca_dist_df['subject'] == subject) & (pca_dist_df['region'] == region), 'pca_dist'])) < 150)):
             pca_dist_df.loc[(pca_dist_df['subject'] == subject) & (pca_dist_df['region'] == region), 'pca_dist_smooth'] = (
                 smooth_interpolate_signal_sg(pca_dist_df.loc[(pca_dist_df['subject'] == subject)
-                                                             & (pca_dist_df['region'] == region), 'pca_dist'], window=15))
+                                                             & (pca_dist_df['region'] == region), 'pca_dist'], window=17))
 
 # Do statistics
 pca_table_df = pca_dist_df.pivot(index='time', columns=['region', 'subject'], values='pca_dist')

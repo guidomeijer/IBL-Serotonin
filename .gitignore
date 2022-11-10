@@ -20,3 +20,5 @@ Histology/annotation_50_lut_v01.npz
 Data/LFP/
 
 .spyproject/config/
+
+paths.json

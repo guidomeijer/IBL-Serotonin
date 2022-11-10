@@ -61,7 +61,7 @@ for i, pid in enumerate(np.unique(light_neurons['pid'])):
     probe = np.unique(these_neurons['probe'])[0]
     subject = np.unique(these_neurons['subject'])[0]
     date = np.unique(these_neurons['date'])[0]
-    print(f'Starting {subject}, {date}')
+    print(f'Starting {subject}, {date}, {probe} ({i+1} of {len(np.unique(light_neurons["pid"]))})')
 
     # Load in laser pulse times
     opto_train_times, _ = load_passive_opto_times(eid, one=one)
@@ -115,12 +115,12 @@ for i, pid in enumerate(np.unique(light_neurons['pid'])):
         pop_median_bl = pop_mean - np.median(pop_mean[tscale < 0])
         pop_var = np.std(pop_act, axis=0)
         pop_var_bl = pop_var - np.mean(pop_var[tscale < 0])
-        pop_cv = np.std(pop_act, axis=0) / np.mean(pop_act, axis=0)
-        pop_cv_bl = pop_cv - np.mean(pop_cv[tscale < 0])
+        pop_ff = np.std(pop_act, axis=0) / np.mean(pop_act, axis=0)
+        pop_ff_bl = pop_ff - np.mean(pop_ff[tscale < 0])
 
         peths_df = pd.concat((peths_df, pd.DataFrame(data={
-            'mean': pop_mean, 'median': pop_median, 'var': pop_var, 'cv': pop_cv,
-            'mean_bl': pop_mean_bl, 'median_bl': pop_median_bl, 'var_bl': pop_var_bl, 'cv_bl': pop_cv_bl,
+            'mean': pop_mean, 'median': pop_median, 'var': pop_var, 'fano': pop_ff,
+            'mean_bl': pop_mean_bl, 'median_bl': pop_median_bl, 'var_bl': pop_var_bl, 'fano_bl': pop_ff_bl,
             'time': peths['tscale'], 'region': reg, 'subject': subject, 'date': date, 'pid': pid})),
             ignore_index=True)
 
@@ -141,9 +141,10 @@ for i in var_table_df.index.values:
 # %% Plot
 
 colors, dpi = figure_style()
-f, (ax1, ax2) = plt.subplots(1, 2, figsize=(3.5, 1.75), dpi=dpi)
+f, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(5.25, 1.75), dpi=dpi)
+
 ax1.add_patch(Rectangle((0, -4), 1, 6, color='royalblue', alpha=0.25, lw=0))
-sns.lineplot(x='time', y='mean_bl', data=peths_df, ax=ax1, hue='region', ci=68,
+sns.lineplot(x='time', y='mean_bl', data=peths_df, ax=ax1, hue='region', errorbar='se',
              hue_order=REGIONS, palette=[colors[i] for i in REGIONS])
 ax1.set(xlabel='Time (s)', ylabel='Population activity (spks/s)',
         ylim=[-1, 1], xticks=[-1, 0, 1, 2])
@@ -151,13 +152,23 @@ leg = ax1.legend(frameon=True, prop={'size': 5.5}, loc='lower left')
 leg.get_frame().set_linewidth(0.0)
 
 ax2.add_patch(Rectangle((0, -2), 1, 4, color='royalblue', alpha=0.25, lw=0))
-sns.lineplot(x='time', y='var_bl', data=peths_df, ax=ax2, hue='region', ci=68,
+sns.lineplot(x='time', y='var_bl', data=peths_df, ax=ax2, hue='region', errorbar='se',
              hue_order=REGIONS, palette=[colors[i] for i in REGIONS])
 ax2.set(xlabel='Time (s)', ylabel='Population variance (std)',
         xticks=[-1, 0, 1, 2], ylim=[-2, 2.05])
 #ax2.plot(var_table_df.loc[var_table_df['p_value'] < 0.05, 'time'],
 #         np.ones(np.sum(var_table_df['p_value'] < 0.05))*2, color='k')
 leg = ax2.legend(frameon=True, prop={'size': 5.5}, loc='lower left')
+leg.get_frame().set_linewidth(0.0)
+
+ax3.add_patch(Rectangle((0, -2), 1, 4, color='royalblue', alpha=0.25, lw=0))
+sns.lineplot(x='time', y='fano', data=peths_df, ax=ax3, hue='region', errorbar='se',
+             hue_order=REGIONS, palette=[colors[i] for i in REGIONS])
+ax3.set(xlabel='Time (s)', ylabel='Fano factor',
+        xticks=[-1, 0, 1, 2], ylim=[0.5, 2])
+#ax2.plot(var_table_df.loc[var_table_df['p_value'] < 0.05, 'time'],
+#         np.ones(np.sum(var_table_df['p_value'] < 0.05))*2, color='k')
+leg = ax3.legend(frameon=True, prop={'size': 5.5}, loc='lower left')
 leg.get_frame().set_linewidth(0.0)
 
 plt.tight_layout()

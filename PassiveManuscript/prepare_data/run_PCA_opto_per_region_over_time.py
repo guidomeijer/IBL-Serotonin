@@ -21,17 +21,17 @@ from one.api import ONE
 from ibllib.atlas import AllenAtlas
 one = ONE()
 ba = AllenAtlas()
-pca = PCA(n_components=3)
+pca = PCA(n_components=10)
 
 # Settings
 MIN_NEURONS = 10  # per region
 T_BEFORE = 1
 T_AFTER = 3
-BASELINE = [-0.5, 0]
+BASELINE = [-1, 0]
 BIN_SIZE = 0.02
 SMOOTHING = 0.02
 MIN_FR = 0.1
-PLOT = False
+PLOT = True
 OVERWRITE = True
 fig_path, save_path = paths()
 fig_path = join(fig_path, 'Ephys', 'PCA')
@@ -132,6 +132,14 @@ for i in rec_ind:
         for kk in range(pca_diff.shape[0]):
             pca_dist[kk] = np.linalg.norm(pca_diff[kk, :])
         time_diff = (time[:-1] + time[1:]) / 2
+
+        """
+        # Get Eucledian distance per point to baseline
+        pca_opto_baseline = np.mean(pca_proj[(time >= BASELINE[0]) & (time < BASELINE[1]), :], axis=0)
+        pca_dist = np.empty(pca_proj.shape[0])
+        for kk in range(pca_proj.shape[0]):
+            pca_dist[kk] = np.linalg.norm(pca_opto_baseline - pca_proj[kk, :])
+        """
 
         # Plot result
         colors, dpi = figure_style()

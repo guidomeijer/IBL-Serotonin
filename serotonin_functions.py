@@ -24,6 +24,7 @@ from sklearn.model_selection import KFold
 from os.path import join, realpath, dirname, isfile
 from glob import glob
 from datetime import datetime
+import json
 from brainbox.io.spikeglx import spikeglx
 from brainbox.metrics.single_units import spike_sorting_metrics
 from brainbox.io.one import SpikeSortingLoader
@@ -56,17 +57,22 @@ def load_subjects(anesthesia=None, behavior=None):
 
 def paths(dropbox=False):
     """
-    Make a file in the root of the repository called 'serotonin_paths.py' with in it:
-
-    FIG_PATH = '/path/to/save/figures'
-    DROPBOX_PATH = '/path/to/Dropbox'
-
+    Load in figure path from paths.json, if this file does not exist it will be generated from
+    user input
     """
-    from serotonin_paths import FIG_PATH, DROPBOX_PATH
+    if not isfile(join(dirname(realpath(__file__)), 'paths.json')):
+        paths = dict()
+        paths['fig_path'] = input('Path folder to save figures: ')
+        paths['dropbox_path'] = input('Path to Dropbox folder (can be empty):')
+        path_file = open(join(dirname(realpath(__file__)), 'paths.json'), 'w')
+        json.dump(paths, path_file)
+        path_file.close()
+    with open(join(dirname(realpath(__file__)), 'paths.json')) as json_file:
+        paths = json.load(json_file)
     if dropbox:
-        fig_path = DROPBOX_PATH
+        fig_path = paths['dropbox_path']
     else:
-        fig_path = FIG_PATH
+        fig_path = paths['fig_path']
     save_path = join(dirname(realpath(__file__)), 'Data')
     return fig_path, save_path
 

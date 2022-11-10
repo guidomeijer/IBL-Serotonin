@@ -64,6 +64,9 @@ sert_neurons['mod_index_abs'] = sert_neurons['mod_index_late'].abs()
 # Group by region
 grouped_df = sert_neurons.groupby(['abr_region', 'full_region']).median(numeric_only=True).reset_index().reset_index()
 
+# Drop root
+grouped_df = grouped_df[grouped_df['abr_region'] != 'root']
+
 # Convert to ms
 grouped_df['latency'] = grouped_df['latency'] * 1000
 sert_neurons['latency'] = sert_neurons['latency'] * 1000
@@ -157,6 +160,36 @@ ax1.text(-0.35, 520, f'r = {r:.2f}', fontsize=6)
      .plot()
 )
 ax2.set(yticks=[0, 200, 400, 600], xticks=[0, 0.25, 0.5])
+
+sns.despine(offset=2, trim=True)
+plt.tight_layout()
+plt.savefig(join(fig_path, 'modulation_latency_vs_index_points.pdf'))
+
+
+# %%
+
+# Add colormap
+grouped_df['color'] = [colors[i] for i in grouped_df['full_region']]
+
+f, ax1 = plt.subplots(1, 1, figsize=(1.75, 1.75), dpi=dpi)
+(
+     so.Plot(grouped_df, x='mod_index_late', y='latency')
+     .add(so.Dot(pointsize=0))
+     .add(so.Line(color='lightgrey', linewidth=1, linestyle='--'), so.PolyFit(order=1))
+     .on(ax1)
+     .plot()
+)
+for i in grouped_df.index:
+    ax1.text(grouped_df.loc[i, 'mod_index_late'] ,
+             grouped_df.loc[i, 'latency'],
+             grouped_df.loc[i, 'abr_region'],
+             ha=grouped_df.loc[i, 'ha'], va=grouped_df.loc[i, 'va'],
+             color=grouped_df.loc[i, 'color'], fontsize=4.5, fontweight='bold')
+ax1.set(yticks=[0, 200, 400, 600], xticks=[-0.4, -0.2, 0, 0.2],
+        ylabel='Modulation latency (ms)', xlabel='Modulation index')
+r, p = pearsonr(grouped_df['mod_index_late'], grouped_df['latency'])
+#ax1.text(0.1, 100, f'r = {r:.2f}', fontsize=6)
+ax1.text(-0.1, 520, '***', fontsize=10, ha='center')
 
 sns.despine(offset=2, trim=True)
 plt.tight_layout()
