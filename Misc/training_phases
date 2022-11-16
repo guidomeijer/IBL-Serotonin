@@ -1,0 +1,27 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Nov 15 09:20:41 2022
+By: Guido Meijer
+"""
+
+from ibl_pipeline import subject, acquisition, reference
+from ibl_pipeline.analyses import behavior as behavior_analysis
+import matplotlib.pyplot as plt
+
+all_subjects = (subject.Subject * subject.SubjectLab * reference.Lab * subject.SubjectProject
+                & 'subject_project = "ibl_neuropixel_brainwide_01"')
+ses = ((all_subjects * behavior_analysis.SessionTrainingStatus * behavior_analysis.PsychResults)
+       .proj('subject_nickname', 'training_status', 'n_trials_stim', 'institution_short')
+       .fetch(format='frame').reset_index())
+ses_status = ses.groupby(['subject_nickname', 'training_status']).size().reset_index()
+ses_status = ses_status.rename(columns={0: 'days'})
+
+f, (ax1, ax2) = plt.subplots(1, 2, figsize=(4, 2), dpi=500)
+ax1.hist(ses_status.loc[ses_status['training_status'] == 'in_training', 'days'])
+ax1.set(xlabel='Days', ylabel='Mice', title='Time to trained 1a')
+
+ax2.hist(ses_status.loc[ses_status['training_status'] == 'trained_1a', 'days'])
+ax2.set(xlabel='Days', ylabel='Mice', title='Time from trained 1a to 1b')
+
+plt.tight_layout()

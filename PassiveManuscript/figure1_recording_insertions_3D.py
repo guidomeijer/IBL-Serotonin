@@ -55,9 +55,9 @@ for i, pid in enumerate(rec['pid']):
 fiber = atlas.Insertion(x=0, y=-0.00664, z=-0.0005, phi=270, theta=32, depth=0.004)
 mlapdv = ba.xyz2ccf(fiber.xyz)
 mlab.plot3d(mlapdv[:, 1], mlapdv[:, 2], mlapdv[:, 0],
-                line_width=1, tube_radius=150, color=(.6, .6, .6))
+            line_width=1, tube_radius=150, color=(.6, .6, .6))
 
-rendering.rotating_video(join(fig_path, 'rotation_brain_insertions.webm'), fig)
+rendering.rotating_video(join(fig_path, 'rotation_brain_insertions.avi'), fig, fps=30, secs=12)
 
 # %%
 colors, dpi = figure_style()
