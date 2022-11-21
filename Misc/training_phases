@@ -14,14 +14,15 @@ all_subjects = (subject.Subject * subject.SubjectLab * reference.Lab * subject.S
 ses = ((all_subjects * behavior_analysis.SessionTrainingStatus * behavior_analysis.PsychResults)
        .proj('subject_nickname', 'training_status', 'n_trials_stim', 'institution_short')
        .fetch(format='frame').reset_index())
+ses.loc[ses['training_status'] == 'untrainable', 'training_status'] = 'in_training'
 ses_status = ses.groupby(['subject_nickname', 'training_status']).size().reset_index()
 ses_status = ses_status.rename(columns={0: 'days'})
 
-f, (ax1, ax2) = plt.subplots(1, 2, figsize=(4, 2), dpi=500)
-ax1.hist(ses_status.loc[ses_status['training_status'] == 'in_training', 'days'])
+f, (ax1, ax2) = plt.subplots(1, 2, figsize=(6, 3), dpi=600)
+ax1.hist(ses_status.loc[ses_status['training_status'] == 'in_training', 'days'], bins=40)
 ax1.set(xlabel='Days', ylabel='Mice', title='Time to trained 1a')
 
-ax2.hist(ses_status.loc[ses_status['training_status'] == 'trained_1a', 'days'])
+ax2.hist(ses_status.loc[ses_status['training_status'] == 'trained_1a', 'days'], bins=40)
 ax2.set(xlabel='Days', ylabel='Mice', title='Time from trained 1a to 1b')
 
 plt.tight_layout()

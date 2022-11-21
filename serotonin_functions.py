@@ -590,11 +590,12 @@ def load_passive_opto_times(eid, one=None, force_rerun=False, anesthesia=False):
             opto_trace = sr.read_sync_analog(slice(offset, sr.shape[0]))[:, 1]
             opto_times = np.arange(offset, sr.shape[0]) / sr.fs
 
-        # Get start times of pulse trains
-        opto_on_times = opto_times[np.concatenate((np.diff(opto_trace), [0])) > 1]
-        if len(opto_on_times) == 0:
+        if np.sum(np.diff(opto_trace) > 1) == 0:
             print(f'No pulses found for {eid}')
             return [], []
+
+        # Get start times of pulse trains
+        opto_on_times = opto_times[np.concatenate((np.diff(opto_trace), [0])) > 1]
 
         # Get the times of the onset of each pulse train
         opto_train_times = opto_on_times[np.concatenate(([True], np.diff(opto_on_times) > 1))]

@@ -93,8 +93,8 @@ f, ax1 = plt.subplots(1, 1, figsize=(3.5, 1.75), dpi=dpi)
 ax1.imshow(R, aspect='auto', cmap='binary', vmin=0, vmax=np.std(R),
            extent=np.r_[times[[0, -1]], depths[[0, -1]]], origin='upper')
 ax1.set(xlim=[1300, 2600], ylim=[0, 4], ylabel='Depth (mm)')
-ax1.set(xticks=[ax1.get_xlim()[0] + 1, ax1.get_xlim()[0] + 61])
-ax1.text(ax1.get_xlim()[0] + 30, 4.3, '1m', ha='center', va='center')
+ax1.set(xticks=[ax1.get_xlim()[0] + 10, ax1.get_xlim()[0] + 70])
+ax1.text(ax1.get_xlim()[0] + 40, 4.3, '1m', ha='center', va='center')
 ax1.axes.get_xaxis().set_visible(False)
 ax1.invert_yaxis()
 
