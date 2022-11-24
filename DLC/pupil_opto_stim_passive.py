@@ -19,14 +19,12 @@ from one.api import ONE
 one = ONE()
 
 # Settings
-OVERWRITE = False
+OVERWRITE = True
 TIME_BINS = np.arange(-0.5, 4.1, 0.1)
 BIN_SIZE = 0.1  # seconds
 BASELINE = [0.5, 0]  # seconds
 fig_path, save_path = paths()
-fig_path = join(fig_path, 'Pupil')
-SERT_EXAMPLE = 'ZFM-02600'
-WT_EXAMPLE = 'ZFM-02181'
+fig_path = join(fig_path, 'Pupil', 'Passive')
 
 # Query and load data
 subjects = load_subjects()
@@ -45,14 +43,14 @@ for k, nickname in enumerate(np.unique(rec['subject'])):
     # Get eids
     eids = np.unique(rec.loc[rec['subject'] == nickname, 'eid'])
 
-    # Skip if all sessions already done
-    if not OVERWRITE:
-        if len([i for i in rec.loc[rec['subject'] == nickname, 'eid'].values if i in eids]) == len(eids):
-            print('Already processed, skipping')
-            continue
-
     pupil_size = pd.DataFrame()
     for i, eid in enumerate(eids):
+
+        # Skip if session is already done
+        if not OVERWRITE:
+            if eid in results_df['eid']:
+                print('Already processed, skipping')
+                continue
 
         # Get session details
         ses_details = one.get_details(eid)
@@ -73,6 +71,8 @@ for k, nickname in enumerate(np.unique(rec['subject'])):
             video_times, XYs = get_dlc_XYs(one, eid)
         except:
             print('Could not load video and/or DLC data')
+            continue
+        if video_times is None:
             continue
 
         # If the difference between timestamps and video frames is too large, skip
@@ -98,13 +98,13 @@ for k, nickname in enumerate(np.unique(rec['subject'])):
         for t, trial_start in enumerate(opto_train_times):
             this_diameter = np.array([np.nan] * TIME_BINS.shape[0])
             baseline_subtracted = np.array([np.nan] * TIME_BINS.shape[0])
-            baseline = np.nanmedian(diameter_perc[(video_times > (trial_start - BASELINE[0]))
+            baseline = np.nanmean(diameter_perc[(video_times > (trial_start - BASELINE[0]))
                                                   & (video_times < (trial_start - BASELINE[1]))])
             for b, time_bin in enumerate(TIME_BINS):
-                this_diameter[b] = np.nanmedian(diameter_perc[
+                this_diameter[b] = np.nanmean(diameter_perc[
                     (video_times > (trial_start + time_bin) - (BIN_SIZE / 2))
                     & (video_times < (trial_start + time_bin) + (BIN_SIZE / 2))])
-                baseline_subtracted[b] = np.nanmedian(diameter_perc[
+                baseline_subtracted[b] = np.nanmean(diameter_perc[
                     (video_times > (trial_start + time_bin) - (BIN_SIZE / 2))
                     & (video_times < (trial_start + time_bin) + (BIN_SIZE / 2))]) - baseline
             pupil_size = pd.concat((pupil_size, pd.DataFrame(data={
@@ -114,9 +114,12 @@ for k, nickname in enumerate(np.unique(rec['subject'])):
 
         # Add to overal dataframe
         results_df = pd.concat((results_df, pd.DataFrame(data={
-            'diameter': pupil_size[pupil_size['subject'] == nickname].groupby('time').mean()['diameter'],
-            'baseline_subtracted': pupil_size[pupil_size['subject'] == nickname].groupby('time').mean()['baseline_subtracted'],
-            'subject': nickname, 'expression': expression})), ignore_index=True)
+            'diameter': pupil_size[pupil_size['eid'] == eid].groupby('time').mean()['diameter'],
+            'baseline_subtracted': pupil_size[pupil_size['eid'] == eid].groupby('time').mean()['baseline_subtracted'],
+            'time': TIME_BINS, 'subject': nickname, 'expression': expression, 'eid': eid})), ignore_index=True)
+
+    # Save output
+    results_df.to_csv(join(save_path, 'pupil_passive.csv'))
 
     # Plot this animal
     colors, dpi = figure_style()
@@ -142,10 +145,7 @@ for k, nickname in enumerate(np.unique(rec['subject'])):
     plt.tight_layout()
     sns.despine(trim=True)
 
-    plt.savefig(join(fig_path, f'{nickname}_pupil_opto_passive.pdf'))
+    plt.savefig(join(fig_path, f'{nickname}_pupil_opto_passive.jpg'), dpi=600)
     plt.close(f)
 
-
-# Save output
-results_df.to_csv(join(save_path, 'pupil_passive.csv'))
 

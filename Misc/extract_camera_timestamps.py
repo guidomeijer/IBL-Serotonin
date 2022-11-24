@@ -9,7 +9,7 @@ import numpy as np
 from os.path import join
 from serotonin_functions import query_ephys_sessions
 from ibllib.io.extractors.camera import CameraTimestampsFPGA
-from ibllib.io.extractors.ephys_fpga import get_sync_and_chn_map
+from ibllib.io.extractors.ephys_fpga import get_sync_and_chn_map, get_main_probe_sync, load_channel_map
 from one.api import ONE
 one = ONE()
 
@@ -21,7 +21,7 @@ for i, eid in enumerate(np.unique(rec['eid'])):
     print(f'Processing {eid} [{i+1} of {len(np.unique(rec["eid"]))}]')
 
     try:
-        cam_times = one.load_dataset(eid, dataset='_ibl_bodyCamera.times.npy', collection='alf')
+        cam_times = one.load_dataset(eid, dataset='_ibl_leftCamera.times.npy', collection='alf')
     except:
         print('\nNo extracted timestamps found, starting manual extraction..\n')
 
@@ -35,12 +35,14 @@ for i, eid in enumerate(np.unique(rec['eid'])):
                          collection='raw_video_data')
 
         # Extract timestamps
-        session_path = one.eid2path(eid)
-        sync, chmap = get_sync_and_chn_map(session_path, 'raw_ephys_data')
-        extractor = CameraTimestampsFPGA('left', session_path=session_path)
-        left_times = extractor.extract(sync=sync, chmap=chmap)[0]
-
-        np.save(join(session_path, 'alf', '_ibl_bodyCamera.times.npy'), left_times)
-
-        print('Extracted timestamps saved')
+        try:
+            session_path = one.eid2path(eid)
+            sync, chmap = get_sync_and_chn_map(session_path, 'raw_ephys_data')
+            extractor = CameraTimestampsFPGA('left', session_path=session_path)
+            left_times = extractor.extract(sync=sync, chmap=chmap)[0]
+            np.save(join(session_path, 'leftCamera.times.npy'), left_times)
+            print('Extracted timestamps saved')
+        except Exception as err:
+            print(err)
+            continue
 

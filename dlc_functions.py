@@ -7,14 +7,20 @@ By: Michael Schartner & Matt Whiteway
 
 from one.api import ONE
 import pandas as pd
-from os.path import join
+from os.path import join, isfile
 import numpy as np
 from scipy.interpolate import interp1d
 
 
 def get_dlc_XYs(one, eid, view='left', likelihood_thresh=0.9):
+    if f'alf/_ibl_{view}Camera.times.npy' in one.list_datasets(eid):
+        times = one.load_dataset(eid, f'_ibl_{view}Camera.times.npy')
+    elif isfile(join(one.eid2path(eid), f'{view}Camera.times.npy')):
+        times = np.load(join(one.eid2path(eid), f'{view}Camera.times.npy'))
+    else:
+        print('could not load camera timestamps')
+        return None, None
     try:
-        times = one.load_dataset(eid, '_ibl_%sCamera.times.npy' % view)
         cam = one.load_dataset(eid, '_ibl_%sCamera.dlc.pqt' % view)
     except KeyError:
         print('not all dlc data available')
