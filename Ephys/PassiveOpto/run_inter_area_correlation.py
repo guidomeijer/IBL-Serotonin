@@ -20,7 +20,7 @@ ba = AllenAtlas()
 # Settings
 T_BEFORE = 1
 T_AFTER = 3
-BIN_SIZE = 0.2
+BIN_SIZE = 0.1
 SMOOTHING = 0
 SUBTRACT_MEAN = False
 OVERWRITE = True

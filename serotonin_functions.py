@@ -301,6 +301,9 @@ def load_trials(eid, laser_stimulation=False, invert_choice=False, invert_stimsi
 
 
 def combine_regions(acronyms, split_thalamus=False, abbreviate=False):
+    """
+    Combines regions into groups, input Beryl atlas acronyms!
+    """
     regions = np.array(['root'] * len(acronyms), dtype=object)
     if abbreviate:
         regions[np.in1d(acronyms, ['ILA', 'PL', 'ACAd', 'ACAv'])] = 'mPFC'
@@ -326,7 +329,7 @@ def combine_regions(acronyms, split_thalamus=False, abbreviate=False):
         regions[np.in1d(acronyms, ['PIR'])] = 'Pir'
         #regions[np.in1d(acronyms, ['SNr', 'SNc', 'SNl'])] = 'SN'
         regions[np.in1d(acronyms, ['VISa', 'VISam'])] = 'PPC'
-        regions[np.in1d(acronyms, ['MEA', 'CEA', 'BLAa', 'BLAp', 'BLAv', 'COAa'])] = 'Amyg'
+        regions[np.in1d(acronyms, ['MEA', 'CEA', 'BLA', 'COAa'])] = 'Amyg'
         regions[np.in1d(acronyms, ['AON', 'TTd', 'DP'])] = 'OLF'
         regions[np.in1d(acronyms, ['CP', 'STR', 'STRd', 'STRv'])] = 'Str'
         regions[np.in1d(acronyms, ['CA1', 'CA3', 'DG'])] = 'Hipp'
