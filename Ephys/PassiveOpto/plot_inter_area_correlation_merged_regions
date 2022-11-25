@@ -16,18 +16,23 @@ from serotonin_functions import paths, figure_style
 import networkx as nx
 
 # Settings
-BIN_SIZE = 100
+BIN_SIZE = 150
 MIN_SUBJECTS = 2
+MIN_NEURONS = 10
 TIME_WIN = [0.2, 0.8]
 
 # Get paths
 fig_path, save_path = paths()
 
 # Load in data
-corr_df = pd.read_csv(join(save_path, f'region_corr_{BIN_SIZE}.csv'))
+corr_df = pd.read_csv(join(save_path, f'combined_region_corr_{BIN_SIZE}.csv'))
 
 # Remove nans
 corr_df = corr_df[~np.isnan(corr_df['r'])]
+
+# Min neuron criterium
+corr_df = corr_df[corr_df['n_region_1'] >= MIN_NEURONS]
+corr_df = corr_df[corr_df['n_region_2'] >= MIN_NEURONS]
 
 # Select sert-cre animals
 sert_df = corr_df[corr_df['sert-cre'] == 1]
@@ -75,7 +80,8 @@ for r1, region_1 in enumerate(all_regions[:-1]):
 
         sns.despine(trim=True)
         plt.tight_layout()
-        plt.savefig(join(fig_path, 'Ephys', 'Correlations', f'{region_1} - {region_2}.jpg'), dpi=600)
+        plt.savefig(join(fig_path, 'Ephys', 'Correlations', 'CombinedRegions',
+                         f'{region_1} - {region_2}.jpg'), dpi=600)
         plt.close(f)
 
 # Get average over animals
@@ -101,8 +107,10 @@ plt.margins(x=0.2, y=0.2)
 pos = nx.circular_layout(G)
 nx.draw(G, pos=pos, with_labels=True, width=weights, edge_color=edge_colors, font_size=7,
         node_size=100, node_color='orange', ax=ax1)
-plt.savefig(join(fig_path, 'Ephys', 'Correlations', 'Correlation_Graph.jpg'), dpi=600)
+plt.savefig(join(fig_path, 'Ephys', 'Correlations', 'CombinedRegions', 'Correlation_Graph.jpg'),
+            dpi=600)
 
+"""
 # %% Plot hippocampus frontal / sensory
 slice1_df = sert_df.loc[(((sert_df['region_1'] == 'Hippocampus') & (sert_df['region_2'] == 'Frontal'))
                          | ((sert_df['region_1'] == 'Frontal') & (sert_df['region_2'] == 'Hippocampus')))]
@@ -124,7 +132,8 @@ plt.setp(leg.get_title(),fontsize=5)
 
 plt.tight_layout()
 sns.despine(trim=True)
-plt.savefig(join(fig_path, 'Ephys', 'Correlations', 'Hippocampus_Sensory_Frontal.jpg'), dpi=600)
-
+plt.savefig(join(fig_path, 'Ephys', 'Correlations', 'CombinedRegions', 'Hippocampus_Sensory_Frontal.jpg'),
+            dpi=600)
+"""
 
 

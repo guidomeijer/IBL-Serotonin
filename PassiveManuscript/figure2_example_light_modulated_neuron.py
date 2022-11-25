@@ -22,7 +22,7 @@ from brainbox.io.one import SpikeSortingLoader
 from brainbox.singlecell import calculate_peths
 from zetapy import getZeta
 from brainbox.plot import peri_event_time_histogram
-from serotonin_functions import paths, remap,  load_passive_opto_times
+from serotonin_functions import paths, remap, load_passive_opto_times
 from one.api import ONE
 from ibllib.atlas import AllenAtlas
 ba = AllenAtlas()
