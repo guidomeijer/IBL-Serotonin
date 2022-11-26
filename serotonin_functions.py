@@ -125,6 +125,7 @@ def figure_style():
               'block': sns.color_palette('colorblind')[6],
               'RS': sns.color_palette('Set2')[0],
               'FS': sns.color_palette('Set2')[1],
+              'NS': sns.color_palette('Set2')[1],
               'OFC': sns.color_palette('Dark2')[0],
               'mPFC': sns.color_palette('Dark2')[1],
               'M2': sns.color_palette('Dark2')[2],
@@ -160,6 +161,7 @@ def figure_style():
               'Frontal': sns.color_palette('Dark2')[2],
               'Sensory': sns.color_palette('Dark2')[5],
               'Midbrain': sns.color_palette('Set1')[7],
+              'Striatum': sns.color_palette('Accent')[1],
               'M2-mPFC': sns.color_palette('Dark2')[1],
               'M2-ORB': sns.color_palette('Dark2')[0]}
     screen_width = tk.Tk().winfo_screenwidth()

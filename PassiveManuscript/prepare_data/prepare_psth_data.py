@@ -21,7 +21,7 @@ one = ONE()
 
 # Settings
 T_BEFORE = 1  # for plotting
-T_AFTER = 2
+T_AFTER = 4
 BIN_SIZE = 0.1
 SMOOTHING = 0.1
 BASELINE = [-1, 0]
@@ -77,7 +77,7 @@ for i, pid in enumerate(np.unique(light_neurons['pid'])):
             # Add to dataframe
             peths_df = pd.concat((peths_df, pd.DataFrame(index=[peths_df.shape[0]], data={
                 'peth': [peths['means'][n, :]],  'time': [tscale], 'region': these_neurons.loc[index, 'full_region'],
-                'modulation': these_neurons.loc[index, 'mod_index_late'],
+                'modulation': these_neurons.loc[index, 'mod_index_late'], 'firing_rate': np.mean(peths['means'][n, :]),
                 'neuron_id': these_neurons.loc[index, 'neuron_id'], 'subject': these_neurons.loc[index, 'subject'],
                 'eid': these_neurons.loc[index, 'eid'], 'acronym': these_neurons.loc[index, 'region'],
                 'probe': probe, 'date': date, 'pid': pid})))

@@ -44,15 +44,15 @@ waveforms_df['type'] = gauss_mix.predict(waveforms_df[FEATURES].to_numpy())
 if (waveforms_df.loc[waveforms_df['type'] == 0, 'firing_rate'].mean()
         > waveforms_df.loc[waveforms_df['type'] == 1, 'firing_rate'].mean()):
     # type 0 is fast spiking
-    waveforms_df.loc[waveforms_df['type'] == 0, 'type'] = 'FS'
+    waveforms_df.loc[waveforms_df['type'] == 0, 'type'] = 'NS'
     waveforms_df.loc[waveforms_df['type'] == 1, 'type'] = 'RS'
 else:
     # type 1 is fast spiking
     waveforms_df.loc[waveforms_df['type'] == 0, 'type'] = 'RS'
-    waveforms_df.loc[waveforms_df['type'] == 1, 'type'] = 'FS'
+    waveforms_df.loc[waveforms_df['type'] == 1, 'type'] = 'NS'
 
 perc_reg = (np.sum(waveforms_df["type"] == "RS") / waveforms_df.shape[0]) * 100
-perc_fast = (np.sum(waveforms_df["type"] == "FS") / waveforms_df.shape[0]) * 100
+perc_fast = (np.sum(waveforms_df["type"] == "NS") / waveforms_df.shape[0]) * 100
 print(f'{perc_fast:.2f}% fast spiking')
 print(f'{perc_reg:.2f}% regural spiking')
 
@@ -65,7 +65,7 @@ neuron_type = neuron_type.drop(['waveform', 'spike_width', 'firing_rate', 'rp_sl
 neuron_type.to_csv(join(data_dir, 'neuron_type.csv'), index=False)
 
 _, p_value = kstest(waveforms_df.loc[waveforms_df['type'] == 'RS', 'firing_rate'],
-                    waveforms_df.loc[waveforms_df['type'] == 'FS', 'firing_rate'])
+                    waveforms_df.loc[waveforms_df['type'] == 'NS', 'firing_rate'])
 print(f'KS-test p-value: {p_value}')
 
 # %% Plot mean waveforms
@@ -76,7 +76,7 @@ time_ax = np.linspace(0, (waveforms_df.loc[1, 'waveform'].shape[0]/30000)*1000,
 f, ax = plt.subplots(1, 1, figsize=(1.5, 1.75), dpi=dpi)
 ax.plot(time_ax, waveforms_df.loc[waveforms_df['type'] == 'RS', 'waveform'].to_numpy().mean(),
          color=colors['RS'], label='RS')
-ax.plot(time_ax, waveforms_df.loc[waveforms_df['type'] == 'FS', 'waveform'].to_numpy().mean(),
+ax.plot(time_ax, waveforms_df.loc[waveforms_df['type'] == 'NS', 'waveform'].to_numpy().mean(),
          color=colors['FS'], label='NS')
 ax.plot([0.1, 0.1], [-0.18, -0.08], color='k', lw=0.5)
 ax.plot([0.1, 1.1], [-0.18, -0.18], color='k', lw=0.5)
@@ -95,10 +95,10 @@ ax.scatter(waveforms_df.loc[waveforms_df['type'] == 'RS', 'spike_width'],
             waveforms_df.loc[waveforms_df['type'] == 'RS', 'pt_ratio'],
             label=f'Regular spiking (RS)',
             color=colors['RS'], s=1)
-ax.scatter(waveforms_df.loc[waveforms_df['type'] == 'FS', 'spike_width'],
-            waveforms_df.loc[waveforms_df['type'] == 'FS', 'pt_ratio'],
+ax.scatter(waveforms_df.loc[waveforms_df['type'] == 'NS', 'spike_width'],
+            waveforms_df.loc[waveforms_df['type'] == 'NS', 'pt_ratio'],
             label=f'Narrow spiking (NS)',
-            color=colors['FS'], s=1)
+            color=colors['NS'], s=1)
 ax.set(xlabel='Spike width (ms)', ylabel='Peak-to-trough ratio', xlim=[0, 1.55], ylim=[0, 1],
        xticks=[0, 0.5, 1, 1.5])
 ax.legend(frameon=False, markerscale=2, bbox_to_anchor=(0.2, 0.8), handletextpad=0.1,
