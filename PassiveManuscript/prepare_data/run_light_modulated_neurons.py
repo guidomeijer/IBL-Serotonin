@@ -22,7 +22,7 @@ ba = AllenAtlas()
 one = ONE()
 
 # Settings
-OVERWRITE = False
+OVERWRITE = True
 NEURON_QC = True
 PRE_TIME = [0.5, 0]  # for modulation index
 POST_TIME_EARLY = [0, 0.5]
@@ -182,7 +182,7 @@ for i in rec.index.values:
         'subject': subject, 'date': date, 'eid': eid, 'probe': probe, 'pid': pid,
         'region': cluster_regions, 'neuron_id': cluster_ids,
         'mod_index_early': mod_idx_early, 'mod_index_late': mod_idx_late,
-        'modulated': p_values < 0.05, 'p_value': p_values,
+        'modulated': p_values < 0.05, 'p_value': p_values, 'firing_rate': firing_rates,
         'latency_peak': latency_peak, 'latency_peak_onset': latency_peak_onset})))
 
     # Save output for this insertion
