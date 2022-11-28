@@ -61,7 +61,8 @@ neuron_type = waveforms_df.copy()
 excl_df['type'] = 'Und.'
 neuron_type = neuron_type.append(excl_df).sort_values('eid')
 neuron_type = neuron_type.drop(['waveform', 'spike_width', 'firing_rate', 'rp_slope', 'spike_amp', 'pt_ratio',
-                                'rc_slope', 'pt_subtract', 'peak_to_trough', 'n_waveforms'], axis=1)
+                                'rc_slope', 'pt_subtract', 'peak_to_trough', 'n_waveforms',
+                                'waveform_2D'], axis=1)
 neuron_type.to_csv(join(data_dir, 'neuron_type.csv'), index=False)
 
 _, p_value = kstest(waveforms_df.loc[waveforms_df['type'] == 'RS', 'firing_rate'],
