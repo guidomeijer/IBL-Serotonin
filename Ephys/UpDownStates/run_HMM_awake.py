@@ -26,10 +26,9 @@ one = ONE()
 
 # Settings
 K = 2    # number of discrete states
-BIN_SIZE = 0.4
-SMOOTHING = 0.1
-do_PCA = True
-D = 5   # dimensions of PCA
+BIN_SIZE = 0.2
+SMOOTHING = 0.2
+D = 10   # dimensions of PCA
 OVERWRITE = True
 T_BEFORE = 1  # for PSTH
 T_AFTER = 4
@@ -46,7 +45,7 @@ subjects = load_subjects()
 if OVERWRITE:
     up_down_state_df = pd.DataFrame()
 else:
-    up_down_state_df = pd.read_csv(join(save_path, 'up_down_states_awake.csv'))
+    up_down_state_df = pd.read_csv(join(save_path, 'updown_state_trans_awake.csv'))
 
 for i in rec.index.values:
 
@@ -64,7 +63,9 @@ for i in rec.index.values:
     artifact_neurons = get_artifact_neurons()
 
     # Load opto times
-    opto_times, _ = load_passive_opto_times(eid, one=one, force_rerun=True)
+    opto_times, _ = load_passive_opto_times(eid, one=one)
+    if len(opto_times) == 0:
+        continue
 
     # Load in neural data
     sl = SpikeSortingLoader(pid=pid, one=one, atlas=ba)
@@ -80,7 +81,7 @@ for i in rec.index.values:
     spikes.clusters = spikes.clusters[np.isin(spikes.clusters, clusters_pass)]
 
     # Remap to high level regions
-    clusters.regions = high_level_regions(clusters.acronym, merge_cortex=True)
+    clusters.regions = high_level_regions(clusters.acronym)
 
     for j, region in enumerate(np.unique(clusters.regions)):
 
@@ -98,27 +99,15 @@ for i in rec.index.values:
         pop_act = peth['means'].T
 
         # Do PCA
-        if do_PCA:
-            pca = PCA(n_components=D)
-            ss = StandardScaler(with_mean=True, with_std=True)
-            pop_vector_norm = ss.fit_transform(pop_act)
-            pca_proj = pca.fit_transform(pop_vector_norm)
+        pca = PCA(n_components=D)
+        ss = StandardScaler(with_mean=True, with_std=True)
+        pop_vector_norm = ss.fit_transform(pop_act)
+        pca_proj = pca.fit_transform(pop_vector_norm)
 
-            # Make an hmm and sample from it
-            arhmm = ssm.HMM(K, pca_proj.shape[1], observations="gaussian")
-            arhmm.fit(pca_proj)
-            zhat = arhmm.most_likely_states(pca_proj)
-
-        else:
-            # Make an hmm and sample from it
-            arhmm = ssm.HMM(K, pop_act.shape[1], observations="gaussian")
-            arhmm.fit(pop_act)
-            zhat = arhmm.most_likely_states(pop_act)
-
-            # Make an hmm and sample from it
-            arhmm = ssm.HMM(K, pop_act.shape[1], observations="gaussian")
-            arhmm.fit(pop_act)
-            zhat = arhmm.most_likely_states(pop_act)
+        # Make an hmm and sample from it
+        arhmm = ssm.HMM(K, pca_proj.shape[1], observations="gaussian")
+        arhmm.fit(pca_proj)
+        zhat = arhmm.most_likely_states(pca_proj)
 
         # Make sure state 0 is inactive and state 1 active
         if np.mean(np.mean(pop_act[zhat == 0, :], 1)) > np.mean(np.mean(pop_act[zhat == 1, :], 1)):
@@ -141,7 +130,6 @@ for i in rec.index.values:
             'subject': subject, 'date': date, 'eid': eid, 'pid': pid, 'sert-cre': sert_cre, 'region': region,
             'to_down_peths': to_down_peths['means'][0], 'to_up_peths': to_up_peths['means'][0],
             'time': to_down_peths['tscale']})))
-
 
         if PLOT:
             try:
@@ -172,6 +160,6 @@ for i in rec.index.values:
                 plt.close(f)
             except Exception as err:
                 print(err)
-                
+
     # Save output
-    up_down_state_df.to_csv(join(save_path, 'up_down_states_awake.csv'))
+    up_down_state_df.to_csv(join(save_path, 'updown_state_trans_awake.csv'))

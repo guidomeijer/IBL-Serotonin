@@ -8,34 +8,46 @@ By: Guido Meijer
 import numpy as np
 from os.path import join
 import pandas as pd
+from scipy.optimize import curve_fit
 from brainbox.metrics.single_units import spike_sorting_metrics
 from brainbox.io.one import SpikeSortingLoader
-from serotonin_functions import paths, query_ephys_sessions
+from serotonin_functions import paths, query_ephys_sessions, get_neuron_qc, get_artifact_neurons
 from one.api import ONE
 from ibllib.atlas import AllenAtlas
 ba = AllenAtlas()
 one = ONE()
 
 # Settings
-OVERWRITE = False
-NEURON_QC = True
+OVERWRITE = True
 _, save_path = paths()
 
 # Query sessions
 rec = query_ephys_sessions(one=one)
+
+# Get artifact neurons
+artifact_neurons = get_artifact_neurons()
 
 if OVERWRITE:
     waveforms_df = pd.DataFrame()
 else:
     waveforms_df = pd.read_pickle(join(save_path, 'waveform_metrics.p'))
 
+# %% Functions
+
+
+def gaus(x, a, x0, sigma):
+    return a * np.exp(-(x-x0)**2 / (2 * sigma**2))
+
+
+# %%
 for i in rec.index.values:
 
     # Get session details
     pid, eid, probe = rec.loc[i, 'pid'], rec.loc[i, 'eid'], rec.loc[i, 'probe']
     subject, date = rec.loc[i, 'subject'], rec.loc[i, 'date']
-    if pid in waveforms_df['pid'].values:
-        continue
+    if not OVERWRITE:
+        if pid in waveforms_df['pid'].values:
+            continue
 
     print(f'Starting {subject}, {date}')
 
@@ -51,10 +63,8 @@ for i in rec.index.values:
     # Get data collection
     collections = one.list_collections(eid)
     if f'alf/{probe}/pykilosort' in collections:
-        alf_path = one.eid2path(eid).joinpath('alf', probe, 'pykilosort')
         collection = f'alf/{probe}/pykilosort'
     else:
-        alf_path = one.eid2path(eid).joinpath('alf', probe)
         collection = f'alf/{probe}'
 
     # Load in waveforms
@@ -64,17 +74,11 @@ for i in rec.index.values:
     waveforms, wf_spikes, wf_channels = data[0], data[1], data[2]
     waveforms = waveforms * 1000  # to uV
 
-    # Filter neurons that pass QC
-    if NEURON_QC:
-        print('Calculating neuron QC metrics..')
-        qc_metrics, _ = spike_sorting_metrics(spikes.times, spikes.clusters,
-                                              spikes.amps, spikes.depths,
-                                              cluster_ids=np.arange(clusters.channels.size))
-        clusters_pass = np.where(qc_metrics['label'] == 1)[0]
-    else:
-        clusters_pass = np.unique(spikes.clusters)
-    if len(spikes.clusters) == 0:
-        continue
+    # Filter neurons that pass QC and exclude artifact neurons
+    qc_metrics = get_neuron_qc(pid, one=one, ba=ba)
+    clusters_pass = np.where(qc_metrics['label'] == 1)[0]
+    clusters_pass = clusters_pass[~np.isin(clusters_pass, artifact_neurons.loc[
+        artifact_neurons['pid'] == pid, 'neuron_id'].values)]
     clusters_regions = clusters['acronym'][clusters_pass]
 
     # Loop over clusters
@@ -120,12 +124,57 @@ for i in rec.index.values:
         neuron_fr = (np.sum(spikes['clusters'] == neuron_id)
                      / np.max(spikes['times']))
 
+        # Get multichannel features
+        these_channels = wf_channels[spikes.clusters[wf_spikes] == neuron_id][0, :]
+
+        # Select channels on the side of the probe with the max amplitude
+        if channels['lateral_um'][these_channels][0] > 35:
+            lat_channels = channels['lateral_um'][these_channels] > 35
+        elif channels['lateral_um'][these_channels][0] < 35:
+            lat_channels = channels['lateral_um'][these_channels] < 35
+
+        # Select channels within 100 um of soma
+        ax_channels = np.abs(channels['axial_um'][these_channels]
+                             - channels['axial_um'][these_channels[0]]) <= 100
+        use_channels = lat_channels & ax_channels
+
+        # Get distance to soma and sort channels accordingly
+        dist_soma = np.sort(channels['axial_um'][these_channels[use_channels]]
+                            - channels['axial_um'][these_channels[use_channels][0]])
+        dist_soma = dist_soma / 1000  # convert to mm
+        sort_ch = np.argsort(channels['axial_um'][these_channels[use_channels]]
+                             - channels['axial_um'][these_channels[use_channels][0]])
+        wf_ch_sort = mean_wf_ch[:, use_channels]
+        wf_ch_sort = wf_ch_sort[:, sort_ch]
+        wf_ch_sort = wf_ch_sort.T  # put time on the second dimension
+
+        # Get normalized amplitude per channel and time of waveform trough
+        norm_amp = np.empty(wf_ch_sort.shape[0])
+        time_trough = np.empty(wf_ch_sort.shape[0])
+        for k in range(wf_ch_sort.shape[0]):
+            norm_amp[k] = np.abs(np.min(wf_ch_sort[k, :]) - np.max(wf_ch_sort[k, :]))
+            time_trough[k] = (np.argmin(wf_ch_sort[k, :]) / 30000) * 1000  # ms
+        norm_amp = (norm_amp - np.min(norm_amp)) / (np.max(norm_amp) - np.min(norm_amp))
+
+        # Get spread and velocity
+        try:
+            popt, pcov = curve_fit(gaus, dist_soma, norm_amp, p0=[1, 0, 0.1])
+            fit = gaus(dist_soma, *popt)
+            spread = (np.sum(fit / np.max(fit) > 0.12) * 20) / 1000
+            v_below, _ = np.polyfit(time_trough[dist_soma <= 0], dist_soma[dist_soma <= 0], 1)
+            v_above, _ = np.polyfit(time_trough[dist_soma >= 0], dist_soma[dist_soma >= 0], 1)
+        except:
+            continue
+
         # Add to dataframe
         waveforms_df = pd.concat((waveforms_df, pd.DataFrame(index=[waveforms_df.shape[0] + 1], data={
             'pid': pid, 'eid': eid, 'probe': probe, 'subject': subject, 'waveform': [mean_wf],
             'cluster_id': neuron_id, 'regions': clusters_regions[n], 'spike_amp': spike_amp,
             'pt_ratio': pt_ratio, 'rp_slope': rp_slope, 'pt_subtract': pt_subtract,
             'rc_slope': rc_slope, 'peak_to_trough': peak_to_trough, 'spike_width': spike_width,
-            'firing_rate': neuron_fr, 'n_waveforms': n_waveforms})))
+            'firing_rate': neuron_fr, 'n_waveforms': n_waveforms, 'spread': spread,
+            'v_below': v_below, 'v_above': v_above, 'waveform_2D': [wf_ch_sort],
+            'dist_soma': [dist_soma]})))
 
+    waveforms_df.to_pickle(join(save_path, 'waveform_metrics.p'))
 waveforms_df.to_pickle(join(save_path, 'waveform_metrics.p'))

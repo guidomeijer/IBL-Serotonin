@@ -80,7 +80,7 @@ psth_df['cluster'] = psth_clusters
 
 # %% Plot t-SNE embedding
 
-f, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4, figsize=(7, 1.75), dpi=300)
+f, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4, figsize=(7, 1.75), dpi=dpi)
 sns.scatterplot(data=psth_df, x='tsne_1', y='tsne_2', hue='cluster', ax=ax1, legend=None,
                 palette='tab10')
 ax1.axis('off')
@@ -110,7 +110,7 @@ plt.tight_layout()
 plt.savefig(join(fig_path, 'tsne_embedding.pdf'))
 plt.savefig(join(f_path, 'PaperPassive', 'figure3', 'tsne_embedding.pdf'))  # it's also in figure 3
 
-# %% 
+# %%
 
 f, ax1 = plt.subplots(1, 1, figsize=(1.75, 1.75), dpi=dpi)
 ax1.add_patch(Rectangle((0, -5), 1, 10, color='royalblue', alpha=0.25, lw=0))

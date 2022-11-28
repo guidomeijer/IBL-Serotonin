@@ -17,7 +17,7 @@ from brainbox.io.one import SpikeSortingLoader
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 from serotonin_functions import (load_passive_opto_times, get_neuron_qc, paths, query_ephys_sessions,
-                                 figure_style, load_subjects, high_level_regions)
+                                 figure_style, load_subjects, high_level_regions, remap)
 from one.api import ONE
 from ibllib.atlas import AllenAtlas
 ba = AllenAtlas()
@@ -165,7 +165,7 @@ for i in rec.index.values:
                    yticks=[0, 0.4, 0.8, 1.2], xticks=[-1, 0, 1, 2, 3, 4])
             # ax.plot([0, 1], [0, 0], lw=2.5, color='royalblue')
             plt.tight_layout()
-            plt.savefig(join(fig_path, 'Ephys', 'Anesthesia', 'UpDownStates',
+            plt.savefig(join(fig_path, 'Ephys', 'UpDownStates', 'Anesthesia',
                              f'{region}_{subject}_{date}_{probe}.jpg'), dpi=600)
             plt.close(f)
 

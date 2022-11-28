@@ -46,8 +46,8 @@ if OVERWRITE:
     state_trans_df = pd.DataFrame()
     up_down_state_df = pd.DataFrame()
 else:
-    up_down_state_df = pd.read_csv(join(save_path, 'up_down_states.csv'))
-    state_trans_df = pd.read_csv(join(save_path, 'up_down_state_transitions.csv'))
+    up_down_state_df = pd.read_csv(join(save_path, 'updown_state_anesthesia.csv'))
+    state_trans_df = pd.read_csv(join(save_path, 'updown_state_trans_anesthesia.csv'))
 
 for i in rec.index.values:
 
@@ -76,7 +76,7 @@ for i in rec.index.values:
     spikes.clusters = spikes.clusters[np.isin(spikes.clusters, clusters_pass)]
 
     # Remap to high level regions
-    clusters.regions = high_level_regions(clusters.acronym, merge_cortex=True)
+    clusters.regions = high_level_regions(remap(clusters.acronym), merge_cortex=True)
 
     for j, region in enumerate(np.unique(clusters.regions)):
 
@@ -170,6 +170,6 @@ for i in rec.index.values:
             plt.close(f)
 
     # Save data
-    state_trans_df.to_csv(join(save_path, 'up_down_state_transitions.csv'))
-    up_down_state_df.to_csv(join(save_path, 'up_down_states.csv'))
+    state_trans_df.to_csv(join(save_path, 'updown_state_trans_anesthesia.csv'))
+    up_down_state_df.to_csv(join(save_path, 'updown_state_anesthesia.csv'))
     print('Saved results to disk')
