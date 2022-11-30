@@ -1,0 +1,36 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Nov 30 17:10:16 2022
+By: Guido Meijer
+"""
+
+from os.path import join
+from serotonin_functions import paths, figure_style, remap
+from scipy.stats import kstest
+import numpy as np
+import seaborn as sns
+import matplotlib.pyplot as plt
+import matplotlib as mpl
+from matplotlib.lines import Line2D
+from sklearn.mixture import GaussianMixture
+from sklearn.cluster import KMeans
+import pandas as pd
+
+# Settings
+CLUSTERING = 'k-means'
+MIN_SPIKE_AMP = 0.07
+MIN_FR = 0.05
+MIN_WAVEFORMS = 10
+PHI = 180
+THETA = 15
+FEATURES = ['spike_width', 'pt_ratio', 'spread', 'v_above', 'v_below']
+
+# Paths
+fig_dir, data_dir = paths()
+FIG_PATH = join(fig_dir, 'Ephys', 'NeuronType')
+
+# Load in waveforms
+waveforms_df = pd.read_pickle(join(data_dir, 'waveform_metrics.p'))
+
+

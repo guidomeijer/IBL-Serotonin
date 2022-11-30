@@ -123,15 +123,17 @@ def figure_style():
               'glm_motion': '#6180E9',
               'probe': sns.color_palette('colorblind')[4],
               'block': sns.color_palette('colorblind')[6],
-              'RS': sns.color_palette('Set2')[0],
-              'FS': sns.color_palette('Set2')[1],
-              'NS': sns.color_palette('Set2')[1],
+              'FS': sns.color_palette('Set2')[0],
+              'NS': sns.color_palette('Set2')[0],
+              'RS': sns.color_palette('Set2')[1],
+              'RS1': sns.color_palette('Set2')[1],
+              'RS2': sns.color_palette('Set2')[2],
               'OFC': sns.color_palette('Dark2')[0],
               'mPFC': sns.color_palette('Dark2')[1],
               'M2': sns.color_palette('Dark2')[2],
               'Amyg': sns.color_palette('Dark2')[3],
               'Hipp': sns.color_palette('Dark2')[4],
-              'PPC': sns.color_palette('Dark2')[5],
+              'VISa/am': sns.color_palette('Dark2')[5],
               'Pir': sns.color_palette('Dark2')[6],
               'SC': sns.color_palette('Dark2')[7],
               'Thal': sns.color_palette('tab10')[9],
@@ -147,7 +149,7 @@ def figure_style():
               'Secondary motor cortex': sns.color_palette('Dark2')[2],
               'Amygdala': sns.color_palette('Dark2')[3],
               'Hippocampus': sns.color_palette('Dark2')[4],
-              'Posterior parietal cortex': sns.color_palette('Dark2')[5],
+              'Secondary visual cortex': sns.color_palette('Dark2')[5],
               'Piriform': sns.color_palette('Dark2')[6],
               'Superior colliculus': sns.color_palette('Dark2')[7],
               'Periaqueductal gray': sns.color_palette('Set1')[7],
@@ -341,7 +343,7 @@ def combine_regions(acronyms, split_thalamus=False, abbreviate=False):
         #regions[np.in1d(acronyms, ['LGv', 'LGd'])] = 'LG'
         regions[np.in1d(acronyms, ['PIR'])] = 'Pir'
         #regions[np.in1d(acronyms, ['SNr', 'SNc', 'SNl'])] = 'SN'
-        regions[np.in1d(acronyms, ['VISa', 'VISam', 'VISp'])] = 'VC'
+        regions[np.in1d(acronyms, ['VISa', 'VISam'])] = 'VISa/am'
         regions[np.in1d(acronyms, ['MEA', 'CEA', 'BLA', 'COAa'])] = 'Amyg'
         regions[np.in1d(acronyms, ['AON', 'TTd', 'DP'])] = 'OLF'
         regions[np.in1d(acronyms, ['CP', 'STR', 'STRd', 'STRv'])] = 'Str'
@@ -370,7 +372,7 @@ def combine_regions(acronyms, split_thalamus=False, abbreviate=False):
         #regions[np.in1d(acronyms, ['LGv', 'LGd'])] = 'Lateral geniculate'
         regions[np.in1d(acronyms, ['PIR'])] = 'Piriform'
         #regions[np.in1d(acronyms, ['SNr', 'SNc', 'SNl'])] = 'Substantia nigra'
-        regions[np.in1d(acronyms, ['VISa', 'VISam', 'VISp'])] = 'Visual cortex'
+        regions[np.in1d(acronyms, ['VISa', 'VISam'])] = 'Secondary visual cortex'
         regions[np.in1d(acronyms, ['MEA', 'CEA', 'BLA', 'COAa'])] = 'Amygdala'
         regions[np.in1d(acronyms, ['CP', 'STR', 'STRd', 'STRv'])] = 'Tail of the striatum'
         regions[np.in1d(acronyms, ['CA1', 'CA3', 'DG'])] = 'Hippocampus'
@@ -388,7 +390,7 @@ def high_level_regions(acronyms, merge_cortex=False):
         regions[cosmos_regions == 'Isocortex'] = 'Cortex'
     else:
         regions[np.in1d(first_level_regions, ['mPFC', 'OFC', 'M2'])] = 'Frontal'
-        regions[np.in1d(first_level_regions, ['Pir', 'BC', 'VC'])] = 'Sensory'
+        regions[np.in1d(first_level_regions, ['Pir', 'BC', 'VISa/am'])] = 'Sensory'
     regions[cosmos_regions == 'MB'] = 'Midbrain'
     regions[cosmos_regions == 'HPF'] = 'Hippocampus'
     regions[cosmos_regions == 'TH'] = 'Thalamus'

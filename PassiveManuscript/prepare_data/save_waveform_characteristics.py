@@ -148,32 +148,13 @@ for i in rec.index.values:
         wf_ch_sort = wf_ch_sort[:, sort_ch]
         wf_ch_sort = wf_ch_sort.T  # put time on the second dimension
 
-        # Get normalized amplitude per channel and time of waveform trough
-        norm_amp = np.empty(wf_ch_sort.shape[0])
-        time_trough = np.empty(wf_ch_sort.shape[0])
-        for k in range(wf_ch_sort.shape[0]):
-            norm_amp[k] = np.abs(np.min(wf_ch_sort[k, :]) - np.max(wf_ch_sort[k, :]))
-            time_trough[k] = (np.argmin(wf_ch_sort[k, :]) / 30000) * 1000  # ms
-        norm_amp = (norm_amp - np.min(norm_amp)) / (np.max(norm_amp) - np.min(norm_amp))
-
-        # Get spread and velocity
-        try:
-            popt, pcov = curve_fit(gaus, dist_soma, norm_amp, p0=[1, 0, 0.1])
-            fit = gaus(dist_soma, *popt)
-            spread = (np.sum(fit / np.max(fit) > 0.12) * 20) / 1000
-            v_below, _ = np.polyfit(time_trough[dist_soma <= 0], dist_soma[dist_soma <= 0], 1)
-            v_above, _ = np.polyfit(time_trough[dist_soma >= 0], dist_soma[dist_soma >= 0], 1)
-        except:
-            continue
-
         # Add to dataframe
         waveforms_df = pd.concat((waveforms_df, pd.DataFrame(index=[waveforms_df.shape[0] + 1], data={
             'pid': pid, 'eid': eid, 'probe': probe, 'subject': subject, 'waveform': [mean_wf],
             'cluster_id': neuron_id, 'regions': clusters_regions[n], 'spike_amp': spike_amp,
             'pt_ratio': pt_ratio, 'rp_slope': rp_slope, 'pt_subtract': pt_subtract,
             'rc_slope': rc_slope, 'peak_to_trough': peak_to_trough, 'spike_width': spike_width,
-            'firing_rate': neuron_fr, 'n_waveforms': n_waveforms, 'spread': spread,
-            'v_below': v_below, 'v_above': v_above, 'waveform_2D': [wf_ch_sort],
+            'firing_rate': neuron_fr, 'n_waveforms': n_waveforms, 'waveform_2D': [wf_ch_sort],
             'dist_soma': [dist_soma]})))
 
     waveforms_df.to_pickle(join(save_path, 'waveform_metrics.p'))
