@@ -26,7 +26,9 @@ def gaus(x, a, x0, sigma):
 
 
 # Settings
-CLUSTERING = 'gaussian'
+REGIONS = ['VISa', 'VISam', 'VISp', 'MOs']
+#REGIONS = ['MOs']
+CLUSTERING = 'k-means'
 MIN_SPIKE_AMP = 0.04
 PHI = 180
 THETA = 15
@@ -38,9 +40,10 @@ FIG_PATH = join(fig_dir, 'Ephys', 'NeuronType')
 
 # Load in waveforms
 waveforms_df = pd.read_pickle(join(data_dir, 'waveform_metrics.p'))
+waveforms_df = waveforms_df.rename(columns={'cluster_id': 'neuron_id'})
 
 # Select neurons from dorsal cortex
-waveforms_df = waveforms_df[np.in1d(remap(waveforms_df['regions']), ['VISa', 'VISam', 'VISp', 'MOs'])]
+waveforms_df = waveforms_df[np.in1d(remap(waveforms_df['regions']), REGIONS)]
 
 # Add insertion angles
 for i, pid in enumerate(np.unique(waveforms_df['pid'])):
@@ -49,8 +52,7 @@ for i, pid in enumerate(np.unique(waveforms_df['pid'])):
     waveforms_df.loc[waveforms_df['pid'] == pid, 'phi'] = traj['phi']
 
 # Select only insertions with the same angle and side
-waveforms_df = waveforms_df[(waveforms_df['theta'] == THETA) & (waveforms_df['phi'] == PHI)]
-
+#waveforms_df = waveforms_df[(waveforms_df['theta'] == THETA) & (waveforms_df['phi'] == PHI)]
 # Exclude positive spikes
 excl_df = waveforms_df[waveforms_df['pt_subtract'] > -0.05]
 waveforms_df = waveforms_df[waveforms_df['pt_subtract'] <= -0.05]
@@ -119,7 +121,7 @@ elif CLUSTERING == 'gaussian':
 fs_label = waveforms_df.groupby('group_label').median(numeric_only=True)['spike_width'].idxmin()
 waveforms_df.loc[waveforms_df['group_label'] == fs_label, 'type'] = 'NS'
 
-rs1_label = waveforms_df.groupby('group_label').mean(numeric_only=True)['v_above'].idxmax()
+rs1_label = waveforms_df.groupby('group_label').mean(numeric_only=True)['v_below'].idxmax()
 types = np.array([0, 1, 2])
 rs2_label = types[~np.isin(types, np.array([fs_label, rs1_label]))][0]
 if rs2_label == fs_label:
@@ -162,40 +164,40 @@ ax2.scatter(waveforms_df.loc[waveforms_df['type'] == 'RS1', 'spike_width'],
             waveforms_df.loc[waveforms_df['type'] == 'RS1', 'rp_slope'], label='RS1', color=colors['RS1'], s=1)
 ax2.scatter(waveforms_df.loc[waveforms_df['type'] == 'RS2', 'spike_width'],
             waveforms_df.loc[waveforms_df['type'] == 'RS2', 'rp_slope'], label='RS2', color=colors['RS2'], s=1)
-ax2.scatter(waveforms_df.loc[waveforms_df['type'] == 'FS', 'spike_width'],
-            waveforms_df.loc[waveforms_df['type'] == 'FS', 'rp_slope'], label='NS', color=colors['NS'], s=1)
+ax2.scatter(waveforms_df.loc[waveforms_df['type'] == 'NS', 'spike_width'],
+            waveforms_df.loc[waveforms_df['type'] == 'NS', 'rp_slope'], label='NS', color=colors['NS'], s=1)
 ax2.set(xlabel='Spike width (ms)', ylabel='Repolarization slope')
 
 ax3.scatter(waveforms_df.loc[waveforms_df['type'] == 'RS1', 'spike_width'],
             waveforms_df.loc[waveforms_df['type'] == 'RS1', 'firing_rate'], label='RS1', color=colors['RS1'], s=1)
 ax3.scatter(waveforms_df.loc[waveforms_df['type'] == 'RS2', 'spike_width'],
             waveforms_df.loc[waveforms_df['type'] == 'RS2', 'firing_rate'], label='RS2', color=colors['RS2'], s=1)
-ax3.scatter(waveforms_df.loc[waveforms_df['type'] == 'FS', 'spike_width'],
-            waveforms_df.loc[waveforms_df['type'] == 'FS', 'firing_rate'], label='NS', color=colors['NS'], s=1)
+ax3.scatter(waveforms_df.loc[waveforms_df['type'] == 'NS', 'spike_width'],
+            waveforms_df.loc[waveforms_df['type'] == 'NS', 'firing_rate'], label='NS', color=colors['NS'], s=1)
 ax3.set(xlabel='Spike width (ms)', ylabel='Firing rate (spks/s)')
 
 ax4.scatter(waveforms_df.loc[waveforms_df['type'] == 'RS1', 'spike_width'],
             waveforms_df.loc[waveforms_df['type'] == 'RS1', 'pt_ratio'], label='RS1', color=colors['RS1'], s=1)
 ax4.scatter(waveforms_df.loc[waveforms_df['type'] == 'RS2', 'spike_width'],
             waveforms_df.loc[waveforms_df['type'] == 'RS2', 'pt_ratio'], label='RS2', color=colors['RS2'], s=1)
-ax4.scatter(waveforms_df.loc[waveforms_df['type'] == 'FS', 'spike_width'],
-            waveforms_df.loc[waveforms_df['type'] == 'FS', 'pt_ratio'], label='NS', color=colors['NS'], s=1)
+ax4.scatter(waveforms_df.loc[waveforms_df['type'] == 'NS', 'spike_width'],
+            waveforms_df.loc[waveforms_df['type'] == 'NS', 'pt_ratio'], label='NS', color=colors['NS'], s=1)
 ax4.set(xlabel='Spike width (ms)', ylabel='Peak-to-trough ratio')
 
 ax5.scatter(waveforms_df.loc[waveforms_df['type'] == 'RS1', 'spike_width'],
             waveforms_df.loc[waveforms_df['type'] == 'RS1', 'rc_slope'], label='RS1', color=colors['RS1'], s=1)
 ax5.scatter(waveforms_df.loc[waveforms_df['type'] == 'RS2', 'spike_width'],
             waveforms_df.loc[waveforms_df['type'] == 'RS2', 'rc_slope'], label='RS2', color=colors['RS2'], s=1)
-ax5.scatter(waveforms_df.loc[waveforms_df['type'] == 'FS', 'spike_width'],
-            waveforms_df.loc[waveforms_df['type'] == 'FS', 'rc_slope'], label='NS', color=colors['NS'], s=1)
+ax5.scatter(waveforms_df.loc[waveforms_df['type'] == 'NS', 'spike_width'],
+            waveforms_df.loc[waveforms_df['type'] == 'NS', 'rc_slope'], label='NS', color=colors['NS'], s=1)
 ax5.set(xlabel='Spike width (ms)', ylabel='Recovery slope')
 
 ax6.scatter(waveforms_df.loc[waveforms_df['type'] == 'RS1', 'spike_width'],
             waveforms_df.loc[waveforms_df['type'] == 'RS1', 'spike_amp'], label='RS1', color=colors['RS1'], s=1)
 ax6.scatter(waveforms_df.loc[waveforms_df['type'] == 'RS2', 'spike_width'],
             waveforms_df.loc[waveforms_df['type'] == 'RS2', 'spike_amp'], label='RS2', color=colors['RS2'], s=1)
-ax6.scatter(waveforms_df.loc[waveforms_df['type'] == 'FS', 'spike_width'],
-            waveforms_df.loc[waveforms_df['type'] == 'FS', 'spike_amp'], label='NS', color=colors['NS'], s=1)
+ax6.scatter(waveforms_df.loc[waveforms_df['type'] == 'NS', 'spike_width'],
+            waveforms_df.loc[waveforms_df['type'] == 'NS', 'spike_amp'], label='NS', color=colors['NS'], s=1)
 ax6.set(xlabel='Spike width (ms)', ylabel='Spike amplitude (uV)')
 
 plt.tight_layout()
