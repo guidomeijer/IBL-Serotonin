@@ -78,12 +78,12 @@ f, ax = plt.subplots(1, 1, figsize=(1.5, 1.75), dpi=dpi)
 ax.plot(time_ax, waveforms_df.loc[waveforms_df['type'] == 'RS', 'waveform'].to_numpy().mean(),
          color=colors['RS'], label='RS')
 ax.plot(time_ax, waveforms_df.loc[waveforms_df['type'] == 'NS', 'waveform'].to_numpy().mean(),
-         color=colors['FS'], label='NS')
+         color=colors['NS'], label='NS')
 ax.plot([0.1, 0.1], [-0.18, -0.08], color='k', lw=0.5)
 ax.plot([0.1, 1.1], [-0.18, -0.18], color='k', lw=0.5)
 ax.text(-0.25, -0.16, '0.1 mV', rotation=90)
 ax.text(0.25, -0.21, '1 ms')
-ax.set(xlim=[0, 3], ylim=[-0.3, 0.101])
+#ax.set(xlim=[0, 3], ylim=[-0.3, 0.101])
 ax.axis('off')
 
 #plt.tight_layout()
@@ -114,8 +114,8 @@ plt.savefig(join(fig_dir, 'waveform_clustering.pdf'))
 f, ax = plt.subplots(1, 1, figsize=(1.5, 1.75), dpi=dpi)
 ax.hist(waveforms_df.loc[waveforms_df['type'] == 'RS', 'firing_rate'], histtype='step',
          color=colors['RS'], density=True, bins=100, cumulative=True, label='Regular spiking (RS)')
-ax.hist(waveforms_df.loc[waveforms_df['type'] == 'FS', 'firing_rate'], histtype='step',
-         color=colors['FS'], density=True, bins=100, cumulative=True, label='Narrow spiking (NS)')
+ax.hist(waveforms_df.loc[waveforms_df['type'] == 'NS', 'firing_rate'], histtype='step',
+         color=colors['NS'], density=True, bins=100, cumulative=True, label='Narrow spiking (NS)')
 ax.set(xlabel='Firing rate (spks/s)', ylabel='Density')
 custom_lines = [Line2D([0], [0], color=colors['RS'], lw=1),
                 Line2D([0], [0], color=colors['FS'], lw=1)]

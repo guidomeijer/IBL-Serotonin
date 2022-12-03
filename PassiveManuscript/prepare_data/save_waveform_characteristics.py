@@ -12,7 +12,7 @@ from scipy.optimize import curve_fit
 from brainbox.metrics.single_units import spike_sorting_metrics
 from brainbox.io.one import SpikeSortingLoader
 import torch
-from waveform_denoiser import Denoise
+from spike_psvae import denoise
 from serotonin_functions import paths, query_ephys_sessions, get_neuron_qc, get_artifact_neurons
 from one.api import ONE
 from ibllib.atlas import AllenAtlas
@@ -35,16 +35,14 @@ else:
     waveforms_df = pd.read_pickle(join(save_path, 'waveform_metrics.p'))
 
 # Initialize waveform denoiser
-if torch.cuda.is_available():
-    device = "cuda:0"
-else:
-    device = "cpu"
-n_filters = [16, 8, 4]
-filter_sizes = [5, 11, 21]
-spike_size = 121
-denoiser = Denoise(n_filters, filter_sizes, spike_size)
-denoiser.load(join(save_path, 'denoise.pt'))
-denoiser = denoiser.cuda()
+denoiser = denoise.SingleChanDenoiser()
+denoiser.load()
+#if torch.cuda.is_available():
+#    device = "cuda:0"
+#else:
+#    device = "cpu"
+device = "cpu"
+denoiser.to(device)
 
 
 # %% Functions
@@ -52,24 +50,6 @@ denoiser = denoiser.cuda()
 
 def gaus(x, a, x0, sigma):
     return a * np.exp(-(x-x0)**2 / (2 * sigma**2))
-
-
-def denoise_wf_nn_tmp(denoiser, device, wf):
-     denoiser = denoiser.to(device)
-     # zero-pad the waveform so that the lenght is 121 with the minimum centered at 42
-     if wf.shape[1] == 82:
-         padded_wf = np.hstack((wf, np.zeros((wf.shape[0], 39, wf.shape[2]))))
-     n_data, n_times, n_chans = padded_wf.shape
-     if padded_wf.shape[0]>0:
-         wf_reshaped = padded_wf.transpose(0, 2, 1).reshape(-1, n_times)
-         wf_torch = torch.FloatTensor(wf_reshaped).to(device)
-         denoised_wf = denoiser(wf_torch)[0].data
-         denoised_wf = denoised_wf.reshape(
-                n_data, n_chans, n_times)
-         denoised_wf = denoised_wf.cpu().data.numpy().transpose(0, 2, 1)
-         del wf_torch
-     #denoised_wf = denoised_wf[:, :82, :]
-     return denoised_wf
 
 
 # %%
@@ -83,6 +63,14 @@ for i in rec.index.values:
             continue
 
     print(f'Starting {subject}, {date}')
+
+    # Load in RMS ap
+    try:
+        rms_ap = one.load_object(eid, 'ephysChannels', collection=f'raw_ephys_data/{probe}',
+                                 attribute=['apRMS'])['apRMS'][1,:]
+    except Exception as err:
+        print(err)
+        continue
 
     # Load in spikes
     sl = SpikeSortingLoader(pid=pid, one=one, atlas=ba)
@@ -105,7 +93,19 @@ for i in rec.index.values:
                                             '_phy_spikes_subset.channels'],
                              collections=[collection]*3)[0]
     waveforms, wf_spikes, wf_channels = data[0], data[1], data[2]
-    waveforms = waveforms * 1000  # to uV
+
+    # Standardize waveforms by dividing signal over ap band RMS and subtract the mean
+    for i in range(waveforms.shape[0]):
+        for j in range(waveforms.shape[2]):
+            waveforms[i, :, j] = waveforms[i, :, j] / rms_ap[wf_channels[i, j]]
+            waveforms[i, :, j] = waveforms[i, :, j] - np.mean(waveforms[i, :, j])
+
+    # Denoise waveforms (denoiser expects wf size to be 121 with the minimum at 41)
+    print('Denoising waveforms..')
+    padded_wf = np.hstack((np.zeros((waveforms.shape[0], 3, waveforms.shape[2])), waveforms,
+                           np.zeros((waveforms.shape[0], 36, waveforms.shape[2]))))  # zero-pad
+    denoised_wf = denoise.denoise_wf_nn_tmp_single_channel(padded_wf, denoiser, device)
+    denoised_wf = denoised_wf[:, 3:85, :]
 
     # Filter neurons that pass QC and exclude artifact neurons
     qc_metrics = get_neuron_qc(pid, one=one, ba=ba)
@@ -122,10 +122,7 @@ for i in rec.index.values:
         if n_waveforms == 0:
             continue
 
-        # Denoise waveforms
-        #denoised_wf = denoise_wf_nn_tmp(denoiser, device, waveforms[spikes.clusters[wf_spikes] == neuron_id])
-
-        mean_wf_ch = np.mean(waveforms[spikes.clusters[wf_spikes] == neuron_id], axis=0)
+        mean_wf_ch = np.mean(denoised_wf[spikes.clusters[wf_spikes] == neuron_id], axis=0)
         mean_wf_ch = (mean_wf_ch
                       - np.tile(np.mean(mean_wf_ch, axis=0), (mean_wf_ch.shape[0], 1)))
         mean_wf = mean_wf_ch[:, np.argmin(np.min(mean_wf_ch, axis=0))]

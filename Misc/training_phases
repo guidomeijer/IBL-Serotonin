@@ -8,6 +8,9 @@ By: Guido Meijer
 from ibl_pipeline import subject, acquisition, reference
 from ibl_pipeline.analyses import behavior as behavior_analysis
 import matplotlib.pyplot as plt
+import pandas as pd
+
+# %% Training phases
 
 all_subjects = (subject.Subject * subject.SubjectLab * reference.Lab * subject.SubjectProject
                 & 'subject_project = "ibl_neuropixel_brainwide_01"')
@@ -26,3 +29,32 @@ ax2.hist(ses_status.loc[ses_status['training_status'] == 'trained_1a', 'days'], 
 ax2.set(xlabel='Days', ylabel='Mice', title='Time from trained 1a to 1b')
 
 plt.tight_layout()
+
+# %% Time to trained
+
+criterion = 'trained'
+
+# Query all subjects with project ibl_neuropixel_brainwide_01 and get the date at which
+# they reached a given training status
+all_subjects = (subject.Subject * subject.SubjectLab * reference.Lab * subject.SubjectProject
+                & 'subject_project = "ibl_neuropixel_brainwide_01"')
+sessions = acquisition.Session * behavior_analysis.SessionTrainingStatus()
+fields = ('subject_nickname', 'sex', 'subject_birth_date', 'institution_short')
+
+if criterion == 'trained':
+    restriction = 'training_status="trained_1a" OR training_status="trained_1b"'
+elif criterion == 'biased':
+    restriction = 'task_protocol LIKE "%biased%"'
+elif criterion == 'ephys':
+    restriction = 'training_status LIKE "ready%"'
+else:
+    raise ValueError('criterion must be "trained", "biased" or "ephys"')
+subj_query = all_subjects.aggr(
+    sessions & restriction, *fields, date_trained='min(date(session_start_time))')
+
+ses = (behavior_analysis.BehavioralSummaryByDate * subj_query)
+ses = (ses & 'session_date <= date_trained').fetch(format='frame').reset_index()
+
+ # Construct dataframe
+training_time = pd.DataFrame(columns=['sessions'], data=ses.groupby('subject_nickname').size())
+training_time.to_csv('training_time.csv')

@@ -28,8 +28,8 @@ def gaus(x, a, x0, sigma):
 # Settings
 REGIONS = ['VISa', 'VISam', 'VISp', 'MOs']
 #REGIONS = ['MOs']
-CLUSTERING = 'k-means'
-MIN_SPIKE_AMP = 0.04
+CLUSTERING = 'gaussian'
+MIN_SPIKE_AMP = 0
 PHI = 180
 THETA = 15
 FEATURES = ['spike_width', 'pt_ratio', 'spread', 'v_above', 'v_below']
@@ -52,7 +52,8 @@ for i, pid in enumerate(np.unique(waveforms_df['pid'])):
     waveforms_df.loc[waveforms_df['pid'] == pid, 'phi'] = traj['phi']
 
 # Select only insertions with the same angle and side
-#waveforms_df = waveforms_df[(waveforms_df['theta'] == THETA) & (waveforms_df['phi'] == PHI)]
+waveforms_df = waveforms_df[(waveforms_df['theta'] == THETA) & (waveforms_df['phi'] == PHI)]
+
 # Exclude positive spikes
 excl_df = waveforms_df[waveforms_df['pt_subtract'] > -0.05]
 waveforms_df = waveforms_df[waveforms_df['pt_subtract'] <= -0.05]
