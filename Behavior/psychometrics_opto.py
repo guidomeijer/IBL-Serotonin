@@ -21,13 +21,13 @@ one = ONE()
 PLOT_SINGLE_ANIMALS = True
 fig_path, _ = paths()
 fig_path = join(fig_path, 'Behavior', 'Psychometrics')
-subjects = load_subjects(behavior=True)
+subjects = load_subjects()
 
 bias_df, lapse_df, psy_df = pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
 for i, nickname in enumerate(subjects['subject']):
 
     # Query sessions
-    eids = query_opto_sessions(nickname, one=one)
+    eids = query_opto_sessions(nickname, include_ephys=True, one=one)
 
     # Exclude the first opto sessions
     #eids = eids[:-1]

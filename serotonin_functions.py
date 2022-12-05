@@ -118,6 +118,8 @@ def figure_style():
               'suppressed': sns.color_palette('colorblind')[0],
               'stim': sns.color_palette('colorblind')[9],
               'no-stim': sns.color_palette('colorblind')[7],
+              'left': 'royalblue',
+              'right': 'indianred',
               'task': 'darkviolet',
               'glm_stim': '#CF453C',
               'glm_motion': '#6180E9',

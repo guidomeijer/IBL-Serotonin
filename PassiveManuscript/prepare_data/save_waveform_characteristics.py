@@ -21,6 +21,7 @@ one = ONE()
 
 # Settings
 OVERWRITE = True
+DENOISE = False
 _, save_path = paths()
 
 # Query sessions
@@ -31,6 +32,8 @@ artifact_neurons = get_artifact_neurons()
 
 if OVERWRITE:
     waveforms_df = pd.DataFrame()
+elif DENOISE:
+    waveforms_df = pd.read_pickle(join(save_path, 'waveform_metrics_denoised.p'))
 else:
     waveforms_df = pd.read_pickle(join(save_path, 'waveform_metrics.p'))
 
@@ -94,18 +97,54 @@ for i in rec.index.values:
                              collections=[collection]*3)[0]
     waveforms, wf_spikes, wf_channels = data[0], data[1], data[2]
 
-    # Standardize waveforms by dividing signal over ap band RMS and subtract the mean
-    for i in range(waveforms.shape[0]):
-        for j in range(waveforms.shape[2]):
-            waveforms[i, :, j] = waveforms[i, :, j] / rms_ap[wf_channels[i, j]]
-            waveforms[i, :, j] = waveforms[i, :, j] - np.mean(waveforms[i, :, j])
+    if DENOISE:
+        print('Preparing waveforms..')
+        wf_length = waveforms.shape[1]
+        padded_wf = np.empty((waveforms.shape[0], 121, waveforms.shape[2]))
+        zero_pad = np.zeros((waveforms.shape[0], 2, waveforms.shape[2])).astype(int)
+        for i in range(waveforms.shape[0]):
+            for j in range(waveforms.shape[2]):
 
-    # Denoise waveforms (denoiser expects wf size to be 121 with the minimum at 41)
-    print('Denoising waveforms..')
-    padded_wf = np.hstack((np.zeros((waveforms.shape[0], 3, waveforms.shape[2])), waveforms,
-                           np.zeros((waveforms.shape[0], 36, waveforms.shape[2]))))  # zero-pad
-    denoised_wf = denoise.denoise_wf_nn_tmp_single_channel(padded_wf, denoiser, device)
-    denoised_wf = denoised_wf[:, 3:85, :]
+                # Standardize waveforms by dividing signal over ap band RMS and subtract the mean
+                waveforms[i, :, j] = waveforms[i, :, j] / rms_ap[wf_channels[i, j]]
+                waveforms[i, :, j] = waveforms[i, :, j] - np.mean(waveforms[i, :, j])
+
+                # Zero-pad so that they are 121 long and centered at 42
+                zero_pad[i, 0, j] = 42-np.argmin(waveforms[i, :, j])
+                zero_pad[i, 1, j] = 121 - (zero_pad[i, 0, j] + wf_length)
+                if zero_pad[i, 0, j] < 0:
+                    zero_pad[i, 1, j] = 121 - waveforms[i, np.abs(zero_pad[i, 0, j]):, j].shape[0]
+
+                    padded_wf[i, :, j] = np.concatenate((waveforms[i, np.abs(zero_pad[i, 0, j]):, j],
+                                                         np.zeros(zero_pad[i, 1, j])))
+                elif zero_pad[i, 1, j] < 0:
+                    padded_wf[i, :, j] = np.concatenate((np.zeros(zero_pad[i, 0, j]),
+                                                         waveforms[i, :zero_pad[i, 1, j], j]))
+                elif zero_pad[i, 0, j] > 40:
+                    zero_pad[i, 1, j] = 0
+                    padded_wf[i, :, j] = np.concatenate((np.zeros(zero_pad[i, 0, j]), waveforms[i, :, j],
+                                                         np.zeros(zero_pad[i, 1, j])))
+                else:
+                    padded_wf[i, :, j] = np.concatenate((np.zeros(zero_pad[i, 0, j]), waveforms[i, :, j],
+                                                         np.zeros(zero_pad[i, 1, j])))
+
+        # Denoise waveforms
+        print('Denoising waveforms..')
+        denoised_wf = denoise.denoise_wf_nn_tmp_single_channel(padded_wf, denoiser, device)
+
+        # Undo the zero-padding
+        for i in range(denoised_wf.shape[0]):
+            for j in range(denoised_wf.shape[2]):
+                if zero_pad[i, 1, j] < 0:
+                    waveforms[i, :, j] = np.concatenate((denoised_wf[i, zero_pad[i, 0, j]:, j],
+                                                         np.zeros(np.abs(zero_pad[i, 1, j]))))
+                elif zero_pad[i, 0, j] < 0:
+                    waveforms[i, :, j] = np.concatenate((np.zeros(np.abs(zero_pad[i, 0, j])),
+                                                         denoised_wf[i, :-zero_pad[i, 1, j], j]))
+                elif zero_pad[i, 1, j] == 0:
+                    waveforms[i, :, j] = denoised_wf[i, zero_pad[i, 0, j]:, j]
+                else:
+                    waveforms[i, :, j] = denoised_wf[i, zero_pad[i, 0, j]:-zero_pad[i, 1, j], j]
 
     # Filter neurons that pass QC and exclude artifact neurons
     qc_metrics = get_neuron_qc(pid, one=one, ba=ba)
@@ -122,7 +161,7 @@ for i in rec.index.values:
         if n_waveforms == 0:
             continue
 
-        mean_wf_ch = np.mean(denoised_wf[spikes.clusters[wf_spikes] == neuron_id], axis=0)
+        mean_wf_ch = np.mean(waveforms[spikes.clusters[wf_spikes] == neuron_id], axis=0)
         mean_wf_ch = (mean_wf_ch
                       - np.tile(np.mean(mean_wf_ch, axis=0), (mean_wf_ch.shape[0], 1)))
         mean_wf = mean_wf_ch[:, np.argmin(np.min(mean_wf_ch, axis=0))]
@@ -191,5 +230,8 @@ for i in rec.index.values:
             'firing_rate': neuron_fr, 'n_waveforms': n_waveforms, 'waveform_2D': [wf_ch_sort],
             'dist_soma': [dist_soma]})))
 
-    waveforms_df.to_pickle(join(save_path, 'waveform_metrics.p'))
-waveforms_df.to_pickle(join(save_path, 'waveform_metrics.p'))
+    if DENOISE:
+        waveforms_df.to_pickle(join(save_path, 'waveform_metrics_denoised.p'))
+    else:
+        waveforms_df.to_pickle(join(save_path, 'waveform_metrics.p'))
+

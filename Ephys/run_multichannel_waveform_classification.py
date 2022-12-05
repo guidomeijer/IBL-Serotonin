@@ -29,17 +29,22 @@ def gaus(x, a, x0, sigma):
 REGIONS = ['VISa', 'VISam', 'VISp', 'MOs']
 #REGIONS = ['MOs']
 CLUSTERING = 'gaussian'
+DENOISED = True
 MIN_SPIKE_AMP = 0
 PHI = 180
 THETA = 15
-FEATURES = ['spike_width', 'pt_ratio', 'spread', 'v_above', 'v_below']
+#FEATURES = ['spike_width', 'pt_ratio', 'spread', 'v_above', 'v_below']
+FEATURES = ['spike_width', 'spread', 'v_above', 'v_below']
 
 # Paths
 fig_dir, data_dir = paths()
 FIG_PATH = join(fig_dir, 'Ephys', 'NeuronType')
 
 # Load in waveforms
-waveforms_df = pd.read_pickle(join(data_dir, 'waveform_metrics.p'))
+if DENOISED:
+    waveforms_df = pd.read_pickle(join(data_dir, 'waveform_metrics_denoised.p'))
+else:
+    waveforms_df = pd.read_pickle(join(data_dir, 'waveform_metrics.p'))
 waveforms_df = waveforms_df.rename(columns={'cluster_id': 'neuron_id'})
 
 # Select neurons from dorsal cortex
@@ -54,14 +59,19 @@ for i, pid in enumerate(np.unique(waveforms_df['pid'])):
 # Select only insertions with the same angle and side
 waveforms_df = waveforms_df[(waveforms_df['theta'] == THETA) & (waveforms_df['phi'] == PHI)]
 
+
+excl_df = waveforms_df[waveforms_df['pt_subtract'] > 0]
+"""
 # Exclude positive spikes
 excl_df = waveforms_df[waveforms_df['pt_subtract'] > -0.05]
 waveforms_df = waveforms_df[waveforms_df['pt_subtract'] <= -0.05]
 waveforms_df = waveforms_df.reset_index(drop=True)
+"""
 
 # Calculate multichannel features
 multich_waveforms = []
 multich_dist_soma = []
+multich_dist_soma_spread = []
 for i in waveforms_df.index:
 
     # Get multichannel waveform for this neuron
@@ -72,8 +82,8 @@ for i in waveforms_df.index:
     spike_amps = np.empty(wf_ch_sort.shape[0])
     for j in range(wf_ch_sort.shape[0]):
         spike_amps[j] = np.abs(np.min(wf_ch_sort[j, :]) - np.max(wf_ch_sort[j, :]))
-    wf_ch_sort = wf_ch_sort[spike_amps > MIN_SPIKE_AMP, :]
-    dist_soma = dist_soma[spike_amps > MIN_SPIKE_AMP]
+    #wf_ch_sort = wf_ch_sort[spike_amps > MIN_SPIKE_AMP, :]
+    #dist_soma = dist_soma[spike_amps > MIN_SPIKE_AMP]
 
     # Get normalized amplitude per channel and time of waveform trough
     norm_amp = np.empty(wf_ch_sort.shape[0])
@@ -88,8 +98,19 @@ for i in waveforms_df.index:
         popt, pcov = curve_fit(gaus, dist_soma, norm_amp, p0=[1, 0, 0.1])
         fit = gaus(dist_soma, *popt)
         spread = (np.sum(fit / np.max(fit) > 0.12) * 20) / 1000
-        v_below, _ = np.polyfit(time_trough[dist_soma <= 0], dist_soma[dist_soma <= 0], 1)
-        v_above, _ = np.polyfit(time_trough[dist_soma >= 0], dist_soma[dist_soma >= 0], 1)
+        """
+        v_below, _ = np.polyfit(time_trough[dist_soma <= 0],
+                                dist_soma[dist_soma <= 0], 1)
+        v_above, _ = np.polyfit(time_trough[dist_soma >= 0],
+                                dist_soma[dist_soma >= 0], 1)
+        """
+        v_below, _ = np.polyfit(time_trough[(fit / np.max(fit) > 0.12) & (dist_soma <= 0)],
+                                dist_soma[(fit / np.max(fit) > 0.12) & (dist_soma <= 0)], 1)
+        v_above, _ = np.polyfit(time_trough[(fit / np.max(fit) > 0.12) & (dist_soma >= 0)],
+                                dist_soma[(fit / np.max(fit) > 0.12) & (dist_soma >= 0)], 1)
+
+
+        dist_soma_spread = dist_soma[fit / np.max(fit) > 0.12]
     except:
         waveforms_df.loc[i, 'spread'] = np.nan
         waveforms_df.loc[i, 'v_below'] = np.nan
@@ -99,6 +120,7 @@ for i in waveforms_df.index:
     # Add new waveforms to list
     multich_waveforms.append(wf_ch_sort)
     multich_dist_soma.append(dist_soma)
+    multich_dist_soma_spread.append(dist_soma_spread)
 
     # Add to df
     waveforms_df.loc[i, 'spread'] = spread
@@ -257,18 +279,6 @@ waveforms_3 = waveforms_3 / size_3
 
 figure_style()
 f, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(2, 3, figsize=(10, 5), dpi=dpi)
-ax3.imshow(np.flipud(waveforms_3), cmap='Greys_r', aspect='auto',
-           vmin=-np.max(waveforms_1), vmax=np.max(waveforms_1))
-ax3.get_xaxis().set_visible(False)
-ax3.get_yaxis().set_visible(False)
-ax3.set(title='RS2', xlim=[np.argmin(np.abs(t_x - 1)), np.argmin(np.abs(t_x - 2))])
-
-ax2.imshow(np.flipud(waveforms_2), cmap='Greys_r', aspect='auto',
-           vmin=-np.max(waveforms_2), vmax=np.max(waveforms_2))
-ax2.get_xaxis().set_visible(False)
-ax2.get_yaxis().set_visible(False)
-ax2.set(title='RS1', xlim=[np.argmin(np.abs(t_x - 1)), np.argmin(np.abs(t_x - 2))])
-
 ax1.imshow(np.flipud(waveforms_1), cmap='Greys_r', aspect='auto',
            vmin=-np.max(waveforms_3), vmax=np.max(waveforms_3))
 ax1.get_xaxis().set_visible(False)
@@ -276,27 +286,39 @@ ax1.set(title='FS', xlim=[np.argmin(np.abs(t_x - 1)), np.argmin(np.abs(t_x - 2))
         yticks=np.linspace(0, 10, 5), yticklabels=np.round(np.linspace(-.1, .1, 5), 2),
         ylabel='Distance to soma (um)')
 
-for i in waveforms_df.loc[waveforms_df['type'] == 'RS2'].index:
-    ax6.plot(t_x[multich_waveforms[i].argmin(axis=1)],
-             multich_dist_soma[i], color=[.7, .7, .7], alpha=0.2)
-ax6.errorbar(np.nanmedian(prop_3, axis=0), dist_soma,
-             xerr=np.nanstd(prop_3, axis=0)/np.sqrt(np.sum(~np.isnan(prop_3), axis=0)), lw=3)
-ax6.set(xlim=[1, 2], xlabel='Time (ms)', yticks=np.round(np.linspace(-.1, .1, 5), 2))
+ax2.imshow(np.flipud(waveforms_2), cmap='Greys_r', aspect='auto',
+           vmin=-np.max(waveforms_2), vmax=np.max(waveforms_2))
+ax2.get_xaxis().set_visible(False)
+ax2.get_yaxis().set_visible(False)
+ax2.set(title='RS1', xlim=[np.argmin(np.abs(t_x - 1)), np.argmin(np.abs(t_x - 2))])
+
+ax3.imshow(np.flipud(waveforms_3), cmap='Greys_r', aspect='auto',
+           vmin=-np.max(waveforms_1), vmax=np.max(waveforms_1))
+ax3.get_xaxis().set_visible(False)
+ax3.get_yaxis().set_visible(False)
+ax3.set(title='RS2', xlim=[np.argmin(np.abs(t_x - 1)), np.argmin(np.abs(t_x - 2))])
+
+for i in waveforms_df.loc[waveforms_df['type'] == 'NS'].index:
+    ax4.plot(t_x[multich_waveforms[i].argmin(axis=1)][np.in1d(multich_dist_soma[i], multich_dist_soma_spread[i])],
+             multich_dist_soma_spread[i], color=[.7, .7, .7], alpha=0.2)
+ax4.errorbar(np.nanmedian(prop_1, axis=0), dist_soma,
+             xerr=np.nanstd(prop_1, axis=0)/np.sqrt(np.sum(~np.isnan(prop_1), axis=0)), lw=2)
+ax4.set(xlim=[1, 2], xlabel='Time (ms)', ylabel='Distance to soma (um)',
+        yticks=np.round(np.linspace(-.1, .1, 5), 2))
 
 if waveforms_df.loc[waveforms_df['type'] == 'RS1'].shape[0] > 0:
     for i in waveforms_df.loc[waveforms_df['type'] == 'RS1'].index:
-        ax5.plot(t_x[multich_waveforms[i].argmin(axis=1)],
-                 multich_dist_soma[i], color=[.7, .7, .7], alpha=0.2)
+        ax5.plot(t_x[multich_waveforms[i].argmin(axis=1)][np.in1d(multich_dist_soma[i], multich_dist_soma_spread[i])],
+                 multich_dist_soma_spread[i], color=[.7, .7, .7], alpha=0.2)
     ax5.errorbar(np.nanmedian(prop_2, axis=0), dist_soma,
-                 xerr=np.nanstd(prop_2, axis=0)/np.sqrt(np.sum(~np.isnan(prop_2), axis=0)), lw=3)
+                 xerr=np.nanstd(prop_2, axis=0)/np.sqrt(np.sum(~np.isnan(prop_2), axis=0)), lw=2)
     ax5.set(xlim=[1, 2], xlabel='Time (ms)', yticks=np.round(np.linspace(-.1, .1, 5), 2))
 
-for i in waveforms_df.loc[waveforms_df['type'] == 'NS'].index:
-    ax4.plot(t_x[multich_waveforms[i].argmin(axis=1)],
-             multich_dist_soma[i], color=[.7, .7, .7], alpha=0.2)
-ax4.errorbar(np.nanmedian(prop_1, axis=0), dist_soma,
-             xerr=np.nanstd(prop_1, axis=0)/np.sqrt(np.sum(~np.isnan(prop_1), axis=0)), lw=3)
-ax4.set(xlim=[1, 2], xlabel='Time (ms)', ylabel='Distance to soma (um)',
-        yticks=np.round(np.linspace(-.1, .1, 5), 2))
+for i in waveforms_df.loc[waveforms_df['type'] == 'RS2'].index:
+    ax6.plot(t_x[multich_waveforms[i].argmin(axis=1)][np.in1d(multich_dist_soma[i], multich_dist_soma_spread[i])],
+             multich_dist_soma_spread[i], color=[.7, .7, .7], alpha=0.2)
+ax6.errorbar(np.nanmedian(prop_3, axis=0), dist_soma,
+             xerr=np.nanstd(prop_3, axis=0)/np.sqrt(np.sum(~np.isnan(prop_3), axis=0)), lw=2)
+ax6.set(xlim=[1, 2], xlabel='Time (ms)', yticks=np.round(np.linspace(-.1, .1, 5), 2))
 
 plt.savefig(join(FIG_PATH, 'multichannel_waveform_groups.jpg'), dpi=600)
