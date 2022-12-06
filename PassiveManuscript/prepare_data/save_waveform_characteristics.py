@@ -145,6 +145,9 @@ for i in rec.index.values:
                     waveforms[i, :, j] = denoised_wf[i, zero_pad[i, 0, j]:, j]
                 else:
                     waveforms[i, :, j] = denoised_wf[i, zero_pad[i, 0, j]:-zero_pad[i, 1, j], j]
+    else:
+        # Convert to uV
+        waveforms = waveforms * 1000
 
     # Filter neurons that pass QC and exclude artifact neurons
     qc_metrics = get_neuron_qc(pid, one=one, ba=ba)

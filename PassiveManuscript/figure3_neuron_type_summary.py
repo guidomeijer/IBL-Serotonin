@@ -67,26 +67,26 @@ colors, dpi = figure_style()
 f, ax1 = plt.subplots(1, 1, figsize=(1.75, 1.75), dpi=dpi)
 ax1.bar([1.1, 1.9],
         [per_mouse_df.loc[per_mouse_df['type'] == 'RS', 'perc_enh'].mean(),
-         per_mouse_df.loc[per_mouse_df['type'] == 'FS', 'perc_enh'].mean()],
-        color=[colors['RS'], colors['FS']], width=0.6)
+         per_mouse_df.loc[per_mouse_df['type'] == 'NS', 'perc_enh'].mean()],
+        color=[colors['RS'], colors['NS']], width=0.6)
 ax1.bar([3.1, 3.9],
         [per_mouse_df.loc[per_mouse_df['type'] == 'RS', 'perc_supp'].mean(),
-         per_mouse_df.loc[per_mouse_df['type'] == 'FS', 'perc_supp'].mean()],
-        color=[colors['RS'], colors['FS']], width=0.6)
+         per_mouse_df.loc[per_mouse_df['type'] == 'NS', 'perc_supp'].mean()],
+        color=[colors['RS'], colors['NS']], width=0.6)
 for i, subject in enumerate(np.unique(per_mouse_df['subject'])):
     ax1.plot([1.1, 1.9],
              [per_mouse_df.loc[(per_mouse_df['subject'] == subject) & (per_mouse_df['type'] == 'RS'), 'perc_enh'],
-              per_mouse_df.loc[(per_mouse_df['subject'] == subject) & (per_mouse_df['type'] == 'FS'), 'perc_enh']],
+              per_mouse_df.loc[(per_mouse_df['subject'] == subject) & (per_mouse_df['type'] == 'NS'), 'perc_enh']],
              color=colors['grey'])
     ax1.plot([3.1, 3.9],
              [per_mouse_df.loc[(per_mouse_df['subject'] == subject) & (per_mouse_df['type'] == 'RS'), 'perc_supp'],
-              per_mouse_df.loc[(per_mouse_df['subject'] == subject) & (per_mouse_df['type'] == 'FS'), 'perc_supp']],
+              per_mouse_df.loc[(per_mouse_df['subject'] == subject) & (per_mouse_df['type'] == 'NS'), 'perc_supp']],
              color=colors['grey'])
 _, p_enh = wilcoxon(per_mouse_df.loc[per_mouse_df['type'] == 'RS', 'perc_enh'],
-                    per_mouse_df.loc[per_mouse_df['type'] == 'FS', 'perc_enh'])
+                    per_mouse_df.loc[per_mouse_df['type'] == 'NS', 'perc_enh'])
 
 _, p_supp = wilcoxon(per_mouse_df.loc[per_mouse_df['type'] == 'RS', 'perc_supp'],
-                     per_mouse_df.loc[per_mouse_df['type'] == 'FS', 'perc_supp'])
+                     per_mouse_df.loc[per_mouse_df['type'] == 'NS', 'perc_supp'])
 ax1.text(1.5, 38, 'n.s.', ha='center')
 ax1.text(3.5, 38, 'n.s.', ha='center')
 ax1.set(xticks=[1.5, 3.5], xticklabels=['Enhanced', 'Suppressed'], ylabel='Modulated neurons (%)',

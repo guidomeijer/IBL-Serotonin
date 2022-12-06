@@ -26,15 +26,14 @@ def gaus(x, a, x0, sigma):
 
 
 # Settings
-REGIONS = ['VISa', 'VISam', 'VISp', 'MOs']
+REGIONS = ['VISa', 'VISam', 'VISp', 'MOs', 'RSPv', 'RSPd']
 #REGIONS = ['MOs']
 CLUSTERING = 'gaussian'
-DENOISED = True
-MIN_SPIKE_AMP = 0
-PHI = 180
-THETA = 15
-#FEATURES = ['spike_width', 'pt_ratio', 'spread', 'v_above', 'v_below']
-FEATURES = ['spike_width', 'spread', 'v_above', 'v_below']
+DENOISED = False
+
+#FEATURES = ['spike_width', 'pt_ratio', 'rp_slope', 'rc_slope', 'spread', 'v_above', 'v_below']
+FEATURES = ['spike_width', 'pt_ratio', 'rp_slope', 'rc_slope', 'spread', 'v_above', 'v_below']
+#FEATURES = ['spike_width', 'spread', 'v_above', 'v_below']
 
 # Paths
 fig_dir, data_dir = paths()
@@ -56,17 +55,10 @@ for i, pid in enumerate(np.unique(waveforms_df['pid'])):
     waveforms_df.loc[waveforms_df['pid'] == pid, 'theta'] = traj['theta']
     waveforms_df.loc[waveforms_df['pid'] == pid, 'phi'] = traj['phi']
 
-# Select only insertions with the same angle and side
-waveforms_df = waveforms_df[(waveforms_df['theta'] == THETA) & (waveforms_df['phi'] == PHI)]
-
-
-excl_df = waveforms_df[waveforms_df['pt_subtract'] > 0]
-"""
 # Exclude positive spikes
 excl_df = waveforms_df[waveforms_df['pt_subtract'] > -0.05]
 waveforms_df = waveforms_df[waveforms_df['pt_subtract'] <= -0.05]
 waveforms_df = waveforms_df.reset_index(drop=True)
-"""
 
 # Calculate multichannel features
 multich_waveforms = []
@@ -82,8 +74,6 @@ for i in waveforms_df.index:
     spike_amps = np.empty(wf_ch_sort.shape[0])
     for j in range(wf_ch_sort.shape[0]):
         spike_amps[j] = np.abs(np.min(wf_ch_sort[j, :]) - np.max(wf_ch_sort[j, :]))
-    #wf_ch_sort = wf_ch_sort[spike_amps > MIN_SPIKE_AMP, :]
-    #dist_soma = dist_soma[spike_amps > MIN_SPIKE_AMP]
 
     # Get normalized amplitude per channel and time of waveform trough
     norm_amp = np.empty(wf_ch_sort.shape[0])
@@ -109,7 +99,6 @@ for i in waveforms_df.index:
         v_above, _ = np.polyfit(time_trough[(fit / np.max(fit) > 0.12) & (dist_soma >= 0)],
                                 dist_soma[(fit / np.max(fit) > 0.12) & (dist_soma >= 0)], 1)
 
-
         dist_soma_spread = dist_soma[fit / np.max(fit) > 0.12]
     except:
         waveforms_df.loc[i, 'spread'] = np.nan
@@ -131,32 +120,110 @@ for i in waveforms_df.index:
 waveforms_df = waveforms_df[~np.isnan(waveforms_df['spread'])]
 waveforms_df = waveforms_df.reset_index(drop=True)
 
+# %% Cluster neurons recorded from the left at 15 degrees angle
+left_15_df = waveforms_df[(waveforms_df['theta'] == 15) & (waveforms_df['phi'] == 180)]
+
 if CLUSTERING == 'k-means':
     # K-means clustering
-    kmeans = KMeans(n_clusters=3, random_state=42, n_init=100).fit(waveforms_df[FEATURES].to_numpy())
-    waveforms_df['group_label'] = kmeans.labels_
+    kmeans = KMeans(n_clusters=3, random_state=42, n_init=100).fit(left_15_df[FEATURES].to_numpy())
+    left_15_df['group_label'] = kmeans.labels_
 elif CLUSTERING == 'gaussian':
     # Mixture of Gaussians clustering
-    gauss_mix = GaussianMixture(n_components=3, random_state=42).fit(waveforms_df[FEATURES].to_numpy())
-    waveforms_df['group_label'] = gauss_mix.predict(waveforms_df[FEATURES].to_numpy())
+    gauss_mix = GaussianMixture(n_components=3, random_state=42).fit(left_15_df[FEATURES].to_numpy())
+    left_15_df['group_label'] = gauss_mix.predict(left_15_df[FEATURES].to_numpy())
 
 # Get the RS and FS labels right
-fs_label = waveforms_df.groupby('group_label').median(numeric_only=True)['spike_width'].idxmin()
-waveforms_df.loc[waveforms_df['group_label'] == fs_label, 'type'] = 'NS'
+fs_label = left_15_df.groupby('group_label').median(numeric_only=True)['spike_width'].idxmin()
+left_15_df.loc[left_15_df['group_label'] == fs_label, 'type'] = 'NS'
 
-rs1_label = waveforms_df.groupby('group_label').mean(numeric_only=True)['v_below'].idxmax()
+rs1_label = left_15_df.groupby('group_label').mean(numeric_only=True)['v_below'].idxmax()
 types = np.array([0, 1, 2])
 rs2_label = types[~np.isin(types, np.array([fs_label, rs1_label]))][0]
 if rs2_label == fs_label:
     rs2_label = types[~np.isin(types, np.array([fs_label, rs1_label]))][0]
-waveforms_df.loc[waveforms_df['group_label'] == rs1_label, 'type'] = 'RS1'
-waveforms_df.loc[waveforms_df['group_label'] == rs2_label, 'type'] = 'RS2'
+left_15_df.loc[left_15_df['group_label'] == rs1_label, 'type'] = 'RS1'
+left_15_df.loc[left_15_df['group_label'] == rs2_label, 'type'] = 'RS2'
+
+# Print result
+FS_perc = (np.sum(left_15_df['type'] == 'NS') / left_15_df.shape[0]) * 100
+RS1_perc = (np.sum(left_15_df['type'] == 'RS1') / left_15_df.shape[0]) * 100
+RS2_perc = (np.sum(left_15_df['type'] == 'RS2') / left_15_df.shape[0]) * 100
+print(f'\nLeft 15 deg\nFS: {FS_perc:.2f}%\nRS1: {RS1_perc:.2f}%\nRS2: {RS2_perc:.2f}%')
+
+# %% Cluster neurons recorded from the right at 10 degrees angle
+right_10_df = waveforms_df[(waveforms_df['theta'] == 10) & (waveforms_df['phi'] == 0)]
+
+if CLUSTERING == 'k-means':
+    # K-means clustering
+    kmeans = KMeans(n_clusters=3, random_state=42, n_init=100).fit(right_10_df[FEATURES].to_numpy())
+    right_10_df['group_label'] = kmeans.labels_
+elif CLUSTERING == 'gaussian':
+    # Mixture of Gaussians clustering
+    gauss_mix = GaussianMixture(n_components=3, random_state=42).fit(right_10_df[FEATURES].to_numpy())
+    right_10_df['group_label'] = gauss_mix.predict(right_10_df[FEATURES].to_numpy())
+
+# Get the RS and FS labels right
+fs_label = right_10_df.groupby('group_label').median(numeric_only=True)['spike_width'].idxmin()
+right_10_df.loc[right_10_df['group_label'] == fs_label, 'type'] = 'NS'
+
+rs1_label = right_10_df.groupby('group_label').mean(numeric_only=True)['v_below'].idxmax()
+types = np.array([0, 1, 2])
+rs2_label = types[~np.isin(types, np.array([fs_label, rs1_label]))][0]
+if rs2_label == fs_label:
+    rs2_label = types[~np.isin(types, np.array([fs_label, rs1_label]))][0]
+right_10_df.loc[right_10_df['group_label'] == rs1_label, 'type'] = 'RS1'
+right_10_df.loc[right_10_df['group_label'] == rs2_label, 'type'] = 'RS2'
+
+# Print result
+FS_perc = (np.sum(right_10_df['type'] == 'NS') / right_10_df.shape[0]) * 100
+RS1_perc = (np.sum(right_10_df['type'] == 'RS1') / right_10_df.shape[0]) * 100
+RS2_perc = (np.sum(right_10_df['type'] == 'RS2') / right_10_df.shape[0]) * 100
+print(f'\nRight 10 deg\nFS: {FS_perc:.2f}%\nRS1: {RS1_perc:.2f}%\nRS2: {RS2_perc:.2f}%')
+
+
+# %% Cluster neurons recorded from the left at 10 degrees angle
+left_10_df = waveforms_df[(waveforms_df['theta'] == 10) & (waveforms_df['phi'] == 180)]
+
+if CLUSTERING == 'k-means':
+    # K-means clustering
+    kmeans = KMeans(n_clusters=3, random_state=42, n_init=100).fit(left_10_df[FEATURES].to_numpy())
+    left_10_df['group_label'] = kmeans.labels_
+elif CLUSTERING == 'gaussian':
+    # Mixture of Gaussians clustering
+    gauss_mix = GaussianMixture(n_components=3, random_state=42).fit(left_10_df[FEATURES].to_numpy())
+    left_10_df['group_label'] = gauss_mix.predict(left_10_df[FEATURES].to_numpy())
+
+# Get the RS and FS labels right
+fs_label = left_10_df.groupby('group_label').median(numeric_only=True)['spike_width'].idxmin()
+left_10_df.loc[left_10_df['group_label'] == fs_label, 'type'] = 'NS'
+
+rs1_label = left_10_df.groupby('group_label').mean(numeric_only=True)['v_below'].idxmax()
+types = np.array([0, 1, 2])
+rs2_label = types[~np.isin(types, np.array([fs_label, rs1_label]))][0]
+if rs2_label == fs_label:
+    rs2_label = types[~np.isin(types, np.array([fs_label, rs1_label]))][0]
+left_10_df.loc[left_10_df['group_label'] == rs1_label, 'type'] = 'RS1'
+left_10_df.loc[left_10_df['group_label'] == rs2_label, 'type'] = 'RS2'
+
+# Print result
+FS_perc = (np.sum(left_10_df['type'] == 'NS') / left_10_df.shape[0]) * 100
+RS1_perc = (np.sum(left_10_df['type'] == 'RS1') / left_10_df.shape[0]) * 100
+RS2_perc = (np.sum(left_10_df['type'] == 'RS2') / left_10_df.shape[0]) * 100
+print(f'\nLeft 10 deg\nFS: {FS_perc:.2f}%\nRS1: {RS1_perc:.2f}%\nRS2: {RS2_perc:.2f}%')
+
+
+# %%
+
+# Add clustering back to main df
+waveforms_df.loc[left_15_df.index, 'type'] = left_15_df['type']
+waveforms_df.loc[left_10_df.index, 'type'] = left_10_df['type']
+waveforms_df.loc[right_10_df.index, 'type'] = right_10_df['type']
 
 # Print result
 FS_perc = (np.sum(waveforms_df['type'] == 'NS') / waveforms_df.shape[0]) * 100
 RS1_perc = (np.sum(waveforms_df['type'] == 'RS1') / waveforms_df.shape[0]) * 100
 RS2_perc = (np.sum(waveforms_df['type'] == 'RS2') / waveforms_df.shape[0]) * 100
-print(f'FS: {FS_perc:.2f}%\nRS1: {RS1_perc:.2f}%\nRS2: {RS2_perc:.2f}%')
+print(f'\nOverall result\nFS: {FS_perc:.2f}%\nRS1: {RS1_perc:.2f}%\nRS2: {RS2_perc:.2f}%')
 
 # Save result
 neuron_type = waveforms_df.copy()
@@ -281,6 +348,7 @@ figure_style()
 f, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(2, 3, figsize=(10, 5), dpi=dpi)
 ax1.imshow(np.flipud(waveforms_1), cmap='Greys_r', aspect='auto',
            vmin=-np.max(waveforms_3), vmax=np.max(waveforms_3))
+ax1.text(54, 10, f'n={prop_1.shape[0]}', fontsize=7, color='w')
 ax1.get_xaxis().set_visible(False)
 ax1.set(title='FS', xlim=[np.argmin(np.abs(t_x - 1)), np.argmin(np.abs(t_x - 2))],
         yticks=np.linspace(0, 10, 5), yticklabels=np.round(np.linspace(-.1, .1, 5), 2),
@@ -288,12 +356,14 @@ ax1.set(title='FS', xlim=[np.argmin(np.abs(t_x - 1)), np.argmin(np.abs(t_x - 2))
 
 ax2.imshow(np.flipud(waveforms_2), cmap='Greys_r', aspect='auto',
            vmin=-np.max(waveforms_2), vmax=np.max(waveforms_2))
+ax2.text(54, 10, f'n={prop_2.shape[0]}', fontsize=7, color='w')
 ax2.get_xaxis().set_visible(False)
 ax2.get_yaxis().set_visible(False)
 ax2.set(title='RS1', xlim=[np.argmin(np.abs(t_x - 1)), np.argmin(np.abs(t_x - 2))])
 
 ax3.imshow(np.flipud(waveforms_3), cmap='Greys_r', aspect='auto',
            vmin=-np.max(waveforms_1), vmax=np.max(waveforms_1))
+ax3.text(54, 10, f'n={prop_3.shape[0]}', fontsize=7, color='w')
 ax3.get_xaxis().set_visible(False)
 ax3.get_yaxis().set_visible(False)
 ax3.set(title='RS2', xlim=[np.argmin(np.abs(t_x - 1)), np.argmin(np.abs(t_x - 2))])
