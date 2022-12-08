@@ -51,9 +51,9 @@ colors, dpi = figure_style()
 f, ax1 = plt.subplots(1, 1, figsize=(1.2, 1.75), dpi=dpi)
 
 sns.boxplot(x='type', y='latency', data=sert_neurons[sert_neurons['type'] != 'Und.'], ax=ax1,
-            palette=[colors['RS'], colors['FS']], width=0.7)
+            palette=[colors['RS'], colors['NS']], width=0.7)
 _, p = mannwhitneyu(sert_neurons.loc[sert_neurons['type'] == 'RS', 'latency'],
-                    sert_neurons.loc[sert_neurons['type'] == 'FS', 'latency'])
+                    sert_neurons.loc[sert_neurons['type'] == 'NS', 'latency'])
 ax1.set(xlabel='', ylabel='Modulation latency (ms)', xticklabels=['RS', 'NS'],
         yticks=[0, 250, 500, 750, 1000])
 ax1.text(0.5, 1100, 'n.s.', ha='center', va='center')
