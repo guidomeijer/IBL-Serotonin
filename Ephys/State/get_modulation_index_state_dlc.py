@@ -15,6 +15,7 @@ from brainbox.task.closed_loop import roc_single_event
 from glob import glob
 import pandas as pd
 from brainbox.io.one import SpikeSortingLoader
+from dlc_functions import get_dlc_XYs
 from serotonin_functions import (figure_style, load_passive_opto_times, get_neuron_qc, remap, paths,
                                  query_ephys_sessions)
 from one.api import ONE
@@ -23,19 +24,15 @@ ba = AllenAtlas()
 one = ONE()
 
 K = 2    # number of discrete states
-D = 25   # dimension of the observations
 T_BEFORE = 0  # for state classification
 T_AFTER = 0.5
 PRE_TIME = [0.5, 0]  # for modulation index
 POST_TIME = [0, 0.5]
-FM_DIR = '/media/guido/Data2/Facemap/'  # dir with facemap data
-OVERWRITE = False
+OVERWRITE = True
+FEATURES = ['nose_tip', 'paw_l', 'paw_r']
 
 # Get path
 _, save_path = paths()
-
-# Get all processed facemap files
-fm_files = glob(join(FM_DIR, '*_proc.npy'))
 
 # Query sessions
 rec = query_ephys_sessions(one=one)
@@ -43,40 +40,33 @@ rec = query_ephys_sessions(one=one)
 if OVERWRITE:
     state_mod_df = pd.DataFrame()
 else:
-    state_mod_df = pd.read_csv(join(save_path, 'state_modulation.csv'))
+    state_mod_df = pd.read_csv(join(save_path, 'mov_state_mod.csv'))
 
-for i, path in enumerate(fm_files):
+for i in rec.index.values:
 
-    # Get session data
-    subject = path[-40:-31]
-    date = path[-30:-20]
-    try:
-        eid = one.search(subject=subject, date_range=date)[0]
-    except:
-        continue
-
+    # Get session details
+    pid, eid, probe = rec.loc[i, 'pid'], rec.loc[i, 'eid'], rec.loc[i, 'probe']
+    subject, date = rec.loc[i, 'subject'], rec.loc[i, 'date']
     if not OVERWRITE:
         if eid in state_mod_df['eid'].values:
             continue
+    print(f'\nStarting {subject}, {date} ({i+1} of {len(rec)})')
 
-    print(f'Starting {subject}, {date}')
-
-    # Load in timestamp data
+    # Load in camera timestamps and DLC output
     try:
-        times = one.load_dataset(eid, '_ibl_leftCamera.times.npy')
+        video_times, XYs = get_dlc_XYs(one, eid)
     except:
+        print('Could not load video and/or DLC data')
         continue
 
-    # Load in facemap data
-    fm_dict = np.load(path, allow_pickle=True).item()
-
-    # Facemap data is the last part of the video
-    fm_times = times[times.shape[0] - fm_dict['motSVD'][1].shape[0]:]
 
     # Load opto times
     opto_times, _ = load_passive_opto_times(eid, one=one)
     if len(opto_times) == 0:
         continue
+
+    # Select features to use
+    XYs = dict((k, XYs[k]) for k in FEATURES)
 
     # Select part of recording starting just before opto onset
     motSVD = fm_dict['motSVD'][1][fm_times > opto_times[0] - 10, :D]
@@ -143,7 +133,7 @@ for i, path in enumerate(fm_files):
             'mod_index_inactive': mod_idx_inactive, 'mod_index_active': mod_idx_active})))
 
     # Save to disk
-    state_mod_df.to_csv(join(save_path, 'state_modulation.csv'))
+    state_mod_df.to_csv(join(save_path, 'mov_state_mod.csv'))
 
 
 

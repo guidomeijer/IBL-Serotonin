@@ -125,6 +125,10 @@ for i in rec.index.values:
             print('Too few trials of one or another state')
             continue
 
+        # Get firing rate per state
+        fr_down = np.mean(pop_act[zhat == 0, :], axis=0)
+        fr_up = np.mean(pop_act[zhat == 1, :], axis=0)
+
         # Get modulation index for active and inactive state and early and late timewindow
         roc_auc, cluster_ids = roc_single_event(region_spikes, region_clusters,
                                                 opto_times[pre_state == 0], pre_time=PRE_TIME,
@@ -149,7 +153,8 @@ for i in rec.index.values:
             'subject': subject, 'date': date, 'eid': eid, 'pid': pid, 'sert_cre': sert_cre,
             'acronym': cluster_regions, 'high_level_region': region, 'neuron_id': cluster_ids,
             'mod_down_early': mod_down_early, 'mod_up_early': mod_up_early,
-            'mod_down_late': mod_down_late, 'mod_up_late': mod_up_late})))
+            'mod_down_late': mod_down_late, 'mod_up_late': mod_up_late,
+            'fr_down': fr_down, 'fr_up': fr_up})))
 
     # Save to disk
     updown_mod_df.to_csv(join(save_path, 'updown_states_modulation.csv'))

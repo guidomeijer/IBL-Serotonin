@@ -72,3 +72,26 @@ ax2.set(xlabel='Change in modulation (up-down)', ylabel='Neuron count', xlim=[-1
 
 plt.tight_layout()
 sns.despine(trim=True)
+
+# %%
+all_neurons.loc[all_neurons['fr_down'] < 0.01, 'fr_down'] = 0.01
+all_neurons.loc[all_neurons['fr_up'] < 0.01, 'fr_up'] = 0.01
+all_neurons['fr_down_log'] = np.log10(all_neurons['fr_down'])
+all_neurons['fr_up_log'] = np.log10(all_neurons['fr_up'])
+
+f, (ax1, ax2) = plt.subplots(1, 2, figsize=(3.5, 1.75), dpi=dpi)
+ax1.hist(all_neurons['fr_down_log'], color=colors['suppressed'], histtype='step', bins=40, label='Down')
+ax1.hist(all_neurons['fr_up_log'], color=colors['enhanced'], histtype='step', bins=40, label='Up')
+ax1.legend(frameon=False, prop={'size': 5}, loc='upper left')
+ax1.set(xlim=[-2.1, 2], ylabel='Neuron count', xticks=[-2, -1, 0, 1, 2], xticklabels=['>0.01', 0.1, 1, 10, 100],
+        xlabel='Firing rate (spks/s)')
+
+ax2.errorbar([0, 1], [all_neurons['fr_down'].mean(), all_neurons['fr_up'].mean()],
+             [all_neurons['fr_down'].sem(), all_neurons['fr_up'].sem()], marker='o')
+ax2.set(xticks=[0, 1], xticklabels=['Down', 'Up'], ylabel='Firing rate (spks/s)')
+
+plt.tight_layout()
+sns.despine(trim=True)
+
+
+
