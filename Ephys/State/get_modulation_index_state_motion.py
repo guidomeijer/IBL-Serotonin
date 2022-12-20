@@ -12,6 +12,7 @@ import ssm
 from ssm.plots import gradient_cmap
 import matplotlib.pyplot as plt
 from brainbox.task.closed_loop import roc_single_event
+from scipy.stats import binned_statistic
 from glob import glob
 import pandas as pd
 from brainbox.io.one import SpikeSortingLoader
@@ -22,13 +23,14 @@ from ibllib.atlas import AllenAtlas
 ba = AllenAtlas()
 one = ONE()
 
-K = 2    # number of discrete states
-D = 3
-T_BEFORE = 0  # for state classification
-T_AFTER = 0.5
+K = 2    # number of behavioral states
+D = 3    # number of dimensions to classify (3 cameras)
+T_BEFORE = 0.25  # for state classification
+T_AFTER = 0.25
 PRE_TIME = [0.5, 0]  # for modulation index
-POST_TIME = [0, 0.5]
+POST_TIME = [0.5, 1]
 OVERWRITE = True
+BIN_SIZE = 0.1
 
 # Get path
 _, save_path = paths()
@@ -39,7 +41,7 @@ rec = query_ephys_sessions(one=one)
 if OVERWRITE:
     state_mod_df = pd.DataFrame()
 else:
-    state_mod_df = pd.read_csv(join(save_path, 'mov_state_mod.csv'))
+    state_mod_df = pd.read_csv(join(save_path, 'motion_state_mod.csv'))
 
 for i in rec.index.values:
 
@@ -65,7 +67,7 @@ for i in rec.index.values:
 
     # Load opto times
     opto_times, _ = load_passive_opto_times(eid, one=one)
-    if len(opto_times) == 0:
+    if (len(opto_times) == 0) | (opto_times[0] < 500) | (opto_times[0] > left_times[-1]):
         continue
 
     # Select part of recording starting just before opto onset
@@ -76,22 +78,41 @@ for i in rec.index.values:
     body_motion = body_motion[body_times > opto_times[0] - 10]
     body_times = body_times[body_times > opto_times[0] - 10]
 
-    # TO DO: cameras have different sampling rates, do some binning
-    make_bins(left_motion, left_times, left_times[0], left_times[-1], 0.1)
+    # Cameras have different sampling rates, do some binning
+    start = opto_times[0] - 8
+    end = opto_times[-1] + 1
+    left_binned, left_edges, _ = binned_statistic(
+        left_times, left_motion, bins=int((end-start)*(1/BIN_SIZE)),
+        range=(start, end), statistic=np.nanmean)
+    left_centers = (left_edges[:-1] + left_edges[1:]) / 2
+    right_binned, right_edges, _ = binned_statistic(
+        right_times, right_motion, bins=int((end-start)*(1/BIN_SIZE)),
+        range=(start, end), statistic=np.nanmean)
+    right_centers = (right_edges[:-1] + right_edges[1:]) / 2
+    body_binned, body_edges, _ = binned_statistic(
+        body_times, body_motion, bins=int((end-start)*(1/BIN_SIZE)),
+        range=(start, end), statistic=np.nanmean)
+    body_centers = (body_edges[:-1] + body_edges[1:]) / 2
+    
+    # Concatenate cameras together
+    all_motion = np.vstack((left_binned, right_binned, body_binned)).T
+    
+    # There will be very slight differences between the bin centers, just average together
+    all_times = np.mean(np.vstack((left_centers, right_centers, body_centers)), axis=0)
 
     # Make an hmm and sample from it
     arhmm = ssm.HMM(K, D, observations="ar")
-    arhmm.fit(motSVD[:, :D])
-    zhat = arhmm.most_likely_states(motSVD[:, :D])
+    arhmm.fit(all_motion)
+    zhat = arhmm.most_likely_states(all_motion)
 
     # Make sure state 0 is inactive and state 1 active
-    if np.mean(motSVD[zhat == 0, 0]) > np.mean(motSVD[zhat == 1, 0]):
+    if np.mean(all_motion[zhat == 0, 0]) > np.mean(all_motion[zhat == 1, 0]):
         zhat = np.where((zhat==0)|(zhat==1), zhat^1, zhat)
 
     # Get state per stimulation onset
     pre_state = np.empty(opto_times.shape)
     for j, opto_time in enumerate(opto_times):
-        pre_zhat = zhat[(fm_times > opto_time - T_BEFORE) & (fm_times <= opto_time + T_AFTER)]
+        pre_zhat = zhat[(all_times > opto_time - T_BEFORE) & (all_times <= opto_time + T_AFTER)]
         if np.sum(pre_zhat == 0) > np.sum(pre_zhat == 1):
             pre_state[j] = 0
         else:
@@ -133,7 +154,7 @@ for i in rec.index.values:
             'mod_index_inactive': mod_idx_inactive, 'mod_index_active': mod_idx_active})))
 
     # Save to disk
-    state_mod_df.to_csv(join(save_path, 'mov_state_mod.csv'))
+    state_mod_df.to_csv(join(save_path, 'motion_state_mod.csv'))
 
 
 

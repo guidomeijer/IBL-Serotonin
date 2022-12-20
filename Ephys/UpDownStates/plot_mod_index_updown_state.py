@@ -8,6 +8,7 @@ import numpy as np
 from os.path import join
 import pandas as pd
 import matplotlib.pyplot as plt
+from scipy.stats import wilcoxon
 import seaborn as sns
 from serotonin_functions import paths, load_subjects, figure_style
 
@@ -39,19 +40,21 @@ supp_df = all_neurons[all_neurons[f'mod_index_{time_win}'] < 0].groupby('subject
 # %%
 colors, dpi = figure_style()
 
-f, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(4, 1.75), dpi=dpi)
+f, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(5, 1.75), dpi=dpi)
 
 for i in enh_df.index:
     ax1.plot([0, 1], [enh_df.loc[i, f'mod_down_{time_win}'], enh_df.loc[i, f'mod_up_{time_win}']],
              '-o', color=colors['enhanced'], markersize=2)
+_, p = wilcoxon(enh_df[f'mod_down_{time_win}'], enh_df[f'mod_up_{time_win}'])
 ax1.set(ylabel='Modulation index', xticks=[0, 1], xticklabels=['Down', 'Up'], xlabel='State',
-        yticks=[-0.1, 0, 0.1, 0.2, 0.3, 0.4], title='Enhanced neurons', xlim=[-0.2, 1.2], ylim=[-0.1, 0.4])
+        yticks=[-0.1, 0, 0.1, 0.2, 0.3, 0.4], title=f'Enhanced neurons (p={p:.2f})', xlim=[-0.2, 1.2], ylim=[-0.1, 0.4])
 
 for i in supp_df.index:
     ax2.plot([0, 1], [supp_df.loc[i, f'mod_down_{time_win}'], supp_df.loc[i, f'mod_up_{time_win}']],
              '-o', color=colors['suppressed'], markersize=2)
+_, p = wilcoxon(supp_df[f'mod_down_{time_win}'], supp_df[f'mod_up_{time_win}'])
 ax2.set(ylabel='Modulation index', xticks=[0, 1], xticklabels=['Down', 'Up'], xlabel='State',
-        yticks=[-0.5, -0.4, -0.3, -0.2, -0.1, 0, 0.1], title='Suppressed neurons', xlim=[-0.2, 1.2])
+        yticks=[-0.5, -0.4, -0.3, -0.2, -0.1, 0], title=f'Supp. neurons (p={p:.2f})', xlim=[-0.2, 1.2])
 
 ax3.plot([-0.5, 1], [0, 0], color='grey', ls='--')
 sns.swarmplot(data=all_df, y='mod_diff', ax=ax3, color=colors['sert'])
