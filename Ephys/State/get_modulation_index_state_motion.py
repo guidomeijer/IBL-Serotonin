@@ -16,7 +16,7 @@ from glob import glob
 import pandas as pd
 from brainbox.io.one import SpikeSortingLoader
 from serotonin_functions import (figure_style, load_passive_opto_times, get_neuron_qc, remap, paths,
-                                 query_ephys_sessions)
+                                 query_ephys_sessions, make_bins)
 from one.api import ONE
 from ibllib.atlas import AllenAtlas
 ba = AllenAtlas()
@@ -77,6 +77,7 @@ for i in rec.index.values:
     body_times = body_times[body_times > opto_times[0] - 10]
 
     # TO DO: cameras have different sampling rates, do some binning
+    make_bins(left_motion, left_times, left_times[0], left_times[-1], 0.1)
 
     # Make an hmm and sample from it
     arhmm = ssm.HMM(K, D, observations="ar")

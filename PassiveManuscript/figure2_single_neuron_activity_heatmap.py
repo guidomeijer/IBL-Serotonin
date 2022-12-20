@@ -150,11 +150,11 @@ ax_am.set_title('Amygdala', fontsize=title_font)
 ax_am.plot([0, 0], [-1, 1], ls='--', color='k')
 ax_am.xaxis.set_tick_params(which='both', labelbottom=True)
 
-these_peths = peths_df[peths_df['region'] == 'Posterior parietal cortex']
+these_peths = peths_df[peths_df['region'] == 'Visual cortex']
 img = ax_ppc.imshow(np.array(these_peths['peth_ratio'].tolist()), cmap=cmap,
                  vmin=VMIN, vmax=VMAX, extent=[-T_BEFORE, T_AFTER, -1, 1], interpolation='none')
 ax_ppc.set(yticks=[1], yticklabels=[these_peths.shape[0]])
-ax_ppc.set_title('Posterior parietal cortex', fontsize=title_font)
+ax_ppc.set_title('Visual cortex', fontsize=title_font)
 ax_ppc.plot([0, 0], [-1, 1], ls='--', color='k')
 
 these_peths = peths_df[peths_df['region'] == 'Hippocampus']

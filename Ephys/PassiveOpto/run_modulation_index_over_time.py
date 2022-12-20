@@ -18,11 +18,11 @@ ba = AllenAtlas()
 one = ONE()
 
 # Settings
-OVERWRITE = False
+OVERWRITE = True
 BASELINE = [0.5, 0]
 PRE_TIME = 1
 POST_TIME = 5
-BIN_SIZE = 0.2
+BIN_SIZE = 0.1
 win_centers = np.arange(-PRE_TIME + (BIN_SIZE/2), POST_TIME, BIN_SIZE)
 
 # Load in results
@@ -33,7 +33,7 @@ if OVERWRITE:
     mod_idx_df = pd.DataFrame()
 else:
     mod_idx_df = pd.read_pickle(join(save_path, 'mod_over_time.pickle'))
-light_neurons = light_neurons[~np.isin(light_neurons['pid'], mod_idx_df['pid'])]
+    light_neurons = light_neurons[~np.isin(light_neurons['pid'], mod_idx_df['pid'])]
 
 for i, pid in enumerate(np.unique(light_neurons['pid'])):
 
@@ -71,6 +71,7 @@ for i, pid in enumerate(np.unique(light_neurons['pid'])):
     if spike_times.shape[0] == 0:
         continue
 
+    """
     # Get spike counts for baseline windows
     baseline_wins = win_centers[(win_centers >= -BASELINE[0]) & (win_centers < BASELINE[1])]
     baseline_counts = np.empty((these_neurons.shape[0], opto_train_times.shape[0], baseline_wins.shape[0]))
@@ -81,8 +82,15 @@ for i, pid in enumerate(np.unique(light_neurons['pid'])):
         baseline_counts[:,:,itb], _ = get_spike_counts_in_bins(spike_times, spike_clusters, times)
 
     # Get median spike count over all baseline windows
-    baseline_median = np.median(baseline_counts, axis=2)
-
+    baseline_mean = np.mean(baseline_counts, axis=2)
+    """
+    
+    # Get spike count for last window before stim onset (baseline)
+    win_c = win_centers[np.where(win_centers < 0)[0][-1]]
+    times = np.column_stack(((opto_train_times + (win_c - (BIN_SIZE/2)),
+                              (opto_train_times + (win_c + (BIN_SIZE/2))))))
+    baseline_counts, _ = get_spike_counts_in_bins(spike_times, spike_clusters, times)
+ 
     # Loop over time bins
     roc_auc = np.empty((baseline_counts.shape[0], win_centers.shape[0]))
     for itb, win_c in enumerate(win_centers):
@@ -96,10 +104,10 @@ for i, pid in enumerate(np.unique(light_neurons['pid'])):
         for iin in range(spike_counts.shape[0]):
 
             # Calculate area under the ROC curve
-            roc_auc[iin, itb] = roc_auc_score(np.concatenate((np.zeros(baseline_median.shape[1]),
+            roc_auc[iin, itb] = roc_auc_score(np.concatenate((np.zeros(baseline_counts.shape[1]),
                                                               np.ones(spike_counts.shape[1]))),
-                                              np.concatenate((baseline_median[iin, :], spike_counts[iin, :])))
-
+                                              np.concatenate((baseline_counts[iin, :], spike_counts[iin, :])))
+                
     # Rescale area under to curve to [-1, 1] range
     mod_idx = 2 * (roc_auc - 0.5)
 

@@ -135,7 +135,7 @@ def figure_style():
               'M2': sns.color_palette('Dark2')[2],
               'Amyg': sns.color_palette('Dark2')[3],
               'Hipp': sns.color_palette('Dark2')[4],
-              'VISa/am': sns.color_palette('Dark2')[5],
+              'VIS': sns.color_palette('Dark2')[5],
               'Pir': sns.color_palette('Dark2')[6],
               'SC': sns.color_palette('Dark2')[7],
               'Thal': sns.color_palette('tab10')[9],
@@ -151,7 +151,7 @@ def figure_style():
               'Secondary motor cortex': sns.color_palette('Dark2')[2],
               'Amygdala': sns.color_palette('Dark2')[3],
               'Hippocampus': sns.color_palette('Dark2')[4],
-              'Secondary visual cortex': sns.color_palette('Dark2')[5],
+              'Visual cortex': sns.color_palette('Dark2')[5],
               'Piriform': sns.color_palette('Dark2')[6],
               'Superior colliculus': sns.color_palette('Dark2')[7],
               'Periaqueductal gray': sns.color_palette('Set1')[7],
@@ -345,7 +345,7 @@ def combine_regions(acronyms, split_thalamus=False, abbreviate=False):
         #regions[np.in1d(acronyms, ['LGv', 'LGd'])] = 'LG'
         regions[np.in1d(acronyms, ['PIR'])] = 'Pir'
         #regions[np.in1d(acronyms, ['SNr', 'SNc', 'SNl'])] = 'SN'
-        regions[np.in1d(acronyms, ['VISa', 'VISam'])] = 'VISa/am'
+        regions[np.in1d(acronyms, ['VISa', 'VISam', 'VISp'])] = 'VIS'
         regions[np.in1d(acronyms, ['MEA', 'CEA', 'BLA', 'COAa'])] = 'Amyg'
         regions[np.in1d(acronyms, ['AON', 'TTd', 'DP'])] = 'OLF'
         regions[np.in1d(acronyms, ['CP', 'STR', 'STRd', 'STRv'])] = 'Str'
@@ -374,7 +374,7 @@ def combine_regions(acronyms, split_thalamus=False, abbreviate=False):
         #regions[np.in1d(acronyms, ['LGv', 'LGd'])] = 'Lateral geniculate'
         regions[np.in1d(acronyms, ['PIR'])] = 'Piriform'
         #regions[np.in1d(acronyms, ['SNr', 'SNc', 'SNl'])] = 'Substantia nigra'
-        regions[np.in1d(acronyms, ['VISa', 'VISam'])] = 'Secondary visual cortex'
+        regions[np.in1d(acronyms, ['VISa', 'VISam', 'VISp'])] = 'Visual cortex'
         regions[np.in1d(acronyms, ['MEA', 'CEA', 'BLA', 'COAa'])] = 'Amygdala'
         regions[np.in1d(acronyms, ['CP', 'STR', 'STRd', 'STRv'])] = 'Tail of the striatum'
         regions[np.in1d(acronyms, ['CA1', 'CA3', 'DG'])] = 'Hippocampus'

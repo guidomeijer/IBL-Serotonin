@@ -17,7 +17,8 @@ from serotonin_functions import paths, load_subjects, figure_style, combine_regi
 MIN_NEURONS = 10
 
 # Load in results
-fig_path, save_path = paths()
+fig_path, save_path = paths(dropbox=True)
+f_path = join(fig_path, 'PaperPassive', 'figure4')
 mod_idx_df = pd.read_pickle(join(save_path, 'mod_over_time.pickle'))
 mod_idx_df['full_region'] = combine_regions(mod_idx_df['region'], abbreviate=True)
 #mod_idx_df['full_region'] = high_level_regions(mod_idx_df['region'])
@@ -43,15 +44,14 @@ for i, region in enumerate(np.unique(mod_idx_df['full_region'])):
 # %% Plot
 colors, dpi = figure_style()
 f, ax1 = plt.subplots(1, 1, figsize=(2, 1.75), dpi=dpi)
-#ax1.add_patch(Rectangle((0, 0), 1, 1, color='royalblue', alpha=0.25, lw=0))
+ax1.add_patch(Rectangle((0, -0.1), 1, 0.2, color='royalblue', alpha=0.25, lw=0))
 sns.lineplot(x='time', y='mod_idx', data=mod_long_df[(mod_long_df['region'] == 'mPFC')],
-             hue='region', errorbar='se', ax=ax1, legend=None,
-             palette=colors)
-ax1.set(xlim=[-1, 3], ylim=[-0.04, 0.061], ylabel='Modulation index', xlabel='Time (s)',
-        title='Frontal cortex')
+             errorbar='se', ax=ax1, color='k')
+ax1.set(xlim=[-1, 3], ylim=[-0.04, 0.101], ylabel='Modulation index', xlabel='Time (s)')
 #leg = ax1.legend(title='', bbox_to_anchor=(0.9, 0.45, 0.2, 0.4), prop={'size': 5})
 #leg.get_frame().set_linewidth(0.0)
 
 sns.despine(trim=True)
 plt.tight_layout()
+plt.savefig(join(f_path, 'modulation_index_over_time.pdf'))
 

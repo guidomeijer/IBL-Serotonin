@@ -10,6 +10,7 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 from os.path import join
+from scipy.stats import pearsonr
 import seaborn.objects as so
 from serotonin_functions import (paths, figure_style, load_subjects, plot_scalar_on_slice,
                                  combine_regions, high_level_regions)
@@ -95,45 +96,17 @@ plt.tight_layout()
 sns.despine(trim=True, offset=3)
 plt.savefig(join(fig_path, 'modulation_vs_latency.pdf'))
 
-# %% Hippocampus
-
-f, (ax1, ax2) = plt.subplots(1, 2, figsize=(3.5, 1.75), dpi=dpi)
-
-(
-     so.Plot(sert_neurons[sert_neurons['full_region'] == 'Hippocampus'],
-             x='mod_index_late', y='latency')
-     .add(so.Dot(pointsize=2))
-     .add(so.Line(color='k', linewidth=1), so.PolyFit(order=1))
-     .limit(x=[-1, 1], y=[-15, 1000])
-     .label(x='Modulation index', y='Modulation latency (ms)')
-     .on(ax1)
-     .plot()
-)
-ax1.set_title('Hippocampus', color=colors['Hippocampus'], fontweight='bold')
-
-(
-     so.Plot(sert_neurons[sert_neurons['full_region'] == 'Hippocampus'],
-             x='mod_index_abs', y='latency')
-     .add(so.Dot(pointsize=2))
-     .add(so.Line(color='k', linewidth=1), so.PolyFit(order=1))
-     .limit(x=[-0.1, 1], y=[-15, 1000])
-     .label(x='Absolute modulation index', y='Modulation latency (ms)')
-     .on(ax2)
-     .plot()
-)
-
-plt.tight_layout()
-sns.despine(trim=True, offset=3)
-plt.savefig(join(fig_path, 'modulation_vs_latency_hippocampus.pdf'))
 
 # %% Medial prefrontal cortex
 
-f, (ax1, ax2) = plt.subplots(1, 2, figsize=(3.5, 1.75), dpi=dpi)
-
+df_slice = sert_neurons[(sert_neurons['full_region'] == 'Medial prefrontal cortex')
+                        & (sert_neurons['type'] != 'Und.')]
+df_slice = df_slice[~np.isnan(df_slice['latency'])]
+r, p = pearsonr(df_slice['mod_index_late'], df_slice['latency'])
+print(f'r = {r:.2f}\np = {p}')
+f, ax1 = plt.subplots(1, 1, figsize=(1.75, 1.75), dpi=dpi)
 (
-     so.Plot(sert_neurons[(sert_neurons['full_region'] == 'Medial prefrontal cortex')
-                          & (sert_neurons['type'] != 'Und.')],
-             x='mod_index_late', y='latency')
+     so.Plot(df_slice, x='mod_index_late', y='latency')
      .add(so.Dot(pointsize=2), color='type')
      .add(so.Line(color='k', linewidth=1), so.PolyFit(order=1))
      .scale(color=[colors['RS'], colors['FS']])
@@ -142,24 +115,13 @@ f, (ax1, ax2) = plt.subplots(1, 2, figsize=(3.5, 1.75), dpi=dpi)
      .on(ax1)
      .plot()
 )
-ax1.set_title('Medial prefrontal cortex', color=colors['Medial prefrontal cortex'], fontweight='bold')
+ax1.text(0, 1000, '***', fontsize=10, ha='center')
 legend = f.legends.pop(0)
 ax1.legend(legend.legendHandles, ['RS', 'NS'], frameon=False,
            prop={'size': 6}, handletextpad=0, bbox_to_anchor=[0.3, 1])
 
-(
-     so.Plot(sert_neurons[sert_neurons['full_region'] == 'Medial prefrontal cortex'],
-             x='mod_index_abs', y='latency')
-     .add(so.Dot(pointsize=2))
-     .add(so.Line(color='k', linewidth=1), so.PolyFit(order=1))
-     .limit(x=[-0.1, 1], y=[-15, 1000])
-     .label(x='Absolute modulation index', y='Modulation latency (ms)')
-     .on(ax2)
-     .plot()
-)
-
 plt.tight_layout()
-sns.despine(trim=True, offset=3)
+sns.despine(trim=True, offset=2)
 plt.savefig(join(fig_path, 'modulation_vs_latency_frontal.pdf'))
 
 

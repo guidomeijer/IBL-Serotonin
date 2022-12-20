@@ -37,7 +37,7 @@ rec_targets[['ML', 'AP', 'DV', 'depth']] = rec_targets[['ML', 'AP', 'DV', 'depth
 
 # Plot all insertions
 rec = query_ephys_sessions()
-fig = rendering.figure(grid=False)
+fig = rendering.figure(grid=False, size=(1024, 768))
 subjects = np.unique(rec['subject'])
 colors = sns.color_palette(CMAP, subjects.shape[0])
 for i, pid in enumerate(rec['pid']):
