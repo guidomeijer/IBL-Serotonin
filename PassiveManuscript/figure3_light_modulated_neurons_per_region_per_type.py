@@ -138,8 +138,8 @@ plt.savefig(join(fig_path, 'ratio_mod_neurons.pdf'))
 
 # %%
 
-reg_order = ['Medial prefrontal cortex', 'Orbitofrontal cortex', 'Secondary motor cortex',
-             'Secondary visual cortex', 'Retrosplenial cortex',
+reg_order = ['Medial prefrontal cortex', 'Secondary motor cortex',
+             'Visual cortex', 'Retrosplenial cortex', 'Orbitofrontal cortex',
              'Olfactory areas', 'Piriform',
              'Tail of the striatum',
              'Thalamus', 'Hippocampus', 'Amygdala',
@@ -162,19 +162,37 @@ plt.savefig(join(fig_path, 'perc_mod_neurons.pdf'))
 
 # %%
 
-f, ax1 = plt.subplots(1, 1, figsize=(1.75, 1.75), dpi=dpi)
-ax1.plot([0, 100], [0, 100])
-(
-     so.Plot(summary_df, x='perc_mod_NS', y='perc_mod_RS')
-     .add(so.Dot(pointsize=2))
-     #.add(so.Line(color='k', linewidth=1), so.PolyFit(order=1))
-     .label(x='Narrow/fast spiking (%)', y='Regular spiking (%)')
-     .on(ax1)
-     .plot()
-)
-ax1.set(xticks=[0, 25, 50, 75], yticks=[0, 25, 50, 75])
-r, p = pearsonr(summary_df['perc_mod_NS'], summary_df['perc_mod_RS'])
+reg_order = ['Medial prefrontal cortex', 'Secondary motor cortex',
+             'Visual cortex', 'Retrosplenial cortex', 'Orbitofrontal cortex',
+             'Olfactory areas', 'Piriform',
+             'Tail of the striatum',
+             'Thalamus', 'Hippocampus', 'Amygdala',
+             'Superior colliculus', 'Midbrain reticular nucleus', 'Periaqueductal gray']
+
+f, (ax1, ax2) = plt.subplots(1, 2, figsize=(3.5, 2), dpi=dpi)
+
+sns.barplot(x='perc_supp_NS', y='full_region', data=summary_df, color=colors['suppressed'], ax=ax1,
+            order=reg_order)
+sns.barplot(x='perc_enh_NS', y='full_region', data=summary_df, color=colors['enhanced'], ax=ax1,
+            order=reg_order)
+ax1.set(ylabel='', xticks=[-75, -50, -25, 0, 25, 50], xticklabels=[75, 50, 25, 0, 25, 50],
+        xlabel='')
+ax1.set_title('NS', fontweight='bold')
+
+sns.barplot(x='perc_supp_RS', y='full_region', data=summary_df, color=colors['suppressed'], ax=ax2,
+            order=reg_order)
+sns.barplot(x='perc_enh_RS', y='full_region', data=summary_df, color=colors['enhanced'], ax=ax2,
+            order=reg_order)
+ax2.set(ylabel='', xticks=[-75, -50, -25, 0, 25, 50], xticklabels=[75, 50, 25, 0, 25, 50],
+        title='RS', yticklabels=[], xlabel='')
+ax2.set_title('RS', fontweight='bold')
+
+f.text(0.7, 0.03, '% modulated neurons', ha='center', va='center')
 
 sns.despine(trim=True)
-plt.tight_layout()
+plt.tight_layout(pad=1.5)
+
+plt.savefig(join(fig_path, 'perc_mod_neurons_signed.pdf'))
+
+
 

@@ -14,8 +14,8 @@ from serotonin_functions import paths, figure_style, combine_regions, load_subje
 
 # Settings
 MIN_NEURONS_POOLED = 5
-MIN_NEURONS_PER_MOUSE = 12
-MIN_MOD_NEURONS = 10
+MIN_NEURONS_PER_MOUSE = 0
+MIN_MOD_NEURONS = 6
 MIN_REC = 2
 
 # Paths

@@ -17,8 +17,8 @@ from matplotlib.lines import Line2D
 from sklearn.mixture import GaussianMixture
 from sklearn.cluster import KMeans
 import pandas as pd
-from one.api import ONE
-one = ONE()
+#from one.api import ONE
+#one = ONE()
 
 
 def gaus(x, a, x0, sigma):
@@ -26,14 +26,14 @@ def gaus(x, a, x0, sigma):
 
 
 # Settings
-REGIONS = ['VISa', 'VISam', 'VISp', 'MOs', 'RSPv', 'RSPd']
-#REGIONS = ['MOs']
+REGIONS = ['VISa', 'VISam', 'VISp', 'MOs', 'RSPd']
+#REGIONS = ['VISa', 'VISam', 'VISp', 'MOs']
 CLUSTERING = 'gaussian'
 DENOISED = False
 
 #FEATURES = ['spike_width', 'pt_ratio', 'rp_slope', 'rc_slope', 'spread', 'v_above', 'v_below']
 #FEATURES = ['spike_width', 'pt_ratio', 'rp_slope', 'rc_slope', 'spread', 'v_above', 'v_below']
-FEATURES = ['spike_width', 'spread']
+FEATURES = ['spike_width', 'pt_ratio', 'spread', 'v_below']
 
 # Paths
 fig_dir, data_dir = paths()
@@ -49,11 +49,13 @@ waveforms_df = waveforms_df.rename(columns={'cluster_id': 'neuron_id'})
 # Select neurons from dorsal cortex
 waveforms_df = waveforms_df[np.in1d(remap(waveforms_df['regions']), REGIONS)]
 
+"""
 # Add insertion angles
 for i, pid in enumerate(np.unique(waveforms_df['pid'])):
     traj = one.alyx.rest('trajectories', 'list', provenance='Micro-manipulator', probe_insertion=pid)[0]
     waveforms_df.loc[waveforms_df['pid'] == pid, 'theta'] = traj['theta']
     waveforms_df.loc[waveforms_df['pid'] == pid, 'phi'] = traj['phi']
+"""
 
 # Exclude positive spikes
 excl_df = waveforms_df[waveforms_df['pt_subtract'] > -0.05]
@@ -85,22 +87,16 @@ for i in waveforms_df.index:
 
     # Get spread and velocity
     try:
-        popt, pcov = curve_fit(gaus, dist_soma, norm_amp, p0=[1, 0, 0.1])
-        fit = gaus(dist_soma, *popt)
-        spread = (np.sum(fit / np.max(fit) > 0.12) * 20) / 1000
-        """
-        v_below, _ = np.polyfit(time_trough[dist_soma <= 0],
-                                dist_soma[dist_soma <= 0], 1)
-        v_above, _ = np.polyfit(time_trough[dist_soma >= 0],
-                                dist_soma[dist_soma >= 0], 1)
-        """
-        v_below, _ = np.polyfit(time_trough[(fit / np.max(fit) > 0.12) & (dist_soma <= 0)],
-                                dist_soma[(fit / np.max(fit) > 0.12) & (dist_soma <= 0)], 1)
-        v_above, _ = np.polyfit(time_trough[(fit / np.max(fit) > 0.12) & (dist_soma >= 0)],
-                                dist_soma[(fit / np.max(fit) > 0.12) & (dist_soma >= 0)], 1)
-
-        dist_soma_spread = dist_soma[fit / np.max(fit) > 0.12]
-    except:
+        lower_lim = dist_soma[norm_amp > 0.12][0]
+        upper_lim = dist_soma[norm_amp > 0.12][-1]
+        dist_soma_spread = np.abs(lower_lim) + np.abs(upper_lim)
+        v_below, _ = np.polyfit(time_trough[(dist_soma <= 0) & (dist_soma >= lower_lim)],
+                                dist_soma[(dist_soma <= 0) & (dist_soma >= lower_lim)], 1)
+        v_above, _ = np.polyfit(time_trough[(dist_soma >= 0) & (dist_soma <= upper_lim)],
+                                dist_soma[(dist_soma >= 0) & (dist_soma <= upper_lim)], 1)
+        
+    except Exception as err:
+        print(err)
         waveforms_df.loc[i, 'spread'] = np.nan
         waveforms_df.loc[i, 'v_below'] = np.nan
         waveforms_df.loc[i, 'v_above'] = np.nan
@@ -109,10 +105,10 @@ for i in waveforms_df.index:
     # Add new waveforms to list
     multich_waveforms.append(wf_ch_sort)
     multich_dist_soma.append(dist_soma)
-    multich_dist_soma_spread.append(dist_soma_spread)
+    multich_dist_soma_spread.append(dist_soma[(dist_soma >= lower_lim) & (dist_soma <= upper_lim)])
 
     # Add to df
-    waveforms_df.loc[i, 'spread'] = spread
+    waveforms_df.loc[i, 'spread'] = dist_soma_spread
     waveforms_df.loc[i, 'v_above'] = v_above
     waveforms_df.loc[i, 'v_below'] = v_below
 
@@ -120,6 +116,7 @@ for i in waveforms_df.index:
 waveforms_df = waveforms_df[~np.isnan(waveforms_df['spread'])]
 waveforms_df = waveforms_df.reset_index(drop=True)
 
+"""
 # %% Cluster neurons recorded from the left at 15 degrees angle
 left_15_df = waveforms_df[(waveforms_df['theta'] == 15) & (waveforms_df['phi'] == 180)]
 
@@ -182,6 +179,7 @@ print(f'\nRight 10 deg\nFS: {FS_perc:.2f}%\nRS1: {RS1_perc:.2f}%\nRS2: {RS2_perc
 
 
 # %% Cluster neurons recorded from the left at 10 degrees angle
+
 left_10_df = waveforms_df[(waveforms_df['theta'] == 10) & (waveforms_df['phi'] == 180)]
 
 if CLUSTERING == 'k-means':
@@ -212,12 +210,39 @@ RS2_perc = (np.sum(left_10_df['type'] == 'RS2') / left_10_df.shape[0]) * 100
 print(f'\nLeft 10 deg\nFS: {FS_perc:.2f}%\nRS1: {RS1_perc:.2f}%\nRS2: {RS2_perc:.2f}%')
 
 
-# %%
-
 # Add clustering back to main df
 waveforms_df.loc[left_15_df.index, 'type'] = left_15_df['type']
 waveforms_df.loc[left_10_df.index, 'type'] = left_10_df['type']
 waveforms_df.loc[right_10_df.index, 'type'] = right_10_df['type']
+"""
+
+
+# %% Cluster neurons 
+
+if CLUSTERING == 'k-means':
+    # K-means clustering
+    kmeans = KMeans(n_clusters=3, random_state=42, n_init=100).fit(waveforms_df[FEATURES].to_numpy())
+    waveforms_df['group_label'] = kmeans.labels_
+elif CLUSTERING == 'gaussian':
+    # Mixture of Gaussians clustering
+    gauss_mix = GaussianMixture(n_components=3, random_state=42).fit(waveforms_df[FEATURES].to_numpy())
+    waveforms_df['group_label'] = gauss_mix.predict(waveforms_df[FEATURES].to_numpy())
+
+# Get the RS and FS labels right
+fs_label = waveforms_df.groupby('group_label').median(numeric_only=True)['spike_width'].idxmin()
+waveforms_df.loc[waveforms_df['group_label'] == fs_label, 'type'] = 'NS'
+
+rs1_label = waveforms_df.groupby('group_label').mean(numeric_only=True)['v_below'].idxmax()
+types = np.array([0, 1, 2])
+rs2_label = types[~np.isin(types, np.array([fs_label, rs1_label]))][0]
+if rs2_label == fs_label:
+    rs2_label = types[~np.isin(types, np.array([fs_label, rs1_label]))][0]
+waveforms_df.loc[waveforms_df['group_label'] == rs1_label, 'type'] = 'RS1'
+waveforms_df.loc[waveforms_df['group_label'] == rs2_label, 'type'] = 'RS2'
+
+
+# %%
+
 
 # Print result
 FS_perc = (np.sum(waveforms_df['type'] == 'NS') / waveforms_df.shape[0]) * 100
@@ -251,12 +276,12 @@ ax1.legend(frameon=False)
 ax1.set(ylabel='mV', xlabel='Time (ms)')
 
 ax2.scatter(waveforms_df.loc[waveforms_df['type'] == 'RS1', 'spike_width'],
-            waveforms_df.loc[waveforms_df['type'] == 'RS1', 'rp_slope'], label='RS1', color=colors['RS1'], s=1)
+            waveforms_df.loc[waveforms_df['type'] == 'RS1', 'pt_ratio'], label='RS1', color=colors['RS1'], s=1)
 ax2.scatter(waveforms_df.loc[waveforms_df['type'] == 'RS2', 'spike_width'],
-            waveforms_df.loc[waveforms_df['type'] == 'RS2', 'rp_slope'], label='RS2', color=colors['RS2'], s=1)
+            waveforms_df.loc[waveforms_df['type'] == 'RS2', 'pt_ratio'], label='RS2', color=colors['RS2'], s=1)
 ax2.scatter(waveforms_df.loc[waveforms_df['type'] == 'NS', 'spike_width'],
-            waveforms_df.loc[waveforms_df['type'] == 'NS', 'rp_slope'], label='NS', color=colors['NS'], s=1)
-ax2.set(xlabel='Spike width (ms)', ylabel='Repolarization slope')
+            waveforms_df.loc[waveforms_df['type'] == 'NS', 'pt_ratio'], label='NS', color=colors['NS'], s=1)
+ax2.set(xlabel='Spike width (ms)', ylabel='Peak-to-trough ratio')
 
 ax3.scatter(waveforms_df.loc[waveforms_df['type'] == 'RS1', 'spike_width'],
             waveforms_df.loc[waveforms_df['type'] == 'RS1', 'firing_rate'], label='RS1', color=colors['RS1'], s=1)
@@ -267,28 +292,28 @@ ax3.scatter(waveforms_df.loc[waveforms_df['type'] == 'NS', 'spike_width'],
 ax3.set(xlabel='Spike width (ms)', ylabel='Firing rate (spks/s)')
 
 ax4.scatter(waveforms_df.loc[waveforms_df['type'] == 'RS1', 'spike_width'],
-            waveforms_df.loc[waveforms_df['type'] == 'RS1', 'pt_ratio'], label='RS1', color=colors['RS1'], s=1)
+            waveforms_df.loc[waveforms_df['type'] == 'RS1', 'spread'], label='RS1', color=colors['RS1'], s=1)
 ax4.scatter(waveforms_df.loc[waveforms_df['type'] == 'RS2', 'spike_width'],
-            waveforms_df.loc[waveforms_df['type'] == 'RS2', 'pt_ratio'], label='RS2', color=colors['RS2'], s=1)
+            waveforms_df.loc[waveforms_df['type'] == 'RS2', 'spread'], label='RS2', color=colors['RS2'], s=1)
 ax4.scatter(waveforms_df.loc[waveforms_df['type'] == 'NS', 'spike_width'],
-            waveforms_df.loc[waveforms_df['type'] == 'NS', 'pt_ratio'], label='NS', color=colors['NS'], s=1)
-ax4.set(xlabel='Spike width (ms)', ylabel='Peak-to-trough ratio')
+            waveforms_df.loc[waveforms_df['type'] == 'NS', 'spread'], label='NS', color=colors['NS'], s=1)
+ax4.set(xlabel='Spike width (ms)', ylabel='Waveform spread (mm)')
 
 ax5.scatter(waveforms_df.loc[waveforms_df['type'] == 'RS1', 'spike_width'],
-            waveforms_df.loc[waveforms_df['type'] == 'RS1', 'rc_slope'], label='RS1', color=colors['RS1'], s=1)
+            waveforms_df.loc[waveforms_df['type'] == 'RS1', 'v_below'], label='RS1', color=colors['RS1'], s=1)
 ax5.scatter(waveforms_df.loc[waveforms_df['type'] == 'RS2', 'spike_width'],
-            waveforms_df.loc[waveforms_df['type'] == 'RS2', 'rc_slope'], label='RS2', color=colors['RS2'], s=1)
+            waveforms_df.loc[waveforms_df['type'] == 'RS2', 'v_below'], label='RS2', color=colors['RS2'], s=1)
 ax5.scatter(waveforms_df.loc[waveforms_df['type'] == 'NS', 'spike_width'],
-            waveforms_df.loc[waveforms_df['type'] == 'NS', 'rc_slope'], label='NS', color=colors['NS'], s=1)
-ax5.set(xlabel='Spike width (ms)', ylabel='Recovery slope')
+            waveforms_df.loc[waveforms_df['type'] == 'NS', 'v_below'], label='NS', color=colors['NS'], s=1)
+ax5.set(xlabel='Spike width (ms)', ylabel='Velocity below (ms/mm)')
 
 ax6.scatter(waveforms_df.loc[waveforms_df['type'] == 'RS1', 'spike_width'],
-            waveforms_df.loc[waveforms_df['type'] == 'RS1', 'spike_amp'], label='RS1', color=colors['RS1'], s=1)
+            waveforms_df.loc[waveforms_df['type'] == 'RS1', 'v_above'], label='RS1', color=colors['RS1'], s=1)
 ax6.scatter(waveforms_df.loc[waveforms_df['type'] == 'RS2', 'spike_width'],
-            waveforms_df.loc[waveforms_df['type'] == 'RS2', 'spike_amp'], label='RS2', color=colors['RS2'], s=1)
+            waveforms_df.loc[waveforms_df['type'] == 'RS2', 'v_above'], label='RS2', color=colors['RS2'], s=1)
 ax6.scatter(waveforms_df.loc[waveforms_df['type'] == 'NS', 'spike_width'],
-            waveforms_df.loc[waveforms_df['type'] == 'NS', 'spike_amp'], label='NS', color=colors['NS'], s=1)
-ax6.set(xlabel='Spike width (ms)', ylabel='Spike amplitude (uV)')
+            waveforms_df.loc[waveforms_df['type'] == 'NS', 'v_above'], label='NS', color=colors['NS'], s=1)
+ax6.set(xlabel='Spike width (ms)', ylabel='Velocity above (ms/mm)')
 
 plt.tight_layout()
 sns.despine(trim=False)
