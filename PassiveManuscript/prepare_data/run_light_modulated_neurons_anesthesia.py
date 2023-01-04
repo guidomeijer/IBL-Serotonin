@@ -22,7 +22,7 @@ ba = AllenAtlas()
 one = ONE()
 
 # Settings
-OVERWRITE = True
+OVERWRITE = False
 NEURON_QC = True
 PRE_TIME = [0.5, 0]  # for modulation index
 POST_TIME_EARLY = [0, 0.5]
@@ -32,7 +32,11 @@ MIN_FR = 0.1
 _, save_path = paths()
 
 # Query sessions
-rec = query_ephys_sessions(anesthesia=True, one=one)
+rec_both = query_ephys_sessions(anesthesia='both', one=one)
+rec_both['anesthesia'] = 'both'
+rec_anes = query_ephys_sessions(anesthesia='yes', one=one)
+rec_anes['anesthesia'] = 'yes'
+rec = pd.concat((rec_both, rec_anes))
 
 if OVERWRITE:
     light_neurons = pd.DataFrame()
@@ -50,7 +54,10 @@ for i in rec.index.values:
 
     # Load in laser pulse times
     try:
-        opto_train_times, _ = load_passive_opto_times(eid, anesthesia=True, one=one)
+        if rec.loc[i, 'anesthesia'] == 'both':
+            opto_train_times, _ = load_passive_opto_times(eid, anesthesia=True, one=one)
+        elif rec.loc[i, 'anesthesia'] == 'yes':
+            opto_train_times, _ = load_passive_opto_times(eid, one=one)
     except:
         print('Session does not have passive laser pulses')
         continue

@@ -46,14 +46,21 @@ DATE_LIGHT_SHIELD = '2021-06-08'
 DATE_OPTO_RAMP = '2022-02-14'
 
 
-def load_subjects(anesthesia=None, behavior=None):
+def load_subjects(anesthesia='all', behavior=None):
+    assert anesthesia in ['no', 'yes', 'both', 'all', 'no&both']
     subjects = pd.read_csv(join(pathlib.Path(__file__).parent.resolve(), 'subjects.csv'),
                            delimiter=';')
     subjects = subjects[~((subjects['expression'] == 0) & (subjects['sert-cre'] == 1))]
     if behavior:
         subjects = subjects[subjects['include_behavior'] == 1]
-    if anesthesia:
+    if anesthesia == 'yes':
+        subjects = subjects[subjects['anesthesia'] == 2]
+    elif anesthesia == 'no':
+        subjects = subjects[subjects['anesthesia'] == 0]
+    elif anesthesia == 'both':
         subjects = subjects[subjects['anesthesia'] == 1]
+    elif anesthesia == 'no&both':
+        subjects = subjects[(subjects['anesthesia'] == 1) | (subjects['anesthesia'] == 0)]
     subjects = subjects.reset_index(drop=True)
     return subjects
 
@@ -207,8 +214,9 @@ def query_opto_sessions(subject, include_ephys=False, one=None):
     return [sess['url'][-36:] for sess in sessions]
 
 
-def query_ephys_sessions(aligned=True, behavior_crit=False, n_trials=0, anesthesia=False,
+def query_ephys_sessions(aligned=True, behavior_crit=False, n_trials=0, anesthesia='no',
                          acronym=None, one=None):
+    assert anesthesia in ['no', 'both', 'yes', 'all', 'no&both']
     if one is None:
         one = ONE()
 
@@ -569,7 +577,7 @@ def load_passive_opto_times(eid, one=None, force_rerun=False, anesthesia=False):
         one = ONE()
 
     # See if this is an anesthesia session
-    anesthesia_sub = load_subjects(anesthesia=True)
+    anesthesia_sub = load_subjects(anesthesia='both')
     subject = one.get_details(eid)['subject']
     if subject in anesthesia_sub['subject'].values:
         anesthesia_ses = True

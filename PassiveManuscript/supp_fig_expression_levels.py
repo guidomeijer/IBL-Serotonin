@@ -18,8 +18,8 @@ from ibllib.atlas import AllenAtlas
 ba = AllenAtlas()
 
 # Settings
-#RAW_DATA_PATH = 'E:\\Flatiron\\mainenlab\\Subjects'
-RAW_DATA_PATH = 'D:\\Flatiron\\mainenlab\\Subjects'
+RAW_DATA_PATH = 'E:\\Flatiron\\mainenlab\\Subjects'
+#RAW_DATA_PATH = 'D:\\Flatiron\\mainenlab\\Subjects'
 AP_EXT = [-4400, -4600]
 EXP_WIN_XY = [190, 130]  # top left point
 CTRL_WIN_XY = [190, 85]

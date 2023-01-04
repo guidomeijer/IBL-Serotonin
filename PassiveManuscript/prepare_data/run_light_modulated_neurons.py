@@ -22,7 +22,7 @@ ba = AllenAtlas()
 one = ONE()
 
 # Settings
-OVERWRITE = True
+OVERWRITE = False
 NEURON_QC = True
 PRE_TIME = [0.5, 0]  # for modulation index
 POST_TIME_EARLY = [0, 0.5]
@@ -33,13 +33,13 @@ fig_path, save_path = paths()
 fig_path = join(fig_path, 'Ephys', 'SingleNeurons', 'LightModNeurons')
 
 # Query sessions
-rec = query_ephys_sessions(one=one)
+rec = query_ephys_sessions(anesthesia='no&both', one=one)
 
 if OVERWRITE:
     light_neurons = pd.DataFrame()
 else:
     light_neurons = pd.read_csv(join(save_path, 'light_modulated_neurons.csv'))
-    rec = rec[~rec['eid'].isin(light_neurons['eid'])]
+    rec = rec[~rec['pid'].isin(light_neurons['pid'])]
 
 for i in rec.index.values:
 
