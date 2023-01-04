@@ -8,6 +8,7 @@ By: Guido Meijer
 from ibllib.qc.alignment_qc import AlignmentQC
 from one.api import ONE
 one = ONE()
+one.refresh_cache('refresh')
 
 all_ins = one.alyx.rest('insertions', 'list',
                         django='session__project__name__icontains,serotonin_inference,'

@@ -47,7 +47,8 @@ DATE_OPTO_RAMP = '2022-02-14'
 
 
 def load_subjects(anesthesia=None, behavior=None):
-    subjects = pd.read_csv(join(pathlib.Path(__file__).parent.resolve(), 'subjects.csv'))
+    subjects = pd.read_csv(join(pathlib.Path(__file__).parent.resolve(), 'subjects.csv'),
+                           delimiter=';')
     subjects = subjects[~((subjects['expression'] == 0) & (subjects['sert-cre'] == 1))]
     if behavior:
         subjects = subjects[subjects['include_behavior'] == 1]

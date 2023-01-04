@@ -9,13 +9,12 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
-import seaborn.objects as so
 from os.path import join
-from scipy.stats import pearsonr
-from serotonin_functions import paths, figure_style, combine_regions, load_subjects, high_level_regions
+from scipy.stats import ttest_ind
+from serotonin_functions import paths, figure_style, combine_regions, load_subjects
 
 # Settings
-MIN_NEURONS = 10
+MIN_NEURONS = 5
 
 # Paths
 fig_path, save_path = paths(dropbox=True)
@@ -58,7 +57,7 @@ for i, nickname in enumerate(np.unique(subjects['subject'])):
 merged_df = merged_df[merged_df['sert-cre'] == 1]
 
 # Calculate stats per animal
-per_animal_df = merged_df.groupby(['full_region', 'subject']).sum()
+per_animal_df = merged_df.groupby(['full_region', 'subject']).sum(numeric_only=True)
 per_animal_df['n_neurons'] = merged_df.groupby(['full_region', 'subject']).size()
 per_animal_df['n_RS'] = merged_df[merged_df['type'] == 'RS'].groupby(['full_region', 'subject']).size()
 per_animal_df['n_NS'] = merged_df[merged_df['type'] == 'NS'].groupby(['full_region', 'subject']).size()
@@ -162,12 +161,29 @@ plt.savefig(join(fig_path, 'perc_mod_neurons.pdf'))
 
 # %%
 
-reg_order = ['Medial prefrontal cortex', 'Secondary motor cortex',
-             'Visual cortex', 'Retrosplenial cortex', 'Orbitofrontal cortex',
-             'Olfactory areas', 'Piriform',
-             'Tail of the striatum',
-             'Thalamus', 'Hippocampus', 'Amygdala',
-             'Superior colliculus', 'Midbrain reticular nucleus', 'Periaqueductal gray']
+per_animal_long_df = pd.melt(per_animal_df, id_vars=['subject', 'full_region'],
+                             value_vars=['perc_mod_RS', 'perc_mod_NS'])
+
+# Do statistics
+p_vals = dict()
+for i, region in enumerate(np.unique(per_animal_df['full_region'])):
+    p_vals[region] = ttest_ind(per_animal_df.loc[per_animal_df['full_region'] == region, 'perc_mod_NS'],
+                               per_animal_df.loc[per_animal_df['full_region'] == region, 'perc_mod_RS'],
+                               nan_policy='omit')[1]
+
+f, ax1 = plt.subplots(1, 1, figsize=(3, 3), dpi=dpi)
+
+sns.barplot(x='value', y='full_region', data=per_animal_long_df, color=colors['RS'], ax=ax1,
+            order=reg_order, errorbar='se', hue='variable', hue_order=['perc_mod_NS', 'perc_mod_RS'],
+            palette=[colors['NS'], colors['RS']])
+ax1.set(ylabel='', xticks=[0, 25, 50, 75], xlabel='% RS neurons')
+
+sns.despine(trim=True)
+plt.tight_layout()
+
+#plt.savefig(join(fig_path, 'perc_mod_neurons.pdf'))
+
+# %%
 
 f, (ax1, ax2) = plt.subplots(1, 2, figsize=(3.5, 2), dpi=dpi)
 

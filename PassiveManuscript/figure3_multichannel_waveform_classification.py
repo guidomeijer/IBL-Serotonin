@@ -18,8 +18,6 @@ from matplotlib.lines import Line2D
 from sklearn.mixture import GaussianMixture
 from sklearn.cluster import KMeans
 import pandas as pd
-#from one.api import ONE
-#one = ONE()
 
 
 def gaus(x, sigma):
@@ -27,7 +25,7 @@ def gaus(x, sigma):
 
 
 # Settings
-REGIONS = ['VISa', 'VISam', 'VISp', 'MOs', 'RSPd']
+REGIONS = ['VISa', 'VISam', 'VISp', 'MOs']
 #REGIONS = ['MOs']
 CLUSTERING = 'k-means'
 DENOISED = False
