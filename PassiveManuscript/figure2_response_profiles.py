@@ -45,8 +45,8 @@ time_ax = psth_df['time'][0]
 for i in range(all_psth.shape[0]):
     #all_psth[i, :] = all_psth[i, :] / np.max(all_psth[i, :])  # normalize
     #all_psth[i, :] = all_psth[i, :] - np.mean(all_psth[i, time_ax < 0])  # baseline subtract
-    all_psth[i, :] = all_psth[i, :] / np.mean(all_psth[i, time_ax < 0])  # divide over baseline
-    #all_psth[i, :] = all_psth[i, :] / (np.mean(all_psth[i, time_ax < 0] + 1))  # divide over baseline + 1 spks/s (Steinmetz, 2019)
+    #all_psth[i, :] = all_psth[i, :] / np.mean(all_psth[i, time_ax < 0])  # divide over baseline
+    all_psth[i, :] = all_psth[i, :] / (np.mean(all_psth[i, time_ax < 0] + 0.1))  # divide over baseline + 1 spks/s (Steinmetz, 2019)
 dim_red_psth = tsne.fit_transform(all_psth)
 psth_df['tsne_1'] = dim_red_psth[:, 0]
 psth_df['tsne_2'] = dim_red_psth[:, 1]
@@ -59,12 +59,25 @@ psth_df['cluster'] = psth_clusters
 colors, dpi = figure_style()
 f, ax1 = plt.subplots(1, 1, figsize=(1.5, 1.5), dpi=dpi)
 
+sns.scatterplot(data=psth_df, x='tsne_1', y='tsne_2', ax=ax1, legend=None)
+ax1.axis('off')
+
+plt.tight_layout()
+plt.savefig(join(fig_path, 'tsne_embedding.pdf'))
+plt.savefig(join(fig_path, 'tsne_embedding.jpg'), dpi=600)
+
+# %%
+colors, dpi = figure_style()
+f, ax1 = plt.subplots(1, 1, figsize=(1.5, 1.5), dpi=dpi)
+
 sns.scatterplot(data=psth_df, x='tsne_1', y='tsne_2', hue='cluster', ax=ax1, legend=None,
                 palette='tab10')
 ax1.axis('off')
 
 plt.tight_layout()
 plt.savefig(join(fig_path, 'tsne_embedding_clusters.pdf'))
+plt.savefig(join(fig_path, 'tsne_embedding_cluster.jpg'), dpi=600)
+
 
 # %%
 f, ax1 = plt.subplots(1, 1, figsize=(1.5, 1.5), dpi=dpi)
@@ -76,6 +89,7 @@ ax1.axis('off')
 
 plt.tight_layout()
 plt.savefig(join(fig_path, 'tsne_embedding_firing_rate.pdf'))
+plt.savefig(join(fig_path, 'tsne_embedding_firing_rate.jpg'), dpi=600)
 
 # %% This one is actually part of figure 3
 f, ax1 = plt.subplots(1, 1, figsize=(1.5, 1.5), dpi=dpi)
@@ -91,7 +105,7 @@ plt.savefig(join(f_path, 'PaperPassive', 'figure3', 'tsne_embedding_neuron_type.
 
 # %%
 f, ax1 = plt.subplots(1, 1, figsize=(1.75, 1.75), dpi=dpi)
-ax1.plot([0, 0], [0, 2.5], ls='--', color='grey', lw=0.75)
+ax1.plot([0, 0], [0, 2], ls='--', color='grey', lw=0.75)
 for i in np.unique(psth_clusters):
     these_psth = all_psth[psth_clusters == i]
     ax1.fill_between(time_ax, np.mean(these_psth, axis=0) - (np.std(these_psth, axis=0) / np.sqrt(these_psth.shape[0])),
@@ -99,9 +113,9 @@ for i in np.unique(psth_clusters):
                     alpha=0.25)
     ax1.plot(time_ax, np.mean(these_psth, axis=0))
 ax1.set(ylabel='Firing rate over baseline', xlabel='Time (s)', xticks=[-1, 0, 1, 2, 3, 4],
-        yticks=[0, 0.5, 1, 1.5, 2, 2.5])
+        yticks=[0, 0.5, 1, 1.5, 2])
 plt.tight_layout()
-sns.despine(trim=True)
+sns.despine(trim=True, offset=-2)
 
 plt.savefig(join(fig_path, 'cluster_psth.pdf'))
 

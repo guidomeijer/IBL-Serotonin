@@ -29,15 +29,17 @@ fig_path, save_path = paths(dropbox=True)
 fig_path = join(fig_path, 'PaperPassive', 'supp_figure_expression')
 
 # Query subjects
-rec = query_ephys_sessions()
+rec = query_ephys_sessions(anesthesia='all')
 subjects = rec['subject'].unique()
 subject_info = load_subjects()
+subject_info = subject_info[subject_info['subject'].isin(subjects)]
+subject_info = subject_info.sort_values(by='sert-cre', ascending=False)
 
 colors, dpi = figure_style()
-f, axs = plt.subplots(3, int(np.ceil(len(subjects)/3)) + 1, figsize=(7, 4), dpi=dpi)
+f, axs = plt.subplots(3, 6, figsize=(7, 4), dpi=dpi)
 axs = np.concatenate(axs)
 expr_df = pd.DataFrame()
-for i, subject in enumerate(subjects):
+for i, subject in enumerate(subject_info['subject']):
     print(f'Processing {subject} ({i+1} of {len(subjects)})')
     sert_cre = subject_info.loc[subject_info['subject'] == subject, 'sert-cre'].values[0]
 

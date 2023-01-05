@@ -25,7 +25,7 @@ def gaus(x, sigma):
 
 
 # Settings
-REGIONS = ['VISa', 'VISam', 'VISp', 'MOs']
+REGIONS = ['VISa', 'VISam', 'VISp', 'VISpm', 'MOs']
 #REGIONS = ['MOs']
 CLUSTERING = 'k-means'
 DENOISED = False

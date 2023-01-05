@@ -28,26 +28,30 @@ K = 2    # number of discrete states
 BIN_SIZE = 0.2
 SMOOTHING = 0.2
 do_PCA = True
-D = 10   # dimensions of PCA
+D = 5   # dimensions of PCA
 OVERWRITE = True
 T_BEFORE = 1  # for PSTH
 T_AFTER = 4
 PLOT = True
-MIN_NEURONS = 10
+MIN_NEURONS = 5
 
 # Get path
 fig_path, save_path = paths()
 
 # Query sessions
-rec = query_ephys_sessions(anesthesia=True, one=one)
+rec_both = query_ephys_sessions(anesthesia='both', one=one)
+rec_both['anesthesia'] = 'both'
+rec_anes = query_ephys_sessions(anesthesia='yes', one=one)
+rec_anes['anesthesia'] = 'yes'
+rec = pd.concat((rec_both, rec_anes)).reset_index(drop=True)
 subjects = load_subjects()
 
 if OVERWRITE:
     state_trans_df = pd.DataFrame()
     up_down_state_df = pd.DataFrame()
 else:
-    up_down_state_df = pd.read_csv(join(save_path, 'up_down_states.csv'))
-    state_trans_df = pd.read_csv(join(save_path, 'up_down_state_transitions.csv'))
+    up_down_state_df = pd.read_csv(join(save_path, 'updown_state_anesthesia.csv'))
+    state_trans_df = pd.read_csv(join(save_path, 'updown_state_trans_anesthesia.csv'))
 
 for i in rec.index.values:
 
@@ -62,7 +66,10 @@ for i in rec.index.values:
             continue
 
     # Load opto times
-    opto_times, _ = load_passive_opto_times(eid, anesthesia=True, one=one)
+    if rec.loc[i, 'anesthesia'] == 'both':
+        opto_times, _ = load_passive_opto_times(eid, anesthesia=True, one=one)
+    elif rec.loc[i, 'anesthesia'] == 'yes':
+        opto_times, _ = load_passive_opto_times(eid, one=one)
 
     # Load in neural data
     sl = SpikeSortingLoader(pid=pid, one=one, atlas=ba)
@@ -170,6 +177,6 @@ for i in rec.index.values:
             plt.close(f)
 
     # Save data
-    state_trans_df.to_csv(join(save_path, 'up_down_state_transitions.csv'))
-    up_down_state_df.to_csv(join(save_path, 'up_down_states.csv'))
+    state_trans_df.to_csv(join(save_path, 'updown_state_trans_anesthesia.csv'))
+    up_down_state_df.to_csv(join(save_path, 'updown_state_anesthesia.csv'))
     print('Saved results to disk')

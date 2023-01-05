@@ -27,7 +27,7 @@ from ibllib.pipes import histology
 
 # Edit so as to reflect the directory containing your electrode tracks
 #path_tracks = "/home/guido/Histology/ZFM-04301/tracks/"
-path_tracks = "D:\\Histology\\ZFM-04812\\tracks"
+path_tracks = "E:\\Histology\\ZFM-05169\\tracks"
 
 # ======== DO NOT EDIT BELOW ====
 ALYX_URL = "https://alyx.internationalbrainlab.org"

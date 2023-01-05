@@ -46,7 +46,8 @@ mod_neurons = all_neurons[all_neurons['modulated']]
 
 # %% Visual cortex
 # Get percentage of modulated neurons per animal per neuron type
-vis_neurons = all_neurons[np.in1d(all_neurons['region'], ['VISa', 'VISam', 'VISp'])]
+#vis_neurons = all_neurons[np.in1d(all_neurons['region'], ['VISa', 'VISam', 'VISp'])]
+vis_neurons = all_neurons[np.in1d(all_neurons['region'], ['VISa', 'VISam', 'VISp', 'VISpm'])]
 perc_mod = ((vis_neurons.groupby(['subject', 'type']).sum(numeric_only=True)['modulated']
             / vis_neurons.groupby(['subject', 'type']).size()) * 100).to_frame()
 perc_mod['n_neurons'] = vis_neurons.groupby(['subject', 'type']).size()

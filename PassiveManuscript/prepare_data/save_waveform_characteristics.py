@@ -8,11 +8,7 @@ By: Guido Meijer
 import numpy as np
 from os.path import join
 import pandas as pd
-from scipy.optimize import curve_fit
-from brainbox.metrics.single_units import spike_sorting_metrics
 from brainbox.io.one import SpikeSortingLoader
-import torch
-from spike_psvae import denoise
 from serotonin_functions import paths, query_ephys_sessions, get_neuron_qc, get_artifact_neurons
 from one.api import ONE
 from ibllib.atlas import AllenAtlas
@@ -20,7 +16,7 @@ ba = AllenAtlas()
 one = ONE()
 
 # Settings
-OVERWRITE = True
+OVERWRITE = False
 DENOISE = False
 _, save_path = paths()
 
@@ -38,14 +34,18 @@ else:
     waveforms_df = pd.read_pickle(join(save_path, 'waveform_metrics.p'))
 
 # Initialize waveform denoiser
-denoiser = denoise.SingleChanDenoiser()
-denoiser.load()
-#if torch.cuda.is_available():
-#    device = "cuda:0"
-#else:
-#    device = "cpu"
-device = "cpu"
-denoiser.to(device)
+if DENOISE:
+    
+    from spike_psvae import denoise
+    
+    denoiser = denoise.SingleChanDenoiser()
+    denoiser.load()
+    #if torch.cuda.is_available():
+    #    device = "cuda:0"
+    #else:
+    #    device = "cpu"
+    device = "cpu"
+    denoiser.to(device)
 
 
 # %% Functions
