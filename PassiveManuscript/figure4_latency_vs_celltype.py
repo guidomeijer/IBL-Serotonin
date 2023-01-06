@@ -62,6 +62,23 @@ plt.tight_layout()
 sns.despine(trim=True, offset=3)
 plt.savefig(join(fig_path, 'modulation_vs_celltype.pdf'))
 
+# %%
+colors, dpi = figure_style()
+f, ax1 = plt.subplots(1, 1, figsize=(1.2, 1.75), dpi=dpi)
+
+sns.boxplot(x='type', y='latency', data=sert_neurons[(sert_neurons['type'] != 'Und.')
+                                                     & (sert_neurons['full_region'] == 'Visual cortex')], ax=ax1,
+            palette=[colors['RS'], colors['NS']], width=0.7)
+_, p = mannwhitneyu(sert_neurons.loc[sert_neurons['type'] == 'RS', 'latency'],
+                    sert_neurons.loc[sert_neurons['type'] == 'NS', 'latency'])
+ax1.set(xlabel='', ylabel='Modulation latency (ms)', xticklabels=['RS', 'NS'],
+        yticks=[0, 250, 500, 750, 1000])
+ax1.text(0.5, 1100, 'n.s.', ha='center', va='center')
+
+plt.tight_layout()
+sns.despine(trim=True, offset=3)
+plt.savefig(join(fig_path, 'modulation_vs_celltype_visual.pdf'))
+
 
 
 

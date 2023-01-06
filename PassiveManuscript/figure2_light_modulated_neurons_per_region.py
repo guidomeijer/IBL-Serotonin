@@ -153,7 +153,7 @@ PROPS = {'boxprops':{'facecolor':'none', 'edgecolor':'none'}, 'medianprops':{'co
          'whiskerprops':{'color':'none'}, 'capprops':{'color':'none'}}
 ORDER = mod_neurons.groupby('full_region').mean()['mod_index_late'].sort_values(ascending=False).reset_index()['full_region']
 
-f, ax1 = plt.subplots(1, 1, figsize=(3, 2), dpi=dpi)
+f, ax1 = plt.subplots(1, 1, figsize=(2.9, 2.5), dpi=dpi)
 sns.boxplot(x='mod_index_late', y='full_region', ax=ax1, data=mod_neurons, showmeans=True,
             order=ORDER, meanprops={"marker": "|", "markeredgecolor": "black", "markersize": "7"},
             fliersize=0, **PROPS)

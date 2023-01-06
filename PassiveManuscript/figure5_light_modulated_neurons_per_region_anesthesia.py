@@ -20,7 +20,7 @@ MIN_REC = 1
 
 # Paths
 fig_path, save_path = paths(dropbox=True)
-fig_path = join(fig_path, 'PaperPassive', 'figure6')
+fig_path = join(fig_path, 'PaperPassive', 'figure5')
 
 # Load in results
 light_neurons = pd.read_csv(join(save_path, 'light_modulated_neurons_anesthesia.csv'))

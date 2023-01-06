@@ -124,5 +124,35 @@ plt.tight_layout()
 sns.despine(trim=True, offset=2)
 plt.savefig(join(fig_path, 'modulation_vs_latency_frontal.pdf'))
 
+# %% Visual cortex
+
+df_slice = sert_neurons[(sert_neurons['full_region'] == 'Visual cortex')
+                        & (sert_neurons['type'] != 'Und.')]
+df_slice = df_slice[~np.isnan(df_slice['latency'])]
+r, p = pearsonr(df_slice['mod_index_late'], df_slice['latency'])
+print(f'r = {r:.2f}\np = {p}')
+f, ax1 = plt.subplots(1, 1, figsize=(1.75, 1.75), dpi=dpi)
+(
+     so.Plot(df_slice, x='mod_index_late', y='latency')
+     .add(so.Dot(pointsize=2), color='type')
+     .add(so.Line(color='k', linewidth=1), so.PolyFit(order=1))
+     .scale(color=[colors['RS'], colors['FS']])
+     .limit(x=[-0.6, 0.6], y=[-15, 1000])
+     .label(x='Modulation index', y='Modulation latency (ms)')
+     .on(ax1)
+     .plot()
+)
+ax1.text(0, 1000, '***', fontsize=10, ha='center')
+legend = f.legends.pop(0)
+ax1.legend(legend.legendHandles, ['RS', 'NS'], frameon=False,
+           prop={'size': 6}, handletextpad=0, bbox_to_anchor=[0.3, 1])
+
+plt.tight_layout()
+sns.despine(trim=True, offset=2)
+plt.savefig(join(fig_path, 'modulation_vs_latency_visual.pdf'))
+
+
+
+
 
 

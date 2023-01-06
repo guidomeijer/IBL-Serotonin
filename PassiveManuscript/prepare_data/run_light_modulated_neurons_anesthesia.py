@@ -36,7 +36,7 @@ rec_both = query_ephys_sessions(anesthesia='both', one=one)
 rec_both['anesthesia'] = 'both'
 rec_anes = query_ephys_sessions(anesthesia='yes', one=one)
 rec_anes['anesthesia'] = 'yes'
-rec = pd.concat((rec_both, rec_anes))
+rec = pd.concat((rec_both, rec_anes)).reset_index(drop=True)
 
 if OVERWRITE:
     light_neurons = pd.DataFrame()
@@ -189,7 +189,8 @@ for i in rec.index.values:
         'region': cluster_regions, 'neuron_id': cluster_ids,
         'mod_index_early': mod_idx_early, 'mod_index_late': mod_idx_late,
         'modulated': p_values < 0.05, 'p_value': p_values,
-        'latency_peak': latency_peak, 'latency_peak_onset': latency_peak_onset})))
+        'latency_peak': latency_peak, 'latency_peak_onset': latency_peak_onset,
+        'anesthesia': rec.loc[i, 'anesthesia']})))
 
     # Save output for this insertion
     light_neurons.to_csv(join(save_path, 'light_modulated_neurons_anesthesia.csv'), index=False)

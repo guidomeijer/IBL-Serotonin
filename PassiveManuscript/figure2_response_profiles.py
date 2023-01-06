@@ -46,7 +46,7 @@ for i in range(all_psth.shape[0]):
     #all_psth[i, :] = all_psth[i, :] / np.max(all_psth[i, :])  # normalize
     #all_psth[i, :] = all_psth[i, :] - np.mean(all_psth[i, time_ax < 0])  # baseline subtract
     #all_psth[i, :] = all_psth[i, :] / np.mean(all_psth[i, time_ax < 0])  # divide over baseline
-    all_psth[i, :] = all_psth[i, :] / (np.mean(all_psth[i, time_ax < 0] + 0.1))  # divide over baseline + 1 spks/s (Steinmetz, 2019)
+    all_psth[i, :] = all_psth[i, :] / (np.mean(all_psth[i, time_ax < 0]) + 0.1)  # divide over baseline + 1 spks/s (Steinmetz, 2019)
 dim_red_psth = tsne.fit_transform(all_psth)
 psth_df['tsne_1'] = dim_red_psth[:, 0]
 psth_df['tsne_2'] = dim_red_psth[:, 1]

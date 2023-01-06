@@ -38,7 +38,7 @@ T_AFTER = 4
 
 # Get paths
 fig_path, save_path = paths(dropbox=True)
-fig_path = join(fig_path, 'PaperPassive', 'figure6')
+fig_path = join(fig_path, 'PaperPassive', 'figure5')
 
 # %% Cortex example
 

@@ -175,7 +175,7 @@ f, ax1 = plt.subplots(1, 1, figsize=(1.75, 1.75), dpi=dpi)
 (
      so.Plot(grouped_df, x='mod_index_late', y='latency')
      .add(so.Dot(pointsize=0))
-     .add(so.Line(color='lightgrey', linewidth=1, linestyle='--'), so.PolyFit(order=1))
+     .add(so.Line(color='grey', linewidth=1), so.PolyFit(order=1))
      .on(ax1)
      .plot()
 )

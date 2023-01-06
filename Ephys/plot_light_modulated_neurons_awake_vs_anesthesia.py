@@ -28,7 +28,7 @@ T_AFTER = 2
 BIN_SIZE = 0.05
 SMOOTHING = 0.025
 PLOT_LATENCY = False
-OVERWRITE = True
+OVERWRITE = False
 fig_path, save_path = paths()
 fig_path = join(fig_path, 'Ephys', 'SingleNeurons', 'AwakeAnesthesia')
 
@@ -40,28 +40,28 @@ merged_neurons = pd.merge(anesthesia_neurons, light_neurons, on=[
 mod_neurons = merged_neurons[merged_neurons['modulated_x'] & merged_neurons['modulated_y']]
 
 for i, pid in enumerate(np.unique(mod_neurons['pid'])):
-    
+
     # Get eid
     eid = np.unique(mod_neurons.loc[mod_neurons['pid'] == pid, 'eid'])[0]
     probe = np.unique(mod_neurons.loc[mod_neurons['pid'] == pid, 'probe'])[0]
     subject = np.unique(mod_neurons.loc[mod_neurons['pid'] == pid, 'subject'])[0]
     date = np.unique(mod_neurons.loc[mod_neurons['pid'] == pid, 'date'])[0]
     print(f'Starting {subject}, {date}, {probe}')
-    
+
     # Get opto times
     awake_opto_times, _ = load_passive_opto_times(eid, one=one, anesthesia=False)
     anesthesia_opto_times, _ = load_passive_opto_times(eid, one=one, anesthesia=True)
     all_times = np.concatenate((awake_opto_times, anesthesia_opto_times))
     anesthesia_ind = np.concatenate((np.zeros(awake_opto_times.shape), np.ones(awake_opto_times.shape)))
-    
+
     # Load in spikes
     sl = SpikeSortingLoader(pid=pid, one=one, atlas=ba)
     spikes, clusters, channels = sl.load_spike_sorting()
     clusters = sl.merge_clusters(spikes, clusters, channels)
-    
+
     # Take slice of dataframe
     modulated = mod_neurons[mod_neurons['pid'] == pid]
-    
+
     colors, dpi = figure_style()
     for n, ind in enumerate(modulated.index.values):
         region = modulated.loc[ind, 'region']
@@ -88,11 +88,11 @@ for i, pid in enumerate(np.unique(mod_neurons['pid'])):
             ax.yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
         sns.despine(trim=False)
         plt.tight_layout()
-        
+
         plt.savefig(join(fig_path, f'{region}_{subject}_{date}_{probe}_neuron{neuron_id}.jpg'), dpi=600)
         plt.close(p)
-    
-    
-    
-    
+
+
+
+
 
