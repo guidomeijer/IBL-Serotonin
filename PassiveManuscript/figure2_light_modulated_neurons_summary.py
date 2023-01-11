@@ -27,19 +27,22 @@ fig_path = join(fig_path, 'PaperPassive', 'figure2')
 all_neurons = pd.read_csv(join(save_path, 'light_modulated_neurons.csv'))
 expression_df = pd.read_csv(join(save_path, 'expression_levels.csv'))
 
-# Add genotype
+# Add genotype and subject number
 subjects = load_subjects()
 for i, nickname in enumerate(np.unique(subjects['subject'])):
     all_neurons.loc[all_neurons['subject'] == nickname, 'sert-cre'] = subjects.loc[subjects['subject'] == nickname, 'sert-cre'].values[0]
+    all_neurons.loc[all_neurons['subject'] == nickname, 'subject_nr'] = subjects.loc[subjects['subject'] == nickname].index[0]
 
 # Only sert-cre mice
 sert_neurons = all_neurons[all_neurons['sert-cre'] == 1]
 wt_neurons = all_neurons[all_neurons['sert-cre'] == 0]
 
 # Calculate percentage modulated neurons
-all_mice = (sert_neurons.groupby('subject').sum()['modulated'] / sert_neurons.groupby('subject').size() * 100).to_frame().reset_index()
+all_mice = ((sert_neurons.groupby(['subject', 'subject_nr']).sum()['modulated']
+             / sert_neurons.groupby(['subject', 'subject_nr']).size() * 100).to_frame().reset_index())
 all_mice['sert-cre'] = 1
-wt_mice = (wt_neurons.groupby('subject').sum()['modulated'] / wt_neurons.groupby('subject').size() * 100).to_frame().reset_index()
+wt_mice = ((wt_neurons.groupby(['subject', 'subject_nr']).sum()['modulated']
+            / wt_neurons.groupby(['subject', 'subject_nr']).size() * 100).to_frame().reset_index())
 wt_mice['sert-cre'] = 0
 all_mice = pd.concat((all_mice, wt_mice), ignore_index=True)
 all_mice = all_mice.rename({0: 'perc_mod'}, axis=1)
@@ -65,32 +68,34 @@ sns.despine(trim=True)
 #plt.tight_layout()
 
 plt.savefig(join(fig_path, 'light_mod_summary.pdf'))
-plt.savefig(join(fig_path, 'light_mod_summary.jpg'), dpi=300)
+plt.savefig(join(fig_path, 'light_mod_summary.jpg'), dpi=600)
 
 # %% Plot percentage mod neurons vs expression
 colors, dpi = figure_style()
-f, ax1 = plt.subplots(1, 1, figsize=(1.2, 1), dpi=dpi)
+f, ax1 = plt.subplots(1, 1, figsize=(1.2, 1.1), dpi=dpi)
 
 f.subplots_adjust(bottom=0.3, left=0.32, right=0.88, top=0.9)
 (
- so.Plot(merged_df, x='rel_fluo', y='perc_mod')
+ so.Plot(merged_df, x='perc_mod', y='rel_fluo')
+ .add(so.Dot(pointsize=2), color='subject_nr')
  .add(so.Line(color='k', linewidth=1), so.PolyFit(order=1))
- .add(so.Dot(pointsize=2, color=colors['sert']))
+ .scale(color='tab20')
  .on(ax1)
  .plot()
  )
-ax1.set(ylabel='Mod. neurons (%)', ylim=[0, 52], yticks=[0, 25, 50],
-        xticks=[0, 200, 400])
+ax1.set(xlim=[0, 52], xticks=[0, 30, 60],
+        yticks=[0, 175, 350])
 ax1.tick_params(axis='x', which='major', pad=2)
-ax1.set_xlabel('Rel. expression (%)', rotation=0, labelpad=2)
+ax1.set_ylabel('Rel. expression (%)', rotation=90, labelpad=2)
+ax1.set_xlabel('Mod. neurons (%)', rotation=0, labelpad=2)
 r, p = pearsonr(merged_df['rel_fluo'], merged_df['perc_mod'])
 print(f'correlation p-value: {p:.3f}')
 ax1.text(150, 45, '**', fontsize=10)
 sns.despine(trim=True)
-#plt.tight_layout()
+plt.tight_layout()
 
 plt.savefig(join(fig_path, 'light_mod_vs_expression.pdf'))
-plt.savefig(join(fig_path, 'light_mod_vs_expression.jpg'), dpi=300)
+plt.savefig(join(fig_path, 'light_mod_vs_expression.jpg'), dpi=600)
 
 
 

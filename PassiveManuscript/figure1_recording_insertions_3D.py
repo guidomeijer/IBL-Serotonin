@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import ibllib.atlas as atlas
 from atlaselectrophysiology import rendering
-from serotonin_functions import query_ephys_sessions, paths, figure_style
+from serotonin_functions import query_ephys_sessions, paths, figure_style, load_subjects
 from one.api import ONE
 ba = atlas.AllenAtlas(25)
 one = ONE()
@@ -36,9 +36,9 @@ rec_targets = pd.read_csv(join(pathlib.Path(__file__).parent.absolute(), '..', '
 rec_targets[['ML', 'AP', 'DV', 'depth']] = rec_targets[['ML', 'AP', 'DV', 'depth']].divide(1000000)
 
 # Plot all insertions
-rec = query_ephys_sessions()
+rec = query_ephys_sessions(anesthesia='all')
 fig = rendering.figure(grid=False, size=(1024, 768))
-subjects = np.unique(rec['subject'])
+subjects = load_subjects()
 colors = sns.color_palette(CMAP, subjects.shape[0])
 for i, pid in enumerate(rec['pid']):
     ins_q = one.alyx.rest('trajectories', 'list', provenance='Ephys aligned histology track',
@@ -49,7 +49,7 @@ for i, pid in enumerate(rec['pid']):
     mlapdv = ba.xyz2ccf(ins.xyz)
     mlab.plot3d(mlapdv[:, 1], mlapdv[:, 2], mlapdv[:, 0],
                 line_width=1, tube_radius=40,
-                color=colors[np.where(subjects == rec.loc[i, 'subject'])[0][0]])
+                color=colors[subjects.loc[subjects['subject'] == rec.loc[i, 'subject']].index[0]])
 
 # Add fiber to plot
 fiber = atlas.Insertion(x=0, y=-0.00664, z=-0.0005, phi=270, theta=32, depth=0.004)
@@ -61,7 +61,7 @@ rendering.rotating_video(join(fig_path, 'rotation_brain_insertions.avi'), fig, f
 
 # %%
 colors, dpi = figure_style()
-f, ax = plt.subplots(1, 1, figsize=(2, 1), dpi=dpi)
+f, ax = plt.subplots(1, 1, figsize=(2.5, 1), dpi=dpi)
 sns.heatmap([np.arange(len(subjects))], cmap=CMAP, cbar=False, ax=ax)
 ax.set(yticks=[], xticks=np.arange(len(subjects))+0.5, xticklabels=np.arange(len(subjects)) + 1)
 ax.set_xlabel('Mice', labelpad=2)

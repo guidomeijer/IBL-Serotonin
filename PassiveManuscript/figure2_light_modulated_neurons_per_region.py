@@ -14,8 +14,8 @@ from serotonin_functions import paths, figure_style, combine_regions, load_subje
 
 # Settings
 MIN_NEURONS_POOLED = 5
-MIN_NEURONS_PER_MOUSE = 0
-MIN_MOD_NEURONS = 6
+MIN_NEURONS_PER_MOUSE = 5
+MIN_MOD_NEURONS = 10
 MIN_REC = 2
 
 # Paths
@@ -81,38 +81,32 @@ per_mouse_df = per_mouse_df[per_mouse_df['n_neurons'] >= MIN_NEURONS_PER_MOUSE]
 per_mouse_df = per_mouse_df.groupby('full_region').filter(lambda x: len(x) >= MIN_REC)
 per_mouse_df = per_mouse_df.reset_index()
 
+# Add mouse number
+subjects = load_subjects()
+for i, nickname in enumerate(np.unique(subjects['subject'])):
+    per_mouse_df.loc[per_mouse_df['subject'] == nickname, 'subject_nr'] = int(subjects.loc[subjects['subject'] == nickname].index[0])
+per_mouse_df['subject_nr'] = per_mouse_df['subject_nr'].astype(int)
+
 # Get ordered regions per mouse
 ordered_regions_pm = per_mouse_df.groupby('full_region').mean(numeric_only=True).sort_values('perc_mod', ascending=False).reset_index()
 
 # %% Plot percentage modulated neurons per region
 
 colors, dpi = figure_style()
-f, ax1 = plt.subplots(1, 1, figsize=(2.5, 2), dpi=dpi)
-sns.barplot(x='perc_mod', y='full_region', data=summary_df, order=ordered_regions['full_region'],
-            color=colors['sert'], ax=ax1, label='SERT')
-sns.barplot(x='perc_mod', y='full_region', data=summary_no_df, order=ordered_regions['full_region'],
-            color=colors['wt'], ax=ax1, label='WT')
-ax1.set(xlabel='Modulated neurons (%)', ylabel='', xlim=[0, 50], xticks=np.arange(0, 51, 10))
-ax1.legend(frameon=False, bbox_to_anchor=(0.5, 0.3))
-#ax1.plot([-1, ax1.get_xlim()[1]], [5, 5], ls='--', color='grey')
-#plt.xticks(rotation=90)
-#ax1.margins(x=0)
-
-plt.tight_layout()
-sns.despine(trim=False)
-plt.savefig(join(fig_path, 'perc_light_modulated_neurons_per_region_pooled.pdf'))
-
-
-# %% Plot percentage modulated neurons per region
-
-colors, dpi = figure_style()
-f, ax1 = plt.subplots(1, 1, figsize=(2.5, 2), dpi=dpi)
+f, ax1 = plt.subplots(1, 1, figsize=(3, 2), dpi=dpi)
 sns.barplot(x='perc_mod', y='full_region', data=per_mouse_df, order=ordered_regions_pm['full_region'],
-            color=colors['sert'], ax=ax1, errorbar=None)
+            color=[0.6, 0.6, 0.6], ax=ax1, errorbar=None)
+
 sns.swarmplot(x='perc_mod', y='full_region', data=per_mouse_df, order=ordered_regions_pm['full_region'],
-              color=colors['grey'], ax=ax1, size=2)
-ax1.set(xlabel='Modulated neurons (%)', ylabel='', xlim=[0, 82], xticks=np.arange(0, 81, 20))
-ax1.legend(frameon=False, bbox_to_anchor=(0.5, 0.3))
+              palette='tab20', hue='subject_nr', ax=ax1, size=2)
+ax1.set(xlabel='Modulated neurons (%)', ylabel='', xlim=[0, 100], xticks=np.arange(0, 101, 20))
+
+#handles, labels = ax1.get_legend_handles_labels()
+#new_labels = [label[:-3] for label in labels]
+#ax1.legend(handles, new_labels, title = 'hr')
+
+
+ax1.legend(frameon=False, bbox_to_anchor=(1, 0.85), prop={'size': 5}, title='Mice')
 #ax1.plot([-1, ax1.get_xlim()[1]], [5, 5], ls='--', color='grey')
 #plt.xticks(rotation=90)
 #ax1.margins(x=0)
@@ -122,29 +116,6 @@ sns.despine(trim=True)
 plt.savefig(join(fig_path, 'perc_light_modulated_neurons_per_region.pdf'))
 
 
-# %%
-f, ax1 = plt.subplots(1, 1, figsize=(3, 2), dpi=dpi)
-
-sns.stripplot(x='perc_enh_late', y='full_region', data=summary_df, order=ordered_regions['full_region'],
-              color='k', alpha=0, ax=ax1)  # this actually doesn't plot anything
-ax1.plot([0, 0], [0, summary_df.shape[0]], color=[0.5, 0.5, 0.5])
-
-ax1.hlines(y=np.arange(ordered_regions.shape[0]), xmin=0, xmax=ordered_regions['perc_enh_late'],
-           color=colors['enhanced'])
-ax1.hlines(y=np.arange(ordered_regions.shape[0]), xmin=ordered_regions['perc_supp_late'], xmax=0,
-           color=colors['suppressed'])
-ax1.plot(ordered_regions['perc_supp_late'], np.arange(ordered_regions.shape[0]), 'o',
-         color=colors['suppressed'])
-ax1.plot(ordered_regions['perc_enh_late'], np.arange(ordered_regions.shape[0]), 'o',
-         color=colors['enhanced'])
-ax1.set(ylabel='', xlabel='Modulated neurons (%)', xlim=[-60, 40],
-        xticklabels=np.concatenate((np.arange(60, 0, -20), np.arange(0, 41, 20))))
-ax1.spines['bottom'].set_position(('data', summary_df.shape[0]))
-ax1.margins(x=0)
-
-plt.tight_layout()
-sns.despine(trim=True)
-plt.savefig(join(fig_path, 'light_modulation_per_region.pdf'))
 
 # %%
 colors, dpi = figure_style()

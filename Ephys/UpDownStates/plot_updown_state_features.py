@@ -25,7 +25,7 @@ from serotonin_functions import (load_passive_opto_times, get_neuron_qc, paths, 
 fig_path, save_path = paths()
 
 # Load in data
-up_down_df = pd.read_csv(join(save_path, 'up_down_states.csv'))
+up_down_df = pd.read_csv(join(save_path, 'updown_state_anesthesia.csv'))
 
 # Get binsize
 bin_size = np.round(up_down_df['time'].values[1] - up_down_df['time'].values[0], 1)
@@ -108,35 +108,35 @@ plt.tight_layout()
 f, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(5.25, 1.75), dpi=dpi)
 
 sns.boxplot(x='state', y='state_dur', hue='opto', data=state_feat_df[state_feat_df['region'] == 'Cortex'],
-            ax=ax1, palette=[colors['stim'], colors['no-stim']], hue_order=[1, 0], fliersize=0)
+            ax=ax1, palette=[colors['no-stim'], colors['stim']], hue_order=[0, 1], fliersize=0)
 _, pd = mannwhitneyu(state_feat_df.loc[(state_feat_df['region'] == 'Cortex') & (state_feat_df['opto'] == 0) & (state_feat_df['state'] == 0), 'state_dur'],
                      state_feat_df.loc[(state_feat_df['region'] == 'Cortex') & (state_feat_df['opto'] == 1) & (state_feat_df['state'] == 0), 'state_dur'])
 _, pu = mannwhitneyu(state_feat_df.loc[(state_feat_df['region'] == 'Cortex') & (state_feat_df['opto'] == 0) & (state_feat_df['state'] == 1), 'state_dur'],
                      state_feat_df.loc[(state_feat_df['region'] == 'Cortex') & (state_feat_df['opto'] == 1) & (state_feat_df['state'] == 1), 'state_dur'])
 if pd < 0.05:
-    ax2.text(0, 4, '*', ha='center', va='center', fontsize=12)
+    ax1.text(0, 4, '*', ha='center', va='center', fontsize=12)
 if pu < 0.05:
-    ax2.text(1, 4, '*', ha='center', va='center', fontsize=12)
+    ax1.text(1, 4, '*', ha='center', va='center', fontsize=12)
 ax1.set(xticks=[0, 1], xticklabels=['Down', 'Up'], xlabel='State', title='Cortex', ylabel='State duration (s)',
         ylim=[0, 6])
 ax1.legend().set_visible(False)
 
 sns.boxplot(x='state', y='state_dur', hue='opto', data=state_feat_df[state_feat_df['region'] == 'Striatum'],
-            ax=ax2, palette=[colors['stim'], colors['no-stim']], hue_order=[1, 0], fliersize=0)
+            ax=ax2, palette=[colors['no-stim'], colors['stim']], hue_order=[0, 1], fliersize=0)
 _, pd = mannwhitneyu(state_feat_df.loc[(state_feat_df['region'] == 'Striatum') & (state_feat_df['opto'] == 0) & (state_feat_df['state'] == 0), 'state_dur'],
                      state_feat_df.loc[(state_feat_df['region'] == 'Striatum') & (state_feat_df['opto'] == 1) & (state_feat_df['state'] == 0), 'state_dur'])
 _, pu = mannwhitneyu(state_feat_df.loc[(state_feat_df['region'] == 'Striatum') & (state_feat_df['opto'] == 0) & (state_feat_df['state'] == 1), 'state_dur'],
                      state_feat_df.loc[(state_feat_df['region'] == 'Striatum') & (state_feat_df['opto'] == 1) & (state_feat_df['state'] == 1), 'state_dur'])
 if pd < 0.05:
-    ax2.text(0, 15, '*', ha='center', va='center', fontsize=12)
+    ax2.text(0, 11, '*', ha='center', va='center', fontsize=12)
 if pu < 0.05:
-    ax2.text(1, 15, '*', ha='center', va='center', fontsize=12)
+    ax2.text(1, 11, '*', ha='center', va='center', fontsize=12)
 ax2.set(xticks=[0, 1], xticklabels=['Down', 'Up'], xlabel='State', title='Striatum', ylabel='State duration (s)',
-        ylim=[0, 6])
+        ylim=[0, 12])
 ax2.legend().set_visible(False)
 
 sns.boxplot(x='state', y='state_dur', hue='opto', data=state_feat_df[state_feat_df['region'] == 'Thalamus'],
-            ax=ax3, palette=[colors['stim'], colors['no-stim']], hue_order=[1, 0], fliersize=0)
+            ax=ax3, palette=[colors['no-stim'], colors['stim']], hue_order=[0, 1], fliersize=0)
 _, pd = mannwhitneyu(state_feat_df.loc[(state_feat_df['region'] == 'Thalamus') & (state_feat_df['opto'] == 0) & (state_feat_df['state'] == 0), 'state_dur'],
                      state_feat_df.loc[(state_feat_df['region'] == 'Thalamus') & (state_feat_df['opto'] == 1) & (state_feat_df['state'] == 0), 'state_dur'])
 _, pu = mannwhitneyu(state_feat_df.loc[(state_feat_df['region'] == 'Thalamus') & (state_feat_df['opto'] == 0) & (state_feat_df['state'] == 1), 'state_dur'],
