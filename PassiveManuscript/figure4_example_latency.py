@@ -30,12 +30,25 @@ one = ONE()
 
 # Settings
 
-# SC neuron
+
+SUBJECT = 'ZFM-03330'
+DATE = '2022-02-16'
+PROBE = 'probe00'
+NEURON = 209
+TITLE = 'Ex. thalamus neuron'
+"""
+SUBJECT = 'ZFM-03330'
+DATE = '2022-02-15'
+PROBE = 'probe00'
+NEURON = 323
+TITLE = 'Ex. frontal cortex neuron'
+
 SUBJECT = 'ZFM-04122'
 DATE = '2022-05-12'
 PROBE = 'probe00'
 NEURON = 265
 TITLE = 'Ex. superior colliculus neuron'
+"""
 
 T_BEFORE = 1  # for plotting
 T_AFTER = 2
@@ -54,6 +67,7 @@ eid = ins[0]['session']
 
 # Get peak latency from file
 all_neurons = pd.read_csv(join(save_path, 'light_modulated_neurons.csv'))
+this_neuron = all_neurons[(all_neurons['pid'] == pid) & (all_neurons['neuron_id'] == NEURON)]
 latency = all_neurons.loc[(all_neurons['pid'] == pid) & (all_neurons['neuron_id'] == NEURON),
                           'latency_peak_onset'].values[0]
 
@@ -89,8 +103,8 @@ peths, _ = calculate_peths(spikes.times, spikes.clusters, [NEURON],
 peak_ind = np.argmin(np.abs(peths['tscale'] - latency))
 peak_act = peths['means'][0][peak_ind]
 ax.plot([latency, latency], [peak_act, peak_act], 'x', color='red', lw=2)
-ax.plot([latency, latency], [peak_act, 7], ls='--', color='red', lw=0.5)
-ax.text(latency-0.03, 4, f'{latency*1000:.0f} ms', color='red', va='center', ha='left', fontsize=5)
+#ax.plot([latency, latency], [peak_act, 14], ls='--', color='red', lw=0.5)
+ax.text(latency-0.7, 6.2, f'{latency*1000:.0f} ms', color='red', va='center', ha='left', fontsize=5)
 
 plt.tight_layout()
 

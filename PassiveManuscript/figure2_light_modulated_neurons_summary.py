@@ -83,14 +83,14 @@ f.subplots_adjust(bottom=0.3, left=0.32, right=0.88, top=0.9)
  .on(ax1)
  .plot()
  )
-ax1.set(xlim=[0, 52], xticks=[0, 30, 60],
+ax1.set(xlim=[0, 50], xticks=[0, 25, 50],
         yticks=[0, 175, 350])
 ax1.tick_params(axis='x', which='major', pad=2)
 ax1.set_ylabel('Rel. expression (%)', rotation=90, labelpad=2)
 ax1.set_xlabel('Mod. neurons (%)', rotation=0, labelpad=2)
 r, p = pearsonr(merged_df['rel_fluo'], merged_df['perc_mod'])
 print(f'correlation p-value: {p:.3f}')
-ax1.text(150, 45, '**', fontsize=10)
+ax1.text(25, 300, '**', fontsize=10)
 sns.despine(trim=True)
 plt.tight_layout()
 

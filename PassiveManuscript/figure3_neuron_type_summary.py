@@ -96,6 +96,10 @@ sns.despine(trim=False)
 plt.tight_layout()
 plt.savefig(join(fig_path, 'enh_supp_perc.pdf'))
 
+# %%
+
+per_mouse_df.loc[per_mouse_df['type'] == 'RS', 'perc_enh']
+per_mouse_df.loc[per_mouse_df['type'] == 'RS', 'perc_supp']
 
 
 

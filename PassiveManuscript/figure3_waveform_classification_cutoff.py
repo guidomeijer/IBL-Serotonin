@@ -98,7 +98,7 @@ plt.savefig(join(fig_dir, 'waveform_clustering.pdf'))
 
 # %% Plot waveform histogram
 f, ax = plt.subplots(1, 1, figsize=(1.5, 1.75), dpi=dpi)
-hst = sns.histplot(data=waveforms_df, x='spike_width', hue='type', hue_order=['NS', 'RS'], 
+hst = sns.histplot(data=waveforms_df, x='spike_width', hue='type', hue_order=['NS', 'RS'],
                    palette=[colors['NS'], colors['RS']], legend='brief', multiple='stack', bins=70)
 ax.set(xlim=[0, 1.2], xticks=[0, 0.6, 1.2], xlabel='Spike width (ms)', ylabel='Neuron count',
        ylim=[0, 600], yticks=[0, 600])
@@ -110,6 +110,19 @@ hst.get_legend().set_bbox_to_anchor((0.55, 0.6))
 sns.despine(trim=True)
 plt.tight_layout()
 plt.savefig(join(fig_dir, 'waveform_histogram.pdf'))
+plt.savefig(join(fig_dir, 'waveform_histogram.jpg'), dpi=600)
+
+# %% Plot waveform histogram
+f, ax = plt.subplots(1, 1, figsize=(1.5, 1.75), dpi=dpi)
+hst = sns.histplot(data=waveforms_df, x='spike_width', color='k', bins=70)
+ax.set(xlim=[0, 1.2], xticks=[0, 0.6, 1.2], xlabel='Spike width (ms)', ylabel='Neuron count',
+       ylim=[0, 600], yticks=[0, 600])
+ax.yaxis.labelpad = -7
+
+sns.despine(trim=True)
+plt.tight_layout()
+plt.savefig(join(fig_dir, 'waveform_histogram_black.pdf'))
+plt.savefig(join(fig_dir, 'waveform_histogram_black.jpg'), dpi=600)
 
 # %% Plot firing rate distribution of clusters
 
