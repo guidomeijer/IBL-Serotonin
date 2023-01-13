@@ -125,12 +125,12 @@ PROPS = {'boxprops':{'facecolor':'none', 'edgecolor':'none'}, 'medianprops':{'co
 ORDER = mod_neurons.groupby('full_region').mean()['mod_index_late'].sort_values(ascending=False).reset_index()['full_region']
 
 f, ax1 = plt.subplots(1, 1, figsize=(2.9, 2.5), dpi=dpi)
-sns.boxplot(x='mod_index_late', y='full_region', ax=ax1, data=mod_neurons, showmeans=True,
-            order=ORDER, meanprops={"marker": "|", "markeredgecolor": "black", "markersize": "7"},
-            fliersize=0, **PROPS)
 sns.stripplot(x='mod_index_late', y='full_region', ax=ax1, data=mod_neurons, order=ORDER,
-              size=2, palette=colors)
-ax1.plot([0, 0], ax1.get_ylim(), ls='--', color=colors['grey'])
+              size=2, color='grey', zorder=1)
+sns.boxplot(x='mod_index_late', y='full_region', ax=ax1, data=mod_neurons, showmeans=True,
+            order=ORDER, meanprops={"marker": "|", "markeredgecolor": "red", "markersize": "8"},
+            fliersize=0, zorder=2, **PROPS)
+ax1.plot([0, 0], ax1.get_ylim(), ls='--', color='black', zorder=0)
 ax1.set(ylabel='', xlabel='Modulation index', xlim=[-1.05, 1.05], xticklabels=[-1, -0.5, 0, 0.5, 1])
 #ax1.spines['bottom'].set_position(('data', np.floor(ax1.get_ylim()[0]) - 0.4))
 plt.tight_layout()
