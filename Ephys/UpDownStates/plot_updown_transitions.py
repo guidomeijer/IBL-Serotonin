@@ -36,8 +36,9 @@ for i, region in enumerate(all_regions):
                  ax=axs[i], color=colors['suppressed'], errorbar='se')
     sns.lineplot(data=awake_mean_df[awake_mean_df['region'] == region], x='time', y='to_up_peths',
                  ax=axs[i], color=colors['enhanced'], errorbar='se')
-    axs[i].set(title=region, ylabel='State transition rate', xlabel='Time (s)', ylim=[0, 0.4],
-               xticks=[-1, 0, 1, 2, 3, 4])
+    n_sub = len(np.unique(awake_mean_df.loc[awake_mean_df['region'] == region, 'subject']))
+    axs[i].set(title=f'{region} n={n_sub} mice', ylabel='State transition rate', xlabel='Time (s)',
+               ylim=[0, 0.4], xticks=[-1, 0, 1, 2, 3, 4])
 plt.tight_layout()
 sns.despine(trim=True)
 
@@ -50,7 +51,8 @@ for i, region in enumerate(all_regions):
                  ax=axs[i], color=colors['suppressed'], errorbar='se')
     sns.lineplot(data=anes_mean_df[anes_mean_df['region'] == region], x='time', y='to_up_peths',
                  ax=axs[i], color=colors['enhanced'], errorbar='se')
-    axs[i].set(title=region, ylabel='State transition rate', xlabel='Time (s)', ylim=[0, 0.4],
-               xticks=[-1, 0, 1, 2, 3, 4])
+    n_sub = len(np.unique(anes_mean_df.loc[anes_mean_df['region'] == region, 'subject']))
+    axs[i].set(title=f'{region} n={n_sub} mice', ylabel='State transition rate', xlabel='Time (s)',
+               ylim=[0, 0.7], xticks=[-1, 0, 1, 2, 3, 4])
 plt.tight_layout()
 sns.despine(trim=True)
