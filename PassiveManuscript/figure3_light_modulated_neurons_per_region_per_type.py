@@ -143,7 +143,7 @@ plt.savefig(join(fig_path, 'ratio_mod_neurons.pdf'))
 
 reg_order = ['Medial prefrontal cortex', 'Orbitofrontal cortex',
              'Secondary motor cortex', 'Retrosplenial cortex', 'Visual cortex',
-             'Piriform', 'Tail of the striatum', 'Thalamus', 'Hippocampus', 'Amygdala']
+             'Piriform', 'Tail of the striatum', 'Hippocampus']
 
 f, (ax1, ax2) = plt.subplots(1, 2, figsize=(3, 2), dpi=dpi)
 

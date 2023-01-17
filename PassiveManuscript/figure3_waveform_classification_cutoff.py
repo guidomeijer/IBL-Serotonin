@@ -6,7 +6,7 @@ By: Guido Meijer
 """
 
 from os.path import join
-from serotonin_functions import paths, figure_style
+from serotonin_functions import paths, figure_style, high_level_regions, combine_regions, remap
 from scipy.stats import kstest
 import numpy as np
 import seaborn as sns
@@ -31,12 +31,32 @@ def fix_hist_step_vertical_line_at_end(ax):
 
 # Load in waveforms
 waveforms_df = pd.read_pickle(join(data_dir, 'waveform_metrics.p'))
+waveforms_df['combined_region'] = combine_regions(remap(waveforms_df['regions']))
+waveforms_df['high_level_region'] = high_level_regions(waveforms_df['regions'], merge_cortex=True)
+waveforms_df = waveforms_df[waveforms_df['high_level_region'] != 'root']
 
 # Exclude positive spikes
 waveforms_df = waveforms_df[waveforms_df['pt_subtract'] <= -0.025]
 waveforms_df = waveforms_df.reset_index(drop=True)
 
-# Mixture of Gaussians clustering
+# Plot spike width distributions per region
+colors, dpi = figure_style()
+f, axs = plt.subplots(2, 3, figsize=(7, 3), dpi=dpi)
+bins = {'Amygdala': 30, 'Cortex': 65, 'Hippocampus': 40, 'Midbrain': 30, 'Striatum': 35, 'Thalamus': 22}
+axs = np.concatenate(axs)
+for i, region in enumerate(np.unique(waveforms_df['high_level_region'])):
+    axs[i].hist(waveforms_df.loc[waveforms_df['high_level_region'] == region, 'spike_width'],
+                bins=bins[region])
+    axs[i].set(xlabel='Spike width (ms)', ylabel='Neuron count', title=f'{region}', xlim=[0, 1])
+sns.despine(trim=True)
+plt.tight_layout()
+
+# Drop all regions that do not have narrow-spiking interneurons
+waveforms_df = waveforms_df[(waveforms_df['high_level_region'] != 'Amygdala')
+                            & (waveforms_df['high_level_region'] != 'Midbrain')
+                            & (waveforms_df['high_level_region'] != 'Thalamus')]
+
+# Cutoff
 waveforms_df.loc[waveforms_df['spike_width'] < SW_CUTOFF, 'type'] = 'NS'
 waveforms_df.loc[waveforms_df['spike_width'] >= SW_CUTOFF, 'type'] = 'RS'
 
@@ -57,7 +77,6 @@ _, p_value = kstest(waveforms_df.loc[waveforms_df['type'] == 'RS', 'firing_rate'
 print(f'KS-test p-value: {p_value}')
 
 # %% Plot mean waveforms
-colors, dpi = figure_style()
 time_ax = np.linspace(0, (waveforms_df.loc[1, 'waveform'].shape[0]/30000)*1000,
                       waveforms_df.loc[1, 'waveform'].shape[0])
 
@@ -140,5 +159,10 @@ fix_hist_step_vertical_line_at_end(ax)
 plt.tight_layout()
 sns.despine(trim=True)
 plt.savefig(join(fig_dir, 'firing_rate_dist.pdf'))
+
+
+
+
+
 
 

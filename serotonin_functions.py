@@ -400,6 +400,7 @@ def high_level_regions(acronyms, merge_cortex=False):
     regions = np.array(['root'] * len(first_level_regions), dtype=object)
     if merge_cortex:
         regions[cosmos_regions == 'Isocortex'] = 'Cortex'
+        regions[first_level_regions == 'Pir'] = 'Cortex'
     else:
         regions[np.in1d(first_level_regions, ['mPFC', 'OFC', 'M2'])] = 'Frontal'
         regions[np.in1d(first_level_regions, ['Pir', 'BC', 'VISa/am'])] = 'Sensory'
