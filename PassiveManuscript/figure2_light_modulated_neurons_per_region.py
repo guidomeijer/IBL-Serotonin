@@ -74,7 +74,10 @@ summary_no_df = pd.concat((summary_no_df, pd.DataFrame(data={
 ordered_regions = summary_df.sort_values('perc_mod', ascending=False).reset_index()
 
 # Summary statistics per mouse
-per_mouse_df = light_neurons[light_neurons['sert-cre'] == 1].groupby(['full_region', 'subject']).sum()
+per_mouse_df = light_neurons[light_neurons['sert-cre'] == 1].groupby(
+    ['full_region', 'subject']).sum(numeric_only=True)
+per_mouse_df['mod_index_late'] = light_neurons[light_neurons['sert-cre'] == 1].groupby(
+    ['full_region', 'subject']).median(numeric_only=True)['mod_index_late']
 per_mouse_df['n_neurons'] = light_neurons[light_neurons['sert-cre'] == 1].groupby(['full_region', 'subject']).size()
 per_mouse_df['perc_mod'] = (per_mouse_df['modulated'] / per_mouse_df['n_neurons']) * 100
 per_mouse_df = per_mouse_df[per_mouse_df['n_neurons'] >= MIN_NEURONS_PER_MOUSE]
@@ -136,5 +139,20 @@ ax1.set(ylabel='', xlabel='Modulation index', xlim=[-1.05, 1.05], xticklabels=[-
 plt.tight_layout()
 sns.despine(trim=True)
 plt.savefig(join(fig_path, 'light_modulation_per_neuron_per_region.pdf'))
+
+# %%
+
+f, ax1 = plt.subplots(1, 1, figsize=(2.9, 2.5), dpi=dpi)
+sns.stripplot(x='mod_index_late', y='full_region', ax=ax1, data=per_mouse_df, order=ORDER,
+              size=2, color='grey', zorder=1)
+sns.boxplot(x='mod_index_late', y='full_region', ax=ax1, data=per_mouse_df, showmeans=True,
+            order=ORDER, meanprops={"marker": "|", "markeredgecolor": "red", "markersize": "8"},
+            fliersize=0, zorder=2, **PROPS)
+ax1.plot([0, 0], ax1.get_ylim(), ls='--', color='black', zorder=0)
+ax1.set(ylabel='', xlabel='Modulation index', xlim=[-0.3, 0.1])
+#ax1.spines['bottom'].set_position(('data', np.floor(ax1.get_ylim()[0]) - 0.4))
+plt.tight_layout()
+sns.despine(trim=True)
+plt.savefig(join(fig_path, 'light_modulation_per_mouse_per_region.pdf'))
 
 

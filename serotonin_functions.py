@@ -170,7 +170,6 @@ def figure_style():
               'Olfactory areas': sns.color_palette('tab10')[8],
               'Substantia nigra': [0.75, 0.75, 0.75],
               'Retrosplenial cortex': 'r',
-              'Raphe nucleus': 'k',
               'Globus pallidus': 'teal',
               'Zona incerta': 'sienna',
               'Frontal': sns.color_palette('Dark2')[2],
@@ -351,7 +350,6 @@ def combine_regions(acronyms, split_thalamus=False, abbreviate=False):
         regions[np.in1d(acronyms, ['MRN'])] = 'MRN'
         regions[np.in1d(acronyms, ['ZI'])] = 'ZI'
         regions[np.in1d(acronyms, ['PAG'])] = 'PAG'
-        regions[np.in1d(acronyms, ['RL', 'IF', 'IPN', 'CLI', 'DR'])] = 'Raphe'
         regions[np.in1d(acronyms, ['SSp-bfd'])] = 'BC'
         #regions[np.in1d(acronyms, ['LGv', 'LGd'])] = 'LG'
         regions[np.in1d(acronyms, ['PIR'])] = 'Pir'
@@ -379,7 +377,6 @@ def combine_regions(acronyms, split_thalamus=False, abbreviate=False):
         regions[np.in1d(acronyms, ['AON', 'TTd', 'DP'])] = 'Olfactory areas'
         regions[np.in1d(acronyms, ['ZI'])] = 'Zona incerta'
         regions[np.in1d(acronyms, ['PAG'])] = 'Periaqueductal gray'
-        regions[np.in1d(acronyms, ['RL', 'IF', 'IPN', 'CLI', 'DR'])] = 'Raphe nucleus'
         regions[np.in1d(acronyms, ['SSp-bfd'])] = 'Barrel cortex'
         #regions[np.in1d(acronyms, ['LGv', 'LGd'])] = 'Lateral geniculate'
         regions[np.in1d(acronyms, ['PIR'])] = 'Piriform'
