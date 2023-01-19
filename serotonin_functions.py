@@ -61,6 +61,8 @@ def load_subjects(anesthesia='all', behavior=None):
         subjects = subjects[subjects['anesthesia'] == 1]
     elif anesthesia == 'no&both':
         subjects = subjects[(subjects['anesthesia'] == 1) | (subjects['anesthesia'] == 0)]
+    elif anesthesia == 'yes&both':
+        subjects = subjects[(subjects['anesthesia'] == 1) | (subjects['anesthesia'] == 2)]
     subjects = subjects.reset_index(drop=True)
     return subjects
 
@@ -1382,3 +1384,5 @@ def peri_multiple_events_time_histogram(
     ax.spines['right'].set_visible(False)
     ax.set_xlabel('Time (s) after event')
     return ax
+
+   

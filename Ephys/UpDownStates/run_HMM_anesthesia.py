@@ -9,45 +9,53 @@ import numpy as np
 from os.path import join
 import ssm
 import pandas as pd
+import seaborn as sns
 import matplotlib.pyplot as plt
-from matplotlib.patches import Rectangle
-from brainbox.singlecell import calculate_peths
+from matplotlib.colors import ListedColormap
 from brainbox.plot import peri_event_time_histogram
 from brainbox.io.one import SpikeSortingLoader
-from sklearn.decomposition import PCA
-from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import KFold
 from serotonin_functions import (load_passive_opto_times, get_neuron_qc, paths, query_ephys_sessions,
-                                 figure_style, load_subjects, remap, high_level_regions)
+                                 figure_style, load_subjects, remap, high_level_regions,
+                                 get_artifact_neurons, calculate_peths)
 from one.api import ONE
 from ibllib.atlas import AllenAtlas
 ba = AllenAtlas()
 one = ONE()
 
 # Settings
-K = 2    # number of discrete states
-BIN_SIZE = 0.2
-SMOOTHING = 0.2
-do_PCA = True
-D = 10   # dimensions of PCA
+N_STATES = 2    
+BIN_SIZE = 0.02
+MIN_NEURONS = 5
+K_FOLDS = 10
+CV_SHUFFLE = True
 OVERWRITE = True
-T_BEFORE = 1  # for PSTH
-T_AFTER = 4
+PRE_TIME = 1
+POST_TIME = 4
 PLOT = True
-MIN_NEURONS = 10
+MIN_NEURONS = 5
 
 # Get path
 fig_path, save_path = paths()
 
 # Query sessions
-rec = query_ephys_sessions(anesthesia=True, one=one)
+rec_both = query_ephys_sessions(anesthesia='both', one=one)
+rec_both['anesthesia'] = 'both'
+rec_anes = query_ephys_sessions(anesthesia='yes', one=one)
+rec_anes['anesthesia'] = 'yes'
+rec = pd.concat((rec_both, rec_anes)).reset_index(drop=True)
 subjects = load_subjects()
 
+# Get artifact neurons
+artifact_neurons = get_artifact_neurons()
+
+# Initialize k-fold cross validation
+kf = KFold(n_splits=K_FOLDS, shuffle=CV_SHUFFLE, random_state=42)
+
 if OVERWRITE:
-    state_trans_df = pd.DataFrame()
     up_down_state_df = pd.DataFrame()
 else:
     up_down_state_df = pd.read_csv(join(save_path, 'updown_state_anesthesia.csv'))
-    state_trans_df = pd.read_csv(join(save_path, 'updown_state_trans_anesthesia.csv'))
 
 for i in rec.index.values:
 
@@ -62,9 +70,12 @@ for i in rec.index.values:
             continue
 
     # Load opto times
-    opto_times, _ = load_passive_opto_times(eid, anesthesia=True, one=one)
+    if rec.loc[i, 'anesthesia'] == 'both':
+        opto_times, _ = load_passive_opto_times(eid, anesthesia=True, one=one)
+    else:
+        opto_times, _ = load_passive_opto_times(eid, one=one)
 
-    # Load in neural data
+    # Load in spikes
     sl = SpikeSortingLoader(pid=pid, one=one, atlas=ba)
     spikes, clusters, channels = sl.load_spike_sorting()
     clusters = sl.merge_clusters(spikes, clusters, channels)
@@ -72,104 +83,125 @@ for i in rec.index.values:
     # Filter neurons that pass QC
     qc_metrics = get_neuron_qc(pid, one=one, ba=ba)
     clusters_pass = np.where(qc_metrics['label'] == 1)[0]
-    spikes.times = spikes.times[np.isin(spikes.clusters, clusters_pass)]
-    spikes.clusters = spikes.clusters[np.isin(spikes.clusters, clusters_pass)]
 
-    # Remap to high level regions
-    clusters.regions = high_level_regions(remap(clusters.acronym), merge_cortex=True)
-
-    for j, region in enumerate(np.unique(clusters.regions)):
-
-        # Get spikes in region
-        region_spikes = spikes.times[np.isin(spikes.clusters, clusters.cluster_id[clusters.regions == region])]
-        region_clusters = spikes.clusters[np.isin(spikes.clusters, clusters.cluster_id[clusters.regions == region])]
-        if (np.unique(region_clusters).shape[0] < MIN_NEURONS) | (region == 'root'):
+    # Exclude artifact neurons
+    clusters_pass = np.array([i for i in clusters_pass if i not in artifact_neurons.loc[
+        artifact_neurons['pid'] == pid, 'neuron_id'].values])
+    if clusters_pass.shape[0] == 0:
             continue
 
-        # Get smoothed firing rates
-        peth, _ = calculate_peths(region_spikes, region_clusters, np.unique(region_clusters),
-                                  [opto_times[0]-300], pre_time=0, post_time=(opto_times[-1] - opto_times[0])+301,
-                                  bin_size=BIN_SIZE, smoothing=SMOOTHING)
-        tscale = peth['tscale'] + (opto_times[0]-300)
-        pop_act = peth['means'].T
+    # Select QC pass neurons
+    spikes.times = spikes.times[np.isin(spikes.clusters, clusters_pass)]
+    spikes.clusters = spikes.clusters[np.isin(spikes.clusters, clusters_pass)]
+    clusters_pass = clusters_pass[np.isin(clusters_pass, np.unique(spikes.clusters))]
 
-        # Do PCA
-        if do_PCA:
-            pca = PCA(n_components=D)
-            ss = StandardScaler(with_mean=True, with_std=True)
-            pop_vector_norm = ss.fit_transform(pop_act)
-            pca_proj = pca.fit_transform(pop_vector_norm)
+    # Get regions from Beryl atlas
+    clusters['region'] = remap(clusters['acronym'], combine=True)
+    clusters['high_level_region'] = high_level_regions(clusters['acronym'])
+    clusters_regions = clusters['high_level_region'][clusters_pass]
 
-            # Make an hmm and sample from it
-            arhmm = ssm.HMM(K, pca_proj.shape[1], observations="gaussian")
-            arhmm.fit(pca_proj)
-            zhat = arhmm.most_likely_states(pca_proj)
+    # Loop over regions
+    for r, region in enumerate(np.unique(clusters['high_level_region'])):
+        if region == 'root':
+            continue
 
-        else:
-            # Make an hmm and sample from it
-            arhmm = ssm.HMM(K, pop_act.shape[1], observations="gaussian")
-            arhmm.fit(pop_act)
-            zhat = arhmm.most_likely_states(pop_act)
+        # Select spikes and clusters in this brain region
+        clusters_in_region = clusters_pass[clusters_regions == region]
+        if len(clusters_in_region) < MIN_NEURONS:
+            continue
 
-            # Make an hmm and sample from it
-            arhmm = ssm.HMM(K, pop_act.shape[1], observations="gaussian")
-            arhmm.fit(pop_act)
-            zhat = arhmm.most_likely_states(pop_act)
+        # Get binned spikes centered at stimulation onset
+        peth, binned_spikes = calculate_peths(spikes.times, spikes.clusters, clusters_in_region, opto_times,
+                                              pre_time=PRE_TIME, post_time=POST_TIME, bin_size=BIN_SIZE,
+                                              smoothing=0, return_fr=False)
+        binned_spikes = binned_spikes.astype(int)
+        time_ax = peth['tscale']
 
-        # Make sure state 0 is inactive and state 1 active
-        if np.mean(np.mean(pop_act[zhat == 0, :], 1)) > np.mean(np.mean(pop_act[zhat == 1, :], 1)):
-            zhat = np.where((zhat==0)|(zhat==1), zhat^1, zhat)
+        # Create list of (time_bins x neurons) per stimulation trial
+        trial_data = []
+        for i in range(binned_spikes.shape[0]):
+            trial_data.append(np.transpose(binned_spikes[i, :, :]))
 
-        # Get state change times
-        to_down = tscale[np.concatenate((np.zeros(1), np.diff(zhat))) == -1]
-        to_up = tscale[np.concatenate((np.zeros(1), np.diff(zhat))) == 1]
-        state_change_times = tscale[np.concatenate((np.zeros(1), np.diff(zhat))) != 0]
-        state_change_id = np.diff(zhat)[np.diff(zhat) != 0]
+        # Initialize HMM
+        simple_hmm = ssm.HMM(N_STATES, clusters_in_region.shape[0], observations='poisson')
 
-        # Get state change PETH
-        to_down_peths, _ = calculate_peths(to_down, np.ones(to_down.shape[0]), [1],
-                                           opto_times, T_BEFORE, T_AFTER, BIN_SIZE, SMOOTHING)
-        to_up_peths, _ = calculate_peths(to_up, np.ones(to_up.shape[0]), [1],
-                                         opto_times, T_BEFORE, T_AFTER, BIN_SIZE, SMOOTHING)
+        # Cross validate
+        this_df = pd.DataFrame()
+        for k, (train_index, test_index) in enumerate(kf.split(trial_data)):
 
-        # Add to df
-        state_trans_df = pd.concat((state_trans_df, pd.DataFrame(data={
-            'subject': subject, 'date': date, 'eid': eid, 'pid': pid, 'sert-cre': sert_cre, 'region': region,
-            'to_down_peths': to_down_peths['means'][0], 'to_up_peths': to_up_peths['means'][0],
-            'time': to_down_peths['tscale']})))
-
+            # Fit HMM on training data
+            lls = simple_hmm.fit(list(np.array(trial_data)[train_index]), method='em')
+            
+            for t in test_index:
+                
+                # Get posterior probability of states for this trial
+                posterior = simple_hmm.filter(trial_data[t])
+                zhat = simple_hmm.most_likely_states(trial_data[t])
+                if np.mean(binned_spikes[t, :, zhat==0]) > np.mean(binned_spikes[t, :, zhat==1]):
+                    
+                    # State 0 is up state
+                    zhat = np.where((zhat==0)|(zhat==1), zhat^1, zhat)
+                
+                    # Add to dataframe
+                    this_df = pd.concat((this_df, pd.DataFrame(data={
+                        'state': zhat, 'p_down': posterior[:, 1], 'region': region, 'time': time_ax,
+                        'trial': t})))
+                else:
+                    # Add to dataframe
+                    this_df = pd.concat((this_df, pd.DataFrame(data={
+                        'state': zhat, 'p_down': posterior[:, 0], 'time': time_ax, 'region': region,
+                        'trial': t})))
+            
+        # Add to dataframe
+        p_down = this_df[['time', 'state']].groupby('time').mean()
+        p_down['state'] = 1-p_down['state']
         up_down_state_df = pd.concat((up_down_state_df, pd.DataFrame(data={
-            'subject': subject, 'date': date, 'eid': eid, 'pid': pid, 'sert-cre': sert_cre, 'region': region,
-            'state': zhat, 'time': tscale, 'opto': tscale >= opto_times[0]})))
-
-        if PLOT:
-            colors, dpi = figure_style()
-            f, ax = plt.subplots(1, 1, figsize=(2, 2), dpi=dpi)
-            ax.add_patch(Rectangle((0, 0), 1, 100, color='royalblue', alpha=0.25, lw=0))
-            ax.add_patch(Rectangle((0, 0), 1, -100, color='royalblue', alpha=0.25, lw=0))
-            peri_event_time_histogram(to_down, np.ones(to_down.shape[0]), opto_times, 1,
-                                      t_before=T_BEFORE, t_after=T_AFTER, bin_size=BIN_SIZE,
-                                      smoothing=SMOOTHING, include_raster=True,
-                                      error_bars='sem', pethline_kwargs={'color': colors['suppressed'], 'lw': 1},
-                                      errbar_kwargs={'color': colors['suppressed'], 'alpha': 0.3},
-                                      raster_kwargs={'color': colors['suppressed'], 'lw': 0.5},
-                                      eventline_kwargs={'lw': 0}, ax=ax)
-            peri_event_time_histogram(to_up, np.ones(to_up.shape[0]), opto_times, 1,
-                                      t_before=T_BEFORE, t_after=T_AFTER, bin_size=BIN_SIZE,
-                                      smoothing=SMOOTHING, include_raster=True,
-                                      error_bars='sem', pethline_kwargs={'color': colors['enhanced'], 'lw': 1},
-                                      errbar_kwargs={'color': colors['enhanced'], 'alpha': 0.3},
-                                      raster_kwargs={'color': colors['enhanced'], 'lw': 0.5},
-                                      eventline_kwargs={'lw': 0}, ax=ax)
-            ax.set(ylabel='State change rate (changes/s)', xlabel='Time (s)',
-                   yticks=[0, 0.4, 0.8, 1.2], xticks=[-1, 0, 1, 2, 3, 4])
-            # ax.plot([0, 1], [0, 0], lw=2.5, color='royalblue')
-            plt.tight_layout()
-            plt.savefig(join(fig_path, 'Ephys', 'Anesthesia', 'UpDownStates',
-                             f'{region}_{subject}_{date}_{probe}.jpg'), dpi=600)
-            plt.close(f)
-
-    # Save data
-    state_trans_df.to_csv(join(save_path, 'updown_state_trans_anesthesia.csv'))
-    up_down_state_df.to_csv(join(save_path, 'updown_state_anesthesia.csv'))
-    print('Saved results to disk')
+            'p_down': p_down['state'], 'time': p_down.index, 'subject': subject, 
+            'pid': pid, 'region': region})))
+                        
+        # Plot example trial
+        trial = 13
+        colors, dpi = figure_style()
+        cmap = ListedColormap([colors['suppressed'], colors['enhanced']])
+        f, ax = plt.subplots(1, 1, figsize=(1.75, 1.75), dpi=dpi)
+        ax.imshow(this_df.loc[this_df['trial'] == trial, 'state'].values[None, :],
+                  aspect='auto', cmap=cmap, vmin=0, vmax=1, alpha=0.5,
+                  extent=(-PRE_TIME, POST_TIME, -1, len(clusters_in_region)+1))
+        tickedges = np.arange(0, len(clusters_in_region)+1)
+        for i, n in enumerate(clusters_in_region):
+            idx = np.bitwise_and(spikes.times[spikes.clusters == n] >= opto_times[trial] - PRE_TIME,
+                                 spikes.times[spikes.clusters == n] <= opto_times[trial] + POST_TIME)
+            neuron_spks = spikes.times[spikes.clusters == n][idx]
+            ax.vlines(neuron_spks - opto_times[trial], tickedges[i + 1], tickedges[i], color='black',
+                      lw=0.5)
+        ax.set(xlabel='Time (s)', ylabel='Neurons', yticks=[0, len(clusters_in_region)],
+               yticklabels=[1, len(clusters_in_region)], xticks=[-1, 0, 1, 2, 3, 4],
+               ylim=[-1, len(clusters_in_region)+1], title=f'{region}')
+        sns.despine(trim=True)
+        plt.tight_layout()  
+        plt.savefig(join(fig_path, 'Ephys', 'UpDownStates', 'Anesthesia',
+                         f'{region}_{subject}_{date}_trial.jpg'),
+                    dpi=600)
+        plt.close(f)
+        
+        # Plot session
+        pivot_df = this_df.pivot_table(index='trial', columns='time', values='state').sort_values(
+            'trial', ascending=False)
+        f, ax = plt.subplots(1, 1, figsize=(1.75, 1.75), dpi=dpi)
+        ax.imshow(pivot_df, aspect='auto', cmap=cmap, vmin=0, vmax=1,
+                  extent=(-PRE_TIME, POST_TIME, 1, len(opto_times)))
+        ax.plot([0, 0], [1, len(opto_times)], ls='--', color='k', lw=0.75)
+        ax.set(ylabel='Trials', xlabel='Time (s)', yticks=[1, 25, 50], xticks=[-1, 0, 1, 2, 3, 4],
+               title=f'{region}')
+        sns.despine(trim=True)
+        plt.tight_layout()        
+        plt.savefig(join(fig_path, 'Ephys', 'UpDownStates', 'Anesthesia',
+                         f'{region}_{subject}_{date}_ses.jpg'),
+                    dpi=600)
+        plt.close(f)
+    
+    # Save result
+    up_down_state_df.to_csv(join(save_path, 'updown_states_anesthesia.csv'))
+    
+        
+        
