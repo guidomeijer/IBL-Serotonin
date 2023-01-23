@@ -6,23 +6,16 @@ By: Guido Meijer
 """
 
 import numpy as np
-from os.path import join, isdir
-import seaborn as sns
+from os.path import join
 import matplotlib.pyplot as plt
 from matplotlib.ticker import FormatStrFormatter
-from brainbox.task.closed_loop import roc_single_event
 import pandas as pd
-from os import mkdir
-from sklearn.metrics import roc_curve
-from brainbox.population.decode import get_spike_counts_in_bins
-from brainbox.metrics.single_units import spike_sorting_metrics
 from matplotlib.patches import Rectangle
 from serotonin_functions import figure_style
 from brainbox.io.one import SpikeSortingLoader
 from brainbox.singlecell import calculate_peths
-from zetapy import getZeta
 from brainbox.plot import peri_event_time_histogram
-from serotonin_functions import paths, remap,  load_passive_opto_times
+from serotonin_functions import paths, load_passive_opto_times
 from one.api import ONE
 from ibllib.atlas import AllenAtlas
 ba = AllenAtlas()

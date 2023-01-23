@@ -45,6 +45,10 @@ DATE_LIGHT_SHIELD = '2021-06-08'
 # Date at which a ramp for the light pulses was introduced (against light artifacts)
 DATE_OPTO_RAMP = '2022-02-14'
 
+# Number of states of awake HMM
+N_STATES = {'Frontal': 10, 'Sensory': 8, 'Hippocampus': 9, 'Striatum': 6, 'Thalamus': 7,
+            'Midbrain': 8, 'Amygdala': 8}
+
 
 def load_subjects(anesthesia='all', behavior=None):
     assert anesthesia in ['no', 'yes', 'both', 'all', 'no&both']
@@ -1385,4 +1389,4 @@ def peri_multiple_events_time_histogram(
     ax.set_xlabel('Time (s) after event')
     return ax
 
-   
+

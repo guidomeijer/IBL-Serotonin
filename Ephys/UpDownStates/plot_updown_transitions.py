@@ -27,6 +27,7 @@ all_regions = np.unique(anes_mean_df['region'])
 f, axs = plt.subplots(2, 4, figsize=(7, 3.5), dpi=dpi)
 axs = np.concatenate(axs)
 for i, region in enumerate(all_regions):
+    axs[i].plot([-1, 4], [0.5, 0.5], ls='--', color='grey')
     sns.lineplot(data=anes_mean_df[anes_mean_df['region'] == region], x='time', y='p_down',
                  ax=axs[i], color=colors['suppressed'], errorbar='se')
     n_sub = len(np.unique(anes_mean_df.loc[anes_mean_df['region'] == region, 'subject']))

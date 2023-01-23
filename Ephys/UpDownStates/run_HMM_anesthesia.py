@@ -24,9 +24,10 @@ ba = AllenAtlas()
 one = ONE()
 
 # Settings
-N_STATES = 2    
-BIN_SIZE = 0.02
+N_STATES = 2
+BIN_SIZE = 0.2
 MIN_NEURONS = 5
+CROSS_VAL = False
 K_FOLDS = 10
 CV_SHUFFLE = True
 OVERWRITE = True
@@ -125,40 +126,67 @@ for i in rec.index.values:
         # Initialize HMM
         simple_hmm = ssm.HMM(N_STATES, clusters_in_region.shape[0], observations='poisson')
 
-        # Cross validate
         this_df = pd.DataFrame()
-        for k, (train_index, test_index) in enumerate(kf.split(trial_data)):
+        if CROSS_VAL:
+            # Cross validate
+            for k, (train_index, test_index) in enumerate(kf.split(trial_data)):
 
-            # Fit HMM on training data
-            lls = simple_hmm.fit(list(np.array(trial_data)[train_index]), method='em')
-            
-            for t in test_index:
-                
-                # Get posterior probability of states for this trial
+                # Fit HMM on training data
+                lls = simple_hmm.fit(list(np.array(trial_data)[train_index]), method='em',
+                                     transitions='sticky')
+
+                for t in test_index:
+
+                    # Get posterior probability and most likely states for this trial
+                    posterior = simple_hmm.filter(trial_data[t])
+                    zhat = simple_hmm.most_likely_states(trial_data[t])
+
+                    # Make sure 0 is down state and 1 is up state
+                    if np.mean(binned_spikes[t, :, zhat==0]) > np.mean(binned_spikes[t, :, zhat==1]):
+
+                        # State 0 is up state
+                        zhat = np.where((zhat==0)|(zhat==1), zhat^1, zhat)
+                        p_down = posterior[:, 1]
+                    else:
+                        p_down = posterior[:, 0]
+
+                # Add to dataframe
+                this_df = pd.concat((this_df, pd.DataFrame(data={
+                    'state': zhat, 'p_down': p_down, 'region': region, 'time': time_ax,
+                    'trial': t})))
+
+        else:
+
+            # Fit HMM on all data
+            lls = simple_hmm.fit(trial_data, method='em', transitions='sticky')
+
+            for t in range(len(trial_data)):
+
+                # Get posterior probability and most likely states for this trial
                 posterior = simple_hmm.filter(trial_data[t])
                 zhat = simple_hmm.most_likely_states(trial_data[t])
+
+                # Make sure 0 is down state and 1 is up state
                 if np.mean(binned_spikes[t, :, zhat==0]) > np.mean(binned_spikes[t, :, zhat==1]):
-                    
+
                     # State 0 is up state
                     zhat = np.where((zhat==0)|(zhat==1), zhat^1, zhat)
-                
-                    # Add to dataframe
-                    this_df = pd.concat((this_df, pd.DataFrame(data={
-                        'state': zhat, 'p_down': posterior[:, 1], 'region': region, 'time': time_ax,
-                        'trial': t})))
+                    p_down = posterior[:, 1]
                 else:
-                    # Add to dataframe
-                    this_df = pd.concat((this_df, pd.DataFrame(data={
-                        'state': zhat, 'p_down': posterior[:, 0], 'time': time_ax, 'region': region,
-                        'trial': t})))
-            
+                    p_down = posterior[:, 0]
+
+                # Add to dataframe
+                this_df = pd.concat((this_df, pd.DataFrame(data={
+                    'state': zhat, 'p_down': p_down, 'region': region, 'time': time_ax,
+                    'trial': t})))
+
         # Add to dataframe
-        p_down = this_df[['time', 'state']].groupby('time').mean()
+        p_down = this_df[['time', 'state']].groupby('time').mean().reset_index()
         p_down['state'] = 1-p_down['state']
         up_down_state_df = pd.concat((up_down_state_df, pd.DataFrame(data={
-            'p_down': p_down['state'], 'time': p_down.index, 'subject': subject, 
+            'p_down': p_down['state'], 'time': p_down['time'], 'subject': subject,
             'pid': pid, 'region': region})))
-                        
+
         # Plot example trial
         trial = 13
         colors, dpi = figure_style()
@@ -178,12 +206,12 @@ for i in rec.index.values:
                yticklabels=[1, len(clusters_in_region)], xticks=[-1, 0, 1, 2, 3, 4],
                ylim=[-1, len(clusters_in_region)+1], title=f'{region}')
         sns.despine(trim=True)
-        plt.tight_layout()  
+        plt.tight_layout()
         plt.savefig(join(fig_path, 'Ephys', 'UpDownStates', 'Anesthesia',
                          f'{region}_{subject}_{date}_trial.jpg'),
                     dpi=600)
         plt.close(f)
-        
+
         # Plot session
         pivot_df = this_df.pivot_table(index='trial', columns='time', values='state').sort_values(
             'trial', ascending=False)
@@ -194,14 +222,14 @@ for i in rec.index.values:
         ax.set(ylabel='Trials', xlabel='Time (s)', yticks=[1, 25, 50], xticks=[-1, 0, 1, 2, 3, 4],
                title=f'{region}')
         sns.despine(trim=True)
-        plt.tight_layout()        
+        plt.tight_layout()
         plt.savefig(join(fig_path, 'Ephys', 'UpDownStates', 'Anesthesia',
                          f'{region}_{subject}_{date}_ses.jpg'),
                     dpi=600)
         plt.close(f)
-    
+
     # Save result
     up_down_state_df.to_csv(join(save_path, 'updown_states_anesthesia.csv'))
-    
-        
-        
+
+
+
