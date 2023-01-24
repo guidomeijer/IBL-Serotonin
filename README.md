@@ -7,7 +7,6 @@ Requirements:
 - zetapy
 - psychofit (for psychometric functions)
 - torch 
-- spike_psvae (for waveform desnoising)
 
 To install these requirements activate the ``iblenv`` and run the following commands
 ```
@@ -15,8 +14,5 @@ pip install zetapy
 pip install torch
 git clone https://github.com/cortex-lab/psychofit
 conda develop ./psychofit
-git clone https://github.com/cwindolf/spike-psvae.git
-cd spike-psvae
-pip install -e .
 ```
 

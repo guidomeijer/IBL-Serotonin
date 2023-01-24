@@ -36,7 +36,7 @@ MIN_NEURONS = 5
 CROSS_VAL = False
 K_FOLDS = 5
 CV_SHUFFLE = True
-CMAP = 'tab10'
+CMAP = 'Set3'
 PETH_BIN = 0.1
 PETH_SMOOTH = 0.05
 
