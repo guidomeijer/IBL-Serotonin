@@ -17,7 +17,7 @@ from plotting_utils import load_glmhmm_data, load_cv_arr, load_data, \
 
 # Settings
 animal = 'ZFM-04122'
-K = 3
+K = 5
 
 # Paths
 figure_path, data_path = paths()
