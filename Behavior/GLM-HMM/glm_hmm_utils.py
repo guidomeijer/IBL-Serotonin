@@ -18,13 +18,10 @@ def get_raw_data(eid, one):
     animal = one.get_details(eid)['subject']
 
     # Get choice data, stim data and rewarded/not rewarded:
-    choice = one.load_dataset(eid, '_ibl_trials.choice')
-    stim_left = one.load_dataset(eid, '_ibl_trials.contrastLeft')
-    stim_right = one.load_dataset(eid, '_ibl_trials.contrastRight')
-    rewarded = one.load_dataset(eid, '_ibl_trials.feedbackType')
-    bias_probs = one.load_dataset(eid, '_ibl_trials.probabilityLeft')
+    trials = one.load_object(eid, 'trials')
 
-    return animal, stim_left, stim_right, rewarded, choice, bias_probs
+    return (animal, trials.contrastLeft, trials.contrastRight, trials.feedbackType, trials.choice,
+            trials.probabilityLeft)
 
 
 def create_stim_vector(stim_left, stim_right):

@@ -70,6 +70,9 @@ final_animal_eid_dict = defaultdict(list)
 for z, animal in enumerate(animal_list):
     sess_counter = 0
     for eid in animal_eid_dict[animal]:
+        animal, unnormalized_inpt, y, session, num_viols_50, rewarded = \
+            get_all_unnormalized_data_this_session(
+                eid, one)
         try:
             animal, unnormalized_inpt, y, session, num_viols_50, rewarded = \
                 get_all_unnormalized_data_this_session(

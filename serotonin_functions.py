@@ -79,6 +79,7 @@ def paths(dropbox=False):
     if not isfile(join(dirname(realpath(__file__)), 'paths.json')):
         paths = dict()
         paths['fig_path'] = input('Path folder to save figures: ')
+        paths['save_path'] = input('Path folder to save data: ')
         paths['dropbox_path'] = input('Path to Dropbox folder (can be empty):')
         path_file = open(join(dirname(realpath(__file__)), 'paths.json'), 'w')
         json.dump(paths, path_file)
@@ -89,7 +90,8 @@ def paths(dropbox=False):
         fig_path = paths['dropbox_path']
     else:
         fig_path = paths['fig_path']
-    save_path = join(dirname(realpath(__file__)), 'Data')
+    save_path = paths['save_path']
+    #save_path = join(dirname(realpath(__file__)), 'Data')
     return fig_path, save_path
 
 
