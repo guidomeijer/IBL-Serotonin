@@ -17,13 +17,14 @@ from plotting_utils import load_glmhmm_data, load_cv_arr, load_data, \
 
 # Settings
 animal = 'ZFM-04122'
-K = 5
+K = 3
 
 # Paths
-figure_path, data_path = paths()
+data_path = '/home/guido/Data/Behavior'
+figure_path = '/home/guido/Figures/5HT/'
 data_dir = join(data_path, 'GLM-HMM', 'data_by_animal')
 results_dir = join(data_path, 'GLM-HMM', 'results', 'individual_fit', animal)
-figure_dir = join(figure_path, 'Behavior', 'GLM-HMM')
+figure_dir = join(figure_path, 'Behavior', 'GLM-HMM', f'{K}_states')
 
 # Load in data
 cv_file = join(results_dir, "cvbt_folds_model.npz")
@@ -57,7 +58,9 @@ plt.gca().spines['right'].set_visible(False)
 plt.gca().spines['top'].set_visible(False)
 plt.ylabel("predictive acc. (%)", fontsize=10)
 plt.xlabel("# states", fontsize=10)
-fig.savefig(join(figure_dir, f'pred_acc{animal}.pdf'))
+plt.title(f'{animal}', fontsize=10)
+plt.tight_layout()
+fig.savefig(join(figure_dir, f'pred_acc{animal}.jpg'), dpi=600)
 
 # %% =========== Fig 2d =============
 raw_file = get_file_name_for_best_model_fold(cvbt_folds_model, K,
@@ -67,19 +70,20 @@ hmm_params, lls = load_glmhmm_data(raw_file)
 
 transition_matrix = np.exp(hmm_params[1][0])
 
-fig = plt.figure(figsize=(1.6, 1.6), dpi=300)
+fig = plt.figure(figsize=(2, 2), dpi=300)
 plt.subplots_adjust(left=0.3, bottom=0.3, right=0.95, top=0.95)
 plt.imshow(transition_matrix, vmin=-0.8, vmax=1, cmap='bone')
-for i in range(transition_matrix.shape[0]):
-    for j in range(transition_matrix.shape[1]):
-        text = plt.text(j,
-                        i,
-                        str(np.around(transition_matrix[i, j],
-                                      decimals=2)),
-                        ha="center",
-                        va="center",
-                        color="k",
-                        fontsize=10)
+if K < 4:
+    for i in range(transition_matrix.shape[0]):
+        for j in range(transition_matrix.shape[1]):
+            text = plt.text(j,
+                            i,
+                            str(np.around(transition_matrix[i, j],
+                                          decimals=2)),
+                            ha="center",
+                            va="center",
+                            color="k",
+                            fontsize=10)
 plt.xlim(-0.5, K - 0.5)
 plt.xticks(range(0, K),
            ('1', '2', '3', '4', '4', '5', '6', '7', '8', '9', '10')[:K],
@@ -90,7 +94,9 @@ plt.yticks(range(0, K),
 plt.ylim(K - 0.5, -0.5)
 plt.ylabel("state t-1", fontsize=10)
 plt.xlabel("state t", fontsize=10)
-fig.savefig(join(figure_dir, f'transition_mat_{animal}.pdf'))
+plt.title(f'{animal}', fontsize=10)
+plt.tight_layout()
+fig.savefig(join(figure_dir, f'transition_mat_{animal}.jpg'), dpi=600)
 
 # %% =========== Fig 2e =============
 weight_vectors = -hmm_params[2]
@@ -120,7 +126,8 @@ plt.ylabel("GLM weight", fontsize=10)
 plt.axhline(y=0, color="k", alpha=0.5, ls="--", lw=0.5)
 plt.gca().spines['right'].set_visible(False)
 plt.gca().spines['top'].set_visible(False)
-fig.savefig(join(figure_dir, f'weights_{animal}.pdf'))
+plt.title(f'{animal}', fontsize=10)
+fig.savefig(join(figure_dir, f'weights_{animal}.jpg'), dpi=600)
 
 # %%
 alpha_val = 2
@@ -194,8 +201,9 @@ for k in range(K):
     plt.yticks([0, 0.5, 1], ['', '', ''], fontsize=10)
     plt.ylabel('')
     plt.xlabel('')
+    plt.title(f"state {k}", fontsize=10, color=cols[k])
+
     if k == 0:
-        plt.title("state 1 \n(\"engaged\")", fontsize=10, color=cols[k])
         plt.xticks([min(stim_vals), 0, max(stim_vals)],
                    labels=['-100', '0', '100'],
                    fontsize=10)
@@ -203,24 +211,21 @@ for k in range(K):
         plt.ylabel('p("R")', fontsize=10)
         plt.xlabel('stimulus', fontsize=10)
     if k == 1:
-        plt.title("state 2 \n(\"biased left\")",
-                  fontsize=10,
-                  color=cols[k])
         plt.xticks([min(stim_vals), 0, max(stim_vals)],
                    labels=['', '', ''],
                    fontsize=10)
         plt.yticks([0, 0.5, 1], ['', '', ''], fontsize=10)
     if k == 2:
-        plt.title("state 3 \n(\"biased right\")",
-                  fontsize=10,
-                  color=cols[k])
         plt.xticks([min(stim_vals), 0, max(stim_vals)],
                    labels=['', '', ''],
                    fontsize=10)
         plt.yticks([0, 0.5, 1], ['', '', ''], fontsize=10)
+
     plt.axhline(y=0.5, color="k", alpha=0.45, ls=":", linewidth=0.5)
     plt.axvline(x=0, color="k", alpha=0.45, ls=":", linewidth=0.5)
     plt.gca().spines['right'].set_visible(False)
     plt.gca().spines['top'].set_visible(False)
     plt.ylim((-0.01, 1.01))
-fig.savefig(join(figure_dir, f'psy_curves_{animal}.pdf'))
+plt.suptitle(f'{animal}', fontsize=10)
+#plt.tight_layout()
+fig.savefig(join(figure_dir, f'psy_curves_{animal}.jpg'), dpi=600)
