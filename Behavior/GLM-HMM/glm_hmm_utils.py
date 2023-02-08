@@ -205,10 +205,10 @@ def load_animal_list(list_file):
 
 
 def load_glm_vectors(glm_vectors_file):
-    container = np.load(glm_vectors_file)
-    data = [container[key] for key in container]
-    loglikelihood_train = data[0]
-    recovered_weights = data[1]
+    container = np.load(glm_vectors_file, allow_pickle=True)
+    data = [container[key] for key in container][0]
+    loglikelihood_train = data[0][0]
+    recovered_weights = data[1][0]
     return loglikelihood_train, recovered_weights
 
 

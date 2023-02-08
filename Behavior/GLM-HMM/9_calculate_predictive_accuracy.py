@@ -15,7 +15,7 @@ from plotting_utils import load_glmhmm_data, load_animal_list, load_cv_arr, \
     calculate_predictive_acc_lapse_model
 
 N_FOLDS = 5
-MAX_K = 3
+MAX_K = 5
 cols = ["#e74c3c", "#15b01a", "#7e1e9c", "#3498db", "#f97306"]
 
 # Paths

@@ -16,11 +16,11 @@ from plotting_utils import load_glmhmm_data, load_cv_arr, load_data, \
     get_marginal_posterior, get_prob_right
 
 # Settings
-animal = 'ZFM-04122'
-K = 3
+animal = 'ZFM-02600'
+K = 4
 
 # Paths
-data_path = '/home/guido/Data/Behavior'
+data_path = '/home/guido/Data/5HT/'
 figure_path = '/home/guido/Figures/5HT/'
 data_dir = join(data_path, 'GLM-HMM', 'data_by_animal')
 results_dir = join(data_path, 'GLM-HMM', 'results', 'individual_fit', animal)

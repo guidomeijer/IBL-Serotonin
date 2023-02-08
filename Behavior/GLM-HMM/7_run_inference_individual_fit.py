@@ -10,7 +10,7 @@ from glm_hmm_utils import load_cluster_arr, load_session_fold_lookup, \
         launch_glm_hmm_job
 
 # Settings
-Ks = [2, 3]  # Number of latent states
+Ks = [2, 3, 4, 5]  # Number of latent states
 prior_sigma = 2
 transition_alpha = 2
 D = 1  # data (observations) dimension

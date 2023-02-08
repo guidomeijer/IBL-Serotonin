@@ -26,7 +26,7 @@ labels_for_plot = ['stim', 'pc', 'wsls', 'bias']
 cv_file = join(results_dir, "cvbt_folds_model.npz")
 cvbt_folds_model = load_cv_arr(cv_file)
 
-for K in range(2, 4):
+for K in range(2, 6):
     print("K = " + str(K))
     with open(join(results_dir, "best_init_cvbt_dict.json"), 'r') as f:
         best_init_cvbt_dict = json.load(f)
@@ -53,6 +53,7 @@ for K in range(2, 4):
     np.savez(join(save_directory, 'best_params_K_' + str(K) + '.npz'),
              params_for_individual_initialization)
 
+    """
     # Plot these too:
     cols = ["#e74c3c", "#15b01a", "#7e1e9c", "#3498db", "#f97306"]
     fig = plt.figure(figsize=(4 * 8, 10),
@@ -116,6 +117,7 @@ for K in range(2, 4):
         "#7e1e9c", "#0343df", "#15b01a", "#bf77f6", "#95d0fc",
         "#96f97b"
     ]
+    """
     cv_file = results_dir + "/cvbt_folds_model.npz"
     data_for_plotting_df, loc_best, best_val, glm_lapse_model = \
         create_cv_frame_for_plotting(
@@ -124,7 +126,7 @@ for K in range(2, 4):
     train_data_for_plotting_df, train_loc_best, train_best_val, \
     train_glm_lapse_model = create_cv_frame_for_plotting(
         cv_file_train)
-
+    """
     glm_lapse_model_cvbt_means = np.mean(glm_lapse_model, axis=1)
     train_glm_lapse_model_cvbt_means = np.mean(train_glm_lapse_model,
                                                axis=1)
@@ -170,3 +172,4 @@ for K in range(2, 4):
     fig.tight_layout()
 
     fig.savefig(join(fig_dir, 'best_params_cross_validation_K_' + str(K) + '.png'))
+    """

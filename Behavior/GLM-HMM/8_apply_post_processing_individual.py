@@ -25,7 +25,7 @@ results_dir = join(data_path, 'GLM-HMM', 'results', 'individual_fit')
 C = 2  # number of output classes
 num_folds = 5  # number of folds
 D = 1  # number of output dimensions
-K_max = 3  # number of latent states
+K_max = 5  # number of latent states
 num_models = K_max + 2  # model for each latent + 2 lapse
 # models
 

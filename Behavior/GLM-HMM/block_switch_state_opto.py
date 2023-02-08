@@ -23,7 +23,7 @@ from one.api import ONE
 one = ONE()
 
 # Settings
-K = 2
+K = 5
 MERGE_STATES = False  # merge 2 and 3
 T_BEFORE = 5  # in trials
 T_AFTER = 15
