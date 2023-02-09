@@ -24,7 +24,7 @@ Adapted from on Zoe Ashwood's code (https://github.com/zashwood/glm-hmm)
 
 # Settings
 N_FOLDS = 5
-MIN_SESSIONS = 5
+MIN_SESSIONS = 2
 
 npr.seed(42)
 

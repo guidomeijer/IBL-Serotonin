@@ -2,7 +2,7 @@
 import autograd.numpy as np
 import autograd.numpy.random as npr
 import os
-from os.path import join
+from os.path import join, isfile
 from serotonin_functions import paths
 from glm_hmm_utils import (load_session_fold_lookup, load_data, load_animal_list,
                            fit_glm, append_zeros)
@@ -62,6 +62,8 @@ for animal in animal_list:
         loglikelihood_train_vector = []
 
         for iter in range(N_initializations):
+            if isfile(join(figure_directory, 'variables_of_interest_iter_' + str(iter) + '.npz')):
+                continue
             loglikelihood_train, recovered_weights = fit_glm([this_inpt],
                                                              [this_y], M,
                                                              C)

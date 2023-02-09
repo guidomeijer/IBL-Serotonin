@@ -55,10 +55,11 @@ for i, animal in enumerate(animal_list):
             for iter in range(N_initializations):
                 # create save directory for this initialization/fold combination:
                 save_directory = join(overall_dir, 'GLM_HMM_K_' + str(K), 'fold_' + str(fold), 'iter_' + str(iter))
-                if not os.path.exists(save_directory):
+                if os.path.exists(save_directory):
+                    continue
+                else:
                     os.makedirs(save_directory)
-
-                launch_glm_hmm_job(inpt, y, session, mask, session_fold_lookup_table,
-                                   K, D, C, N_em_iters, transition_alpha, prior_sigma,
-                                   fold, iter, global_fit, init_param_file,
-                                   save_directory)
+                    launch_glm_hmm_job(inpt, y, session, mask, session_fold_lookup_table,
+                                       K, D, C, N_em_iters, transition_alpha, prior_sigma,
+                                       fold, iter, global_fit, init_param_file,
+                                       save_directory)

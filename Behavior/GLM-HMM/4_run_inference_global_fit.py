@@ -12,7 +12,7 @@ Adapted from on Zoe Ashwood's code (https://github.com/zashwood/glm-hmm)
 """
 
 # Settings
-Ks = [2, 5]  # number of latent states
+Ks = [2, 3, 4, 5]  # number of latent states
 D = 1  # data (observations) dimension
 C = 2  # number of output types/categories
 N_em_iters = 300  # number of EM iterations
