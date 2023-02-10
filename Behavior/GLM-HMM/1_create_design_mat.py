@@ -46,7 +46,7 @@ for i, nickname in enumerate(subjects['subject']):
 
     # Query sessions
     eids = query_opto_sessions(nickname, include_ephys=True, one=one)
-    eids = behavioral_criterion(eids, max_lapse=1.1, max_bias=1.1, min_trials=100, one=one)
+    eids = behavioral_criterion(eids, max_lapse=0.4, max_bias=0.5, min_trials=200, one=one)
 
     # animal_eid_dict is a dict with subjects as keys and a list of eids per subject
     animal_eid_dict[nickname] = eids

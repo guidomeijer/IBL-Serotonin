@@ -53,7 +53,7 @@ for K in range(2, 6):
     np.savez(join(save_directory, 'best_params_K_' + str(K) + '.npz'),
              params_for_individual_initialization)
 
-    """
+
     # Plot these too:
     cols = ["#e74c3c", "#15b01a", "#7e1e9c", "#3498db", "#f97306"]
     fig = plt.figure(figsize=(4 * 8, 10),
@@ -77,7 +77,7 @@ for K in range(2, 6):
                  lw=4)
     plt.xticks(list(range(0, len(labels_for_plot))),
                labels_for_plot,
-               rotation='20',
+               rotation=20,
                fontsize=24)
     plt.yticks(fontsize=30)
     plt.legend(fontsize=30)
@@ -117,7 +117,7 @@ for K in range(2, 6):
         "#7e1e9c", "#0343df", "#15b01a", "#bf77f6", "#95d0fc",
         "#96f97b"
     ]
-    """
+
     cv_file = results_dir + "/cvbt_folds_model.npz"
     data_for_plotting_df, loc_best, best_val, glm_lapse_model = \
         create_cv_frame_for_plotting(
@@ -126,29 +126,31 @@ for K in range(2, 6):
     train_data_for_plotting_df, train_loc_best, train_best_val, \
     train_glm_lapse_model = create_cv_frame_for_plotting(
         cv_file_train)
-    """
+
     glm_lapse_model_cvbt_means = np.mean(glm_lapse_model, axis=1)
     train_glm_lapse_model_cvbt_means = np.mean(train_glm_lapse_model,
                                                axis=1)
     g = sns.lineplot(
-        data_for_plotting_df['model'],
-        data_for_plotting_df['cv_bit_trial'],
+        data=data_for_plotting_df,
+        x='model',
+        y='cv_bit_trial',
         err_style="bars",
         mew=0,
         color=cols[0],
         marker='o',
-        ci=68,
+        errorbar='se',
         label="test",
         alpha=1,
         lw=4)
     sns.lineplot(
-        train_data_for_plotting_df['model'],
-        train_data_for_plotting_df['cv_bit_trial'],
+        data=train_data_for_plotting_df,
+        x='model',
+        y='cv_bit_trial',
         err_style="bars",
         mew=0,
         color=cols[1],
         marker='o',
-        ci=68,
+        errorbar='se',
         label="train",
         alpha=1,
         lw=4)
@@ -172,4 +174,3 @@ for K in range(2, 6):
     fig.tight_layout()
 
     fig.savefig(join(fig_dir, 'best_params_cross_validation_K_' + str(K) + '.png'))
-    """

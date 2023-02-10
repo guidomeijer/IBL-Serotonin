@@ -6,8 +6,8 @@ By: Guido Meijer
 """
 
 
-#print('Creating design matrix..')
-#runfile('1_create_design_mat.py')
+print('Creating design matrix..')
+runfile('1_create_design_mat.py')
 print('Fitting GLM for all animals together..')
 runfile('2_fit_glm_all_animals_together.py')
 print('Fitting GLM for animals seperately')
