@@ -18,7 +18,7 @@ npr.seed(42)  # set seed in case of randomization
 _, save_path = paths()
 data_dir = join(save_path, 'GLM-HMM')
 results_dir = join(save_path, 'GLM-HMM', 'results')
-num_folds = 5
+num_folds = 3
 
 # Create directory for results:
 if not os.path.exists(results_dir):

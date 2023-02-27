@@ -16,7 +16,7 @@ from plotting_utils import load_glmhmm_data, load_cv_arr, load_data, load_animal
     get_marginal_posterior, get_prob_right
 
 # Settings
-K = 3
+K = 5
 
 # Paths
 data_path = '/home/guido/Data/5HT/'

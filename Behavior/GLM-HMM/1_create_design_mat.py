@@ -23,9 +23,10 @@ Adapted from on Zoe Ashwood's code (https://github.com/zashwood/glm-hmm)
 """
 
 # Settings
-N_FOLDS = 5
-MIN_SESSIONS = 2
+N_FOLDS = 3
+MIN_SES = 3
 
+# Fix random seed for reproducibility
 npr.seed(42)
 
 # Paths
@@ -43,20 +44,16 @@ subjects = load_subjects()
 animal_list = subjects['subject'].values
 animal_eid_dict = dict()
 for i, nickname in enumerate(subjects['subject']):
+    print(f'Loading behavioral data of {nickname}')
 
     # Query sessions
     eids = query_opto_sessions(nickname, include_ephys=True, one=one)
-    eids = behavioral_criterion(eids, max_lapse=0.4, max_bias=0.5, min_trials=200, one=one)
+    eids = behavioral_criterion(eids, min_perf=0.8, min_trials=100, verbose=False, one=one)
 
     # animal_eid_dict is a dict with subjects as keys and a list of eids per subject
-    animal_eid_dict[nickname] = eids
-
-# Require that each animal has enough sessions
-for animal in animal_list:
-    num_sessions = len(animal_eid_dict[animal])
-    if num_sessions < MIN_SESSIONS:
-        animal_list = np.delete(animal_list,
-                                np.where(animal_list == animal))
+    if len(eids) >= MIN_SES:
+        animal_eid_dict[nickname] = eids
+animal_list = list(animal_eid_dict.keys())
 
 # %%
 # Identify idx in master array where each animal's data starts and ends:
@@ -67,6 +64,7 @@ final_animal_eid_dict = defaultdict(list)
 # WORKHORSE: iterate through each animal and each animal's set of eids;
 # obtain unnormalized data.  Write out each animal's data and then also
 # write to master array
+print('Building design matrix..')
 for z, animal in enumerate(animal_list):
     sess_counter = 0
     for eid in animal_eid_dict[animal]:

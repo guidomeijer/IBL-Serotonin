@@ -19,7 +19,7 @@ session_fold_lookup_table = load_session_fold_lookup(join(
 
 # Parameters
 C = 2  # number of output classes
-num_folds = 5  # number of folds
+num_folds = 3  # number of folds
 D = 1  # number of output dimensions
 K_max = 5  # maximum number of latent states
 num_models = K_max + 2  # model for each latent + 2 lapse models

@@ -28,7 +28,7 @@ PLOT_EXAMPLES = True
 INCLUDE_EPHYS = True
 REMOVE_OLD_FIT = False
 POSTERIOR = 'posterior_mean'
-STIM = 'block'
+STIM = 20
 fig_path, save_path = paths()
 fig_path = join(fig_path, 'Behavior', 'Models')
 
@@ -40,7 +40,7 @@ for i, nickname in enumerate(subjects['subject']):
 
     # Query sessions
     eids = query_opto_sessions(nickname, include_ephys=INCLUDE_EPHYS, one=one)
-    eids = behavioral_criterion(eids, max_lapse=1, max_bias=1, min_trials=100, one=one)
+    eids = behavioral_criterion(eids, verbose=False, one=one)
     if len(eids) == 0:
         continue
     if len(eids) > 10:

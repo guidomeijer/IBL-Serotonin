@@ -18,7 +18,7 @@ N_initializations = 10
 
 _, data_path = paths()
 data_dir = join(data_path, 'GLM-HMM', 'data_by_animal')
-num_folds = 5
+num_folds = 3
 animal_list = load_animal_list(join(data_dir, 'animal_list.npz'))
 results_dir = join(data_path, 'GLM-HMM', 'results', 'individual_fit')
 

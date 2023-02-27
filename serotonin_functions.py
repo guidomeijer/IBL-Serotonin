@@ -609,8 +609,35 @@ def get_neuron_qc(pid, one=None, ba=None, force_rerun=False):
     return qc_metrics
 
 
-def behavioral_criterion(eids, max_lapse=0.5, max_bias=0.5, min_trials=200, return_excluded=False,
-                         one=None):
+def behavioral_criterion(eids, min_perf=0.8, min_trials=100, return_excluded=False,
+                         verbose=True, one=None):
+    if one is None:
+        one = ONE()
+    use_eids, excl_eids = [], []
+    for j, eid in enumerate(eids):
+        try:
+            trials = load_trials(eid, one=one)
+            perf = (np.sum(trials.loc[np.abs(trials['signed_contrast']) == 1, 'feedbackType'] == 1)
+                    / trials[np.abs(trials['signed_contrast']) == 1].shape[0])
+            details = one.get_details(eid)
+            if (perf > min_perf) & (trials.shape[0] > min_trials):
+                use_eids.append(eid)
+            else:
+                if verbose:
+                    print('%s %s excluded (perf: %.2f, n_trials: %d)'
+                          % (details['subject'], details['start_time'][:10], perf, trials.shape[0]))
+                excl_eids.append(eid)
+        except Exception:
+            if verbose:
+                print('Could not load session %s' % eid)
+    if return_excluded:
+        return use_eids, excl_eids
+    else:
+        return use_eids
+
+
+def behavioral_criterion_old(eids, max_lapse=0.5, max_bias=0.5, min_trials=200, return_excluded=False,
+                             one=None):
     if one is None:
         one = ONE()
     use_eids, excl_eids = [], []
@@ -652,6 +679,7 @@ def load_exp_smoothing_trials(eids, stimulated=None, rt_cutoff=0.2, after_probe_
             probe: only laser probe trials
             block: only laser block trials (no probes)
             rt: this is a weird one - return a reaction time cut off as stimulated trials
+            integer: if an integer X is given stimulated trials are X trials after stim block onset
     rt_cutoff : float
         Only used if stimulated = 'rt'. Reaction time cutoff in seconds above which stimulated is 1
     after_probe_trials : int
@@ -692,6 +720,14 @@ def load_exp_smoothing_trials(eids, stimulated=None, rt_cutoff=0.2, after_probe_
                     stim_trials[(trials['laser_stimulation'] == 1) & (trials['laser_probability'] == .25)] = 0
             elif stimulated == 'rt':
                 stim_trials = (trials['reaction_times'] > rt_cutoff).values
+            elif type(stimulated) == int:
+                trials.loc[(trials['laser_stimulation'] == 0) & (trials['laser_probability'] == .75), 'laser_stimulation'] = 1
+                trials.loc[(trials['laser_stimulation'] == 1) & (trials['laser_probability'] == .25), 'laser_stimulation'] = 0
+                trials['opto_block_switch'] = np.concatenate(([False], np.diff(trials['laser_stimulation']) != 0))
+                opto_block_switch_ind = np.where(trials['opto_block_switch'])[0]
+                stim_trials = np.zeros(trials.shape[0])
+                for kk in opto_block_switch_ind:
+                    stim_trials[kk:kk+stimulated] = 1
             if stim_trial_shift > 0:
                 stim_trials = np.append(np.zeros(stim_trial_shift), stim_trials)[:-stim_trial_shift]
             if stimulated is not None:
@@ -701,8 +737,9 @@ def load_exp_smoothing_trials(eids, stimulated=None, rt_cutoff=0.2, after_probe_
             stim_sides_arr.append(trials['stim_side'].values)
             prob_left_arr.append(trials['probabilityLeft'].values)
             session_uuids.append(eid)
-        except:
-            print(f'Could not load trials for {eid}')
+        except Exception as err:
+            print(err)
+            continue
 
     if (len(session_uuids) == 0) and (stimulated is not None):
         return [], [], [], [], [], []
