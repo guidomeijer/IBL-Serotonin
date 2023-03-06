@@ -173,9 +173,11 @@ ax1.set(ylabel='P[repeat choice] (%)', xticks=[1, 2], xticklabels=['No stim', 'S
 #ax1.legend(frameon=False)
 
 ax2.plot([TRIAL_BINS[0], TRIAL_BINS[-1]], [0, 0], ls='--', color='grey')
-sns.lineplot(data=p_repeat_bins_df[(p_repeat_bins_df['opto'] == 1) & (p_repeat_bins_df['sert-cre'] == 1)],
-             x='trial', y='p_repeat_bl', errorbar='se', err_style='bars',
-             color='k', ax=ax2)
+#sns.lineplot(data=p_repeat_bins_df[(p_repeat_bins_df['opto'] == 1) & (p_repeat_bins_df['sert-cre'] == 1)],
+#             x='trial', y='p_repeat_bl', errorbar='se', err_style='bars',
+#             color='k', ax=ax2)
+sns.lineplot(data=p_repeat_bins_df[p_repeat_bins_df['opto'] == 1], hue='sert-cre',
+             x='trial', y='p_repeat_bl', errorbar='se', err_style='bars', ax=ax2)
 ax2.set(ylabel='P[repeat choice] (%)', xlabel='Trials since start of stimulation',
         xticks=np.arange(TRIAL_BINS[0], TRIAL_BINS[-1]+1, trial_bin_size*2),
         yticks=np.arange(-1, 6))

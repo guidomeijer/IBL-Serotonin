@@ -9,18 +9,17 @@ import json
 from os.path import join
 import matplotlib.pyplot as plt
 import numpy as np
-from serotonin_functions import paths
 from plotting_utils import load_glmhmm_data, load_cv_arr, load_data, load_animal_list, \
     get_file_name_for_best_model_fold, \
     partition_data_by_session, create_violation_mask, \
     get_marginal_posterior, get_prob_right
 
 # Settings
-K = 5
+K = 4
 
 # Paths
-data_path = '/home/guido/Data/5HT/'
-figure_path = '/home/guido/Figures/5HT/'
+data_path = 'C:\\Users\\guido\\Data\\5-HT'
+figure_path = 'C:\\Users\\guido\\Figures\\5-HT'
 data_dir = join(data_path, 'GLM-HMM', 'data_by_animal')
 figure_dir = join(figure_path, 'Behavior', 'GLM-HMM', f'{K}_states')
 

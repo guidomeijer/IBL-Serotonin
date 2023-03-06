@@ -34,6 +34,9 @@ figure_dir = join(figure_path, 'Behavior', 'GLM-HMM')
 subjects = load_subjects()
 animal_list = load_animal_list(join(data_dir, 'animal_list.npz'))
 
+# Exclude animals that do not have a previous action state
+#animal_list = animal_list[~np.isin(animal_list, ['ZFM-04301'])]
+
 plot_colors, dpi = figure_style()
 state_block, state_probe = pd.DataFrame(), pd.DataFrame()
 p_state_change, p_state_change, p_state_change_probe = pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
@@ -68,14 +71,12 @@ for i, subject in enumerate(animal_list):
     else:
         K = N_STATES
 
-    """
     # Swap states 1 and 3 for some mice
-    if subject in ['ZFM-04301', 'ZFM-05170']:
+    if subject == 'ZFM-05170':
         states_max_posterior[states_max_posterior == 1] = 999
         states_max_posterior[states_max_posterior == 3] = 1
         states_max_posterior[states_max_posterior == 999] = 3
-    """
-
+    
     # Loop over sessions
     trials = pd.DataFrame()
     for j, eid in enumerate(all_sessions):
@@ -246,6 +247,7 @@ for i, subject in enumerate(animal_list):
     sns.despine(trim=True)
     plt.tight_layout()
     plt.savefig(join(figure_dir, f'p_state_change_{subject}.jpg'), dpi=600)
+    plt.close(f)
 
     # Plot this animal
     N_TRIALS = 1500
@@ -260,6 +262,7 @@ for i, subject in enumerate(animal_list):
     cbar = f.colorbar(plt_states)
     cbar.set_ticks(np.arange(0, K))
     cbar.set_ticklabels(np.arange(1, K+1))
+    plt.close(f)
 
 # Do statistics
 p_probe = np.empty(trial_bin_labels.shape[0])

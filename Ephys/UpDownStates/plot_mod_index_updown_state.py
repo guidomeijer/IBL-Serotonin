@@ -13,6 +13,7 @@ import seaborn as sns
 from serotonin_functions import paths, load_subjects, figure_style
 
 fig_path, data_path = paths()
+fig_path = join(fig_path, 'Ephys', 'UpDownStates')
 time_win = 'late'
 
 # Load data
@@ -95,6 +96,7 @@ ax2.set(xticks=[0, 1], xticklabels=['Down', 'Up'], ylabel='Firing rate (spks/s)'
 
 plt.tight_layout()
 sns.despine(trim=True)
+plt.savefig(join(fig_path, 'fr_diff_updown_state.jpg'), dpi=600)
 
 
 
