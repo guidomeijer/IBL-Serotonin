@@ -201,7 +201,7 @@ for animal in animal_list:
         plt.yticks([0, 0.5, 1], ['', '', ''], fontsize=10)
         plt.ylabel('')
         plt.xlabel('')
-        plt.title(f"state {k}", fontsize=10, color=cols[k])
+        plt.title(f"state {k+1}", fontsize=10, color=cols[k])
 
         if k == 0:
             plt.xticks([min(stim_vals), 0, max(stim_vals)],

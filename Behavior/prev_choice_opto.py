@@ -6,11 +6,12 @@ By: Guido Meijer
 """
 import numpy as np
 import pandas as pd
+from os.path import join
 from scipy.stats import ttest_rel, ttest_1samp
 import matplotlib.pyplot as plt
 import seaborn as sns
 from serotonin_functions import (load_subjects, query_opto_sessions, behavioral_criterion,
-                                 load_trials, figure_style)
+                                 load_trials, figure_style, paths)
 from one.api import ONE
 one = ONE()
 
@@ -23,6 +24,9 @@ trial_bin_labels = TRIAL_BINS[:-1] + (np.diff(TRIAL_BINS) / 2)
 
 # Query which subjects to use and create eid list per subject
 subjects = load_subjects()
+
+# Get paths
+fig_path = join(paths()[0], 'Behavior')
 
 p_repeat_df, p_repeat_bins_df, p_probe_bins_df = pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
 p_repeat_probe_df = pd.DataFrame()
@@ -135,24 +139,18 @@ for t, trial in enumerate(trial_bin_labels):
     p_block[t] = ttest_1samp(p_repeat_bins_df.loc[(p_repeat_bins_df['trial'] == trial)
                                                   & (p_repeat_bins_df['sert-cre'] == 1),
                                                   'p_repeat_bl'], 0)[1]
-print(p_block)
+
+p_probe_bins = np.empty(trial_bin_labels.shape[0])
+for t, trial in enumerate(trial_bin_labels):
+    p_probe_bins[t] = ttest_1samp(p_probe_bins_df.loc[(p_probe_bins_df['trial'] == trial)
+                                                      & (p_probe_bins_df['sert-cre'] == 1),
+                                                      'p_repeat_bl'], 0)[1]
 
 p_probe = np.empty(np.arange(-PROBE_TRIALS[0], PROBE_TRIALS[-1]+1).shape[0])
 for t, trial in enumerate(np.arange(-PROBE_TRIALS[0], PROBE_TRIALS[-1]+1)):
-    p_probe[t] = ttest_rel(p_repeat_probe_df.loc[(p_repeat_probe_df['trial'] == trial)
-                                                 & (p_repeat_probe_df['sert-cre'] == 1),
-                                                 'p_repeat'],
-                           p_repeat_probe_df.loc[(p_repeat_probe_df['trial'] == -PROBE_TRIALS[0])
-                                                 & (p_repeat_probe_df['sert-cre'] == 1),
-                                                 'p_repeat'])[1]
-    """
     p_probe[t] = ttest_1samp(p_repeat_probe_df.loc[(p_repeat_probe_df['trial'] == trial)
                                                    & (p_repeat_probe_df['sert-cre'] == 1),
                                                    'p_repeat_bl'], 0)[1]
-    """
-print(p_probe)
-
-
 
 # %% Plot
 
@@ -173,14 +171,16 @@ ax1.set(ylabel='P[repeat choice] (%)', xticks=[1, 2], xticklabels=['No stim', 'S
 #ax1.legend(frameon=False)
 
 ax2.plot([TRIAL_BINS[0], TRIAL_BINS[-1]], [0, 0], ls='--', color='grey')
-#sns.lineplot(data=p_repeat_bins_df[(p_repeat_bins_df['opto'] == 1) & (p_repeat_bins_df['sert-cre'] == 1)],
-#             x='trial', y='p_repeat_bl', errorbar='se', err_style='bars',
-#             color='k', ax=ax2)
-sns.lineplot(data=p_repeat_bins_df[p_repeat_bins_df['opto'] == 1], hue='sert-cre',
-             x='trial', y='p_repeat_bl', errorbar='se', err_style='bars', ax=ax2)
+sns.lineplot(data=p_repeat_bins_df[(p_repeat_bins_df['opto'] == 1) & (p_repeat_bins_df['sert-cre'] == 1)],
+             x='trial', y='p_repeat_bl', errorbar='se', err_style='bars',
+             color='k', ax=ax2)
+#sns.lineplot(data=p_repeat_bins_df[p_repeat_bins_df['opto'] == 1], hue='sert-cre',
+#             x='trial', y='p_repeat_bl', errorbar='se', err_style='bars', ax=ax2)
 ax2.set(ylabel='P[repeat choice] (%)', xlabel='Trials since start of stimulation',
         xticks=np.arange(TRIAL_BINS[0], TRIAL_BINS[-1]+1, trial_bin_size*2),
         yticks=np.arange(-1, 6))
+ax2.scatter(np.unique(p_repeat_bins_df['trial'])[p_block < 0.05], np.ones(np.sum(p_block < 0.05))*5.5,
+            marker='*', color='k')
 #handles, labels = ax1.get_legend_handles_labels()
 #labels = ['No stim', '5-HT stim']
 #ax2.legend(handles, labels, frameon=False, prop={'size': 5}, loc='upper left')
@@ -204,5 +204,6 @@ ax4.set(ylabel='P[repeat choice] (%)', xlabel='Trials since single stimulation',
 
 sns.despine(trim=True)
 plt.tight_layout()
+plt.savefig(join(fig_path, 'prev_choice_opto.jpg'), dpi=600)
 
 

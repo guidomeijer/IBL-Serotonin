@@ -185,7 +185,12 @@ def figure_style():
               'Midbrain': sns.color_palette('Set1')[7],
               'Striatum': sns.color_palette('Accent')[1],
               'M2-mPFC': sns.color_palette('Dark2')[1],
-              'M2-ORB': sns.color_palette('Dark2')[0]}
+              'M2-ORB': sns.color_palette('Dark2')[0],
+              'state_1': '#ff7f00',
+              'state_2': '#4daf4a',
+              'state_3': '#377eb8',
+              'state_4': '#f781bf',
+              'state_5': '#a65628'}
     screen_width = tk.Tk().winfo_screenwidth()
     dpi = screen_width / 10
     return colors, dpi
