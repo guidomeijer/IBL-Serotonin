@@ -138,7 +138,7 @@ for i, subject in enumerate(animal_list):
                     these_switches[tt] = np.sum(this_ses.loc[trial_ind+this_edge:trial_ind+TRIAL_BINS[tt+1],
                                                              'state_change'].values)
             opto_probe_bins_df = pd.concat((opto_probe_bins_df, pd.DataFrame(data={
-                'state_switch': these_switches, 'trial_bin': trial_bin_labels, 'probe_trial': b,
+                'state_switch': these_switches, 'trial_bin': trial_bin_labels, 'probe_trial': all_probes,
                 'trial_ind': np.arange(len(trial_bin_labels))})), ignore_index=True)
     opto_probe_bins_df['state_switch'] /= trial_bin_size
 
