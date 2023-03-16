@@ -182,7 +182,6 @@ def non_uniform_savgol(x, y, window, polynom):
     return y_smoothed
 
 
-
 def get_pupil_diameter(XYs):
     """Estimate pupil diameter by taking median of different computations.
 
@@ -229,8 +228,6 @@ def get_pupil_diameter(XYs):
     for side in [[t, l], [t, r], [b, l], [b, r]]:
         ds.append(dia_via_circle(side[0], side[1]))
     diam = np.nanmedian(ds, axis=0)
-
-
     return diam
 
 

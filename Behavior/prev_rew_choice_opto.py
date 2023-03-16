@@ -54,12 +54,16 @@ for i, subject in enumerate(subjects['subject']):
         continue
     print(f'{subject}: {trials.shape[0]} trials')
 
-    # Get repeated choices
-    trials['repeat_choice'] = np.concatenate((
-        [False], trials['choice'].values[:-1] == trials['choice'].values[1:])).astype(int)
+    # Get repeated choices of rewarded trials
+    rep_rew = (trials['choice'].values[:-1] == trials['choice'].values[1:]) & (trials['correct'].values[:-1] == 0)
+    trials['repeat_choice'] = np.concatenate(([False], rep_rew)).astype(int)
 
     # Get P(repeat choice) centered at probe trials
-    trials['probe_trial'] = (trials['laser_probability'] == 0.25) | (trials['laser_probability'] == 0.75)
+    #trials['probe_trial'] = trials['signed_contrast'] == 0
+    trials['probe_trial'] = (((trials['laser_probability'] == 0.25) & (trials['laser_stimulation'] == 1))
+                             | ((trials['laser_probability'] == 0.75) & (trials['laser_stimulation'] == 0)))
+    #trials['probe_trial'] = np.zeros(trials.shape[0]).astype(bool)
+    #trials.loc[np.random.choice(trials.index.values, int(trials.shape[0]*0.07), replace=False), 'probe_trial'] = True
     this_probe_df = pd.DataFrame()
     for s in np.unique(trials['session']):
         this_ses = trials[trials['session'] == s].reset_index(drop=True)
@@ -74,8 +78,9 @@ for i, subject in enumerate(subjects['subject']):
                                         'rel_trial']
             this_probe_df = pd.concat((this_probe_df, pd.DataFrame(data={
                 'repeat_choice': these_repeats, 'trial': these_trials,
-                'opto': this_ses.loc[trial_ind, 'laser_stimulation']})))
-                   
+                'opto': this_ses.loc[trial_ind, 'laser_stimulation'],
+                'opto_prob': this_ses.loc[trial_ind, 'laser_probability']})))
+            
     # Remove probe trials
     #trials.loc[(trials['laser_probability'] == 0.25) | (trials['laser_probability'] == 0.75), 'repeat_choice'] = np.nan
     trials.loc[(trials['laser_probability'] == 0.25) & (trials['laser_stimulation'] == 1), 'laser_stimulation'] = 0
@@ -124,16 +129,16 @@ for i, subject in enumerate(subjects['subject']):
               / (stim_trials.shape[0]-1))
 
     # Add to dataframe
-    this_repeats = this_probe_df[this_probe_df['opto'] == 1].groupby('trial').mean()['repeat_choice'].values * 100
-    p_repeat_probe_df = pd.concat((p_repeat_probe_df, pd.DataFrame(data={
-        'p_repeat': this_repeats, 'p_repeat_bl': this_repeats - np.mean(this_repeats[:SINGLE_TRIALS[0]]),
-        'trial': np.arange(-SINGLE_TRIALS[0], SINGLE_TRIALS[1]+1), 'sert-cre': sert_cre, 'subject': subject,
-        'opto': 1})))
     this_repeats = this_probe_df[this_probe_df['opto'] == 0].groupby('trial').mean()['repeat_choice'].values * 100
     p_repeat_probe_df = pd.concat((p_repeat_probe_df, pd.DataFrame(data={
         'p_repeat': this_repeats, 'p_repeat_bl': this_repeats - np.mean(this_repeats[:SINGLE_TRIALS[0]]),
         'trial': np.arange(-SINGLE_TRIALS[0], SINGLE_TRIALS[1]+1), 'sert-cre': sert_cre, 'subject': subject,
         'opto': 0})))
+    this_repeats = this_probe_df[this_probe_df['opto'] == 1].groupby('trial').mean()['repeat_choice'].values * 100
+    p_repeat_probe_df = pd.concat((p_repeat_probe_df, pd.DataFrame(data={
+        'p_repeat': this_repeats, 'p_repeat_bl': this_repeats - np.mean(this_repeats[:SINGLE_TRIALS[0]]),
+        'trial': np.arange(-SINGLE_TRIALS[0], SINGLE_TRIALS[1]+1), 'sert-cre': sert_cre, 'subject': subject,
+        'opto': 1})))
     
     this_repeats = this_block_single_df[this_block_single_df['opto'] == 1].groupby('trial').mean()['repeat_choice'].values * 100
     p_repeat_single_df = pd.concat((p_repeat_single_df, pd.DataFrame(data={
@@ -249,11 +254,11 @@ sns.lineplot(data=p_repeat_probe_df[p_repeat_probe_df['sert-cre'] == 1], x='tria
 handles, labels = ax4.get_legend_handles_labels()
 labels = ['No stim', 'Stim']
 ax4.legend(handles, labels, frameon=False, prop={'size': 5}, loc='upper right')
-ax4.set(ylabel='P[repeat choice] (%)', xlabel='Trials since single stimulation',
-        xticks=np.arange(-SINGLE_TRIALS[0], SINGLE_TRIALS[-1]+1), yticks=[-3, 0, 3])
+#ax4.set(ylabel='P[repeat choice] (%)', xlabel='Trials since single stimulation',
+#        xticks=np.arange(-SINGLE_TRIALS[0], SINGLE_TRIALS[-1]+1), yticks=[-3, 0, 3])
 
 sns.despine(trim=True)
 plt.tight_layout()
-plt.savefig(join(fig_path, 'prev_choice_opto.jpg'), dpi=600)
+plt.savefig(join(fig_path, 'prev_rew_choice_opto.jpg'), dpi=600)
 
 
