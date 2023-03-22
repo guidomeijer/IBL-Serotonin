@@ -19,7 +19,7 @@ K = 4
 
 # Paths
 data_path = 'C:\\Users\\guido\\Data\\5-HT'
-figure_path = 'C:\\Users\\guido\\Figures\\5-HT'
+figure_path = 'C:\\Users\\guido\\Figures\\5HT'
 data_dir = join(data_path, 'GLM-HMM', 'data_by_animal')
 figure_dir = join(figure_path, 'Behavior', 'GLM-HMM', f'{K}_states')
 

@@ -105,11 +105,11 @@ sns.lineplot(data=p_repeat_probe_df, x='trial', y='p_repeat',
 #            marker='*', color='k')
 handles, labels = ax1.get_legend_handles_labels()
 labels = ['No reward', 'Reward']
-ax1.legend(handles, labels, frameon=False, prop={'size': 5}, loc='lower right')
+ax1.legend(handles, labels, frameon=False, prop={'size': 5}, loc='lower left')
 #ax1.set(ylabel='P[repeat choice] (%)', xlabel='Trials since 0% contrast trial',
 #        xticks=np.arange(-SINGLE_TRIALS[0], SINGLE_TRIALS[-1]+1), yticks=[-10, 0, 10])
 ax1.set(ylabel='P[repeat choice] (%)', xlabel='Trials since 0% contrast trial',
-        xticks=np.arange(-SINGLE_TRIALS[0], SINGLE_TRIALS[-1]+1), ylim=[0, 60])
+        xticks=np.arange(-SINGLE_TRIALS[0], SINGLE_TRIALS[-1]+1), ylim=[0, 70])
 
 sns.despine(trim=True)
 plt.tight_layout()
