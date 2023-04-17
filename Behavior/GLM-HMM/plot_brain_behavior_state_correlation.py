@@ -24,7 +24,7 @@ BIN_SIZE = 0.1
 
 # Get paths
 glm_hmm_dir = 'C:\\Users\\guido\\Data\\5-HT'
-_, save_path = paths()
+fig_path, save_path = paths()
 
 # Get subjects for which GLM-HMM data is available
 subjects = load_subjects()
@@ -64,6 +64,14 @@ for i, subject in enumerate(animal_list):
     posterior_probs = get_marginal_posterior(inputs, datas, train_masks, hmm_params, N_STATES,
                                              range(N_STATES))
     states_max_posterior = np.argmax(posterior_probs, axis=1)
+    
+    """
+    # Swap states 1 and 3 for some mice
+    if subject in ['ZFM-05170', 'ZFM-04301']:
+        states_max_posterior[states_max_posterior == 1] = 999
+        states_max_posterior[states_max_posterior == 3] = 1
+        states_max_posterior[states_max_posterior == 999] = 3
+    """
     
     # Loop over sessions that have both GLM-HMM and ephys
     ephys_sessions = all_sessions[np.isin(all_sessions, rec['eid'])]
@@ -114,9 +122,8 @@ for r, region in enumerate(np.unique(sim_states_df['region'])):
 axs[0].set(ylabel='Brain-behavioral state similarity')
 sns.despine(trim=True)
 plt.tight_layout()  
+plt.savefig(join(fig_path, 'Extra plots', 'Behavior', 'brain_behavior_state.jpg'), dpi=600)
 
-
-"""
 grouped_df = sim_states_df.groupby(['pid', 'region', 'time']).max().reset_index()
 
 colors, dpi = figure_style()
@@ -130,8 +137,9 @@ sns.lineplot(data=grouped_df[grouped_df['region'] == 'Midbrain'], x='time', y='s
 sns.despine(trim=True)
 plt.tight_layout()    
 
-
-grouped_df = sim_states_df[sim_states_df['time'] == 0.75].groupby(['pid', 'region']).max().reset_index()
+# %%
+grouped_df = sim_states_df[(sim_states_df['time'] == 0.75)
+                           & (sim_states_df['behav_state'] == 4)].groupby(['pid', 'region']).mean().reset_index()
       
 colors, dpi = figure_style()
 f, ax1 = plt.subplots(1, 1, figsize=(1.75, 1.75), dpi=dpi)      
@@ -141,7 +149,7 @@ ax1.set(xlabel='')
 
 sns.despine(trim=True)
 plt.tight_layout()    
-"""
+
     
     
     

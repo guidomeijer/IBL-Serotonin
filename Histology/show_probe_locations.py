@@ -15,7 +15,7 @@ import matplotlib as mpl
 from one.api import ONE
 one = ONE(mode='remote')
 
-SUBJECT = 'ZFM-05170'
+SUBJECT = 'ZFM-05492'
 
 trajs = one.alyx.rest('trajectories', 'list', provenance='micro-manipulator')
 traj = pd.DataFrame(list(trajs))
@@ -53,7 +53,7 @@ traj_mm = traj.copy()
 sns.set(style="darkgrid", context="paper")
 markers = ['o', 's', 'v', 'D', 'X', '^', '*', 'h', 'H',  'd', 'p', 'P']
 
-f, ax = plt.subplots(1, 1, figsize=(7, 4), dpi=300)
+f, ax = plt.subplots(1, 1, figsize=(7, 4), dpi=150)
 df = traj[traj.subject_nickname==SUBJECT]
 sns.lineplot(data=df, x='x', y='y', hue="session_date", style="probe_label",
              hue_order=sorted(df.session_date.unique()),

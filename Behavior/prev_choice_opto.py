@@ -18,7 +18,7 @@ one = ONE()
 # Settings
 MIN_TRIALS = 800
 SINGLE_TRIALS = [2, 5]
-TRIAL_BINS = np.arange(-10, 31, 5)
+TRIAL_BINS = np.arange(-9, 31, 3)
 trial_bin_size = np.unique(np.diff(TRIAL_BINS))[0]
 trial_bin_labels = TRIAL_BINS[:-1] + (np.diff(TRIAL_BINS) / 2)
 
@@ -30,12 +30,13 @@ fig_path = join(paths()[0], 'Behavior')
 
 p_repeat_df, p_repeat_bins_df = pd.DataFrame(), pd.DataFrame()
 p_repeat_probe_df, p_repeat_single_df = pd.DataFrame(), pd.DataFrame()
+p_repeat_contrast_df = pd.DataFrame()
 for i, subject in enumerate(subjects['subject']):
 
     # Query sessions
     sert_cre = subjects.loc[subjects['subject'] == subject, 'sert-cre'].values[0]
     eids = query_opto_sessions(subject, include_ephys=True, one=one)
-    #eids = behavioral_criterion(eids, min_perf=0.7, min_trials=200, verbose=False, one=one)
+    eids = behavioral_criterion(eids, min_perf=0.7, min_trials=200, verbose=False, one=one)
 
     # Loop over sessions
     trials = pd.DataFrame()
@@ -59,7 +60,8 @@ for i, subject in enumerate(subjects['subject']):
         [False], trials['choice'].values[:-1] == trials['choice'].values[1:])).astype(int)
 
     # Get P(repeat choice) centered at probe trials
-    trials['probe_trial'] = (trials['laser_probability'] == 0.25) | (trials['laser_probability'] == 0.75)
+    trials['probe_trial'] = (((trials['laser_probability'] == 0.25) & (trials['laser_stimulation'] == 1))
+                             | ((trials['laser_probability'] == 0.75) & (trials['laser_stimulation'] == 0)))
     this_probe_df = pd.DataFrame()
     for s in np.unique(trials['session']):
         this_ses = trials[trials['session'] == s].reset_index(drop=True)
@@ -75,7 +77,15 @@ for i, subject in enumerate(subjects['subject']):
             this_probe_df = pd.concat((this_probe_df, pd.DataFrame(data={
                 'repeat_choice': these_repeats, 'trial': these_trials,
                 'opto': this_ses.loc[trial_ind, 'laser_stimulation']})))
-                   
+                 
+    # Get P(choice) depending on stim contrast
+    trials['unsigned_contrast'] = np.abs(trials['signed_contrast'])
+    rep_contrast = (trials.groupby(['unsigned_contrast', 'laser_stimulation']).sum()['repeat_choice']
+                    / trials.groupby(['unsigned_contrast', 'laser_stimulation']).size()).reset_index()
+    rep_contrast = rep_contrast.rename(columns={0: 'repeat_choice'})
+    rep_contrast['subject'] = subject
+    rep_contrast['sert-cre'] = sert_cre    
+            
     # Remove probe trials
     #trials.loc[(trials['laser_probability'] == 0.25) | (trials['laser_probability'] == 0.75), 'repeat_choice'] = np.nan
     trials.loc[(trials['laser_probability'] == 0.25) & (trials['laser_stimulation'] == 1), 'laser_stimulation'] = 0
@@ -164,6 +174,8 @@ for i, subject in enumerate(subjects['subject']):
     p_repeat_df = pd.concat((p_repeat_df, pd.DataFrame(index=[p_repeat_df.shape[0]+1], data={
         'p_no_stim': p_no_stim, 'p_stim': p_stim, 'subject': subject,
         'sert-cre': sert_cre})))
+    
+    p_repeat_contrast_df = pd.concat((p_repeat_contrast_df, rep_contrast))
 
 # %% Statistics
 
@@ -201,6 +213,8 @@ colors, dpi = figure_style()
 plot_colors = [colors['wt'], colors['sert']]
 plot_labels = ['WT', 'SERT']
 f, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4, figsize=(7, 1.75), dpi=dpi)
+
+"""
 for i in p_repeat_df[p_repeat_df['sert-cre'] == 1].index:
     ax1.plot([1, 2], [p_repeat_df.loc[i, 'p_no_stim'], p_repeat_df.loc[i, 'p_stim']],
              color=plot_colors[p_repeat_df.loc[i, 'sert-cre']],
@@ -209,6 +223,12 @@ ax1.set(ylabel='P[repeat choice] (%)', xticks=[1, 2], xticklabels=['No stim', 'S
         title=f'n = {len(np.unique(p_repeat_bins_df.loc[p_repeat_bins_df["sert-cre"] == 1, "subject"]))} mice',
         xlim=[0.8, 2.2], ylim=[0.6, 0.8])
 #ax1.legend(frameon=False)
+"""
+
+sns.lineplot(data=p_repeat_contrast_df[p_repeat_contrast_df['sert-cre'] == 1],
+             x='unsigned_contrast', y='repeat_choice', hue='laser_stimulation',
+             errorbar='se', ax=ax1)
+
 
 ax2.plot([TRIAL_BINS[0], TRIAL_BINS[-1]], [0, 0], ls='--', color='grey')
 sns.lineplot(data=p_repeat_bins_df[(p_repeat_bins_df['sert-cre'] == 1)],
@@ -255,5 +275,6 @@ ax4.set(ylabel='P[repeat choice] (%)', xlabel='Trials since single stimulation',
 sns.despine(trim=True)
 plt.tight_layout()
 plt.savefig(join(fig_path, 'prev_choice_opto.jpg'), dpi=600)
+
 
 
