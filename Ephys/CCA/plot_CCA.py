@@ -12,12 +12,10 @@ from matplotlib.patches import Rectangle
 import matplotlib.pyplot as plt
 import seaborn as sns
 from scipy.ndimage import gaussian_filter
-from serotonin_functions import paths, load_subjects, figure_style
+from stim_functions import paths, load_subjects, figure_style
 from dlc_functions import smooth_interpolate_signal_sg
 
 # Settings
-REGION_PAIRS = ['M2-mPFC', 'M2-OFC']
-PER_SUBJECT = True
 
 # Paths
 fig_path, save_path = paths()

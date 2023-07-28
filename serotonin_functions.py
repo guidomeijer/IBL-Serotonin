@@ -228,7 +228,7 @@ def query_opto_sessions(subject, include_ephys=False, one=None):
 
 def query_ephys_sessions(aligned=True, behavior_crit=False, n_trials=0, anesthesia='no',
                          acronym=None, one=None):
-    assert anesthesia in ['no', 'both', 'yes', 'all', 'no&both']
+    assert anesthesia in ['no', 'both', 'yes', 'all', 'no&both', 'yes&both']
     if one is None:
         one = ONE()
 
