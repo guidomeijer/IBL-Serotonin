@@ -34,10 +34,8 @@ _, save_path = paths()
 save_path = join(save_path, 'GLM-HMM')
 
 # Create folders
-if not isdir(save_path):
-    os.mkdir(save_path)
-if not isdir(join(save_path, 'data_by_animal')):
-    os.mkdir(join(save_path, 'data_by_animal'))
+os.makedirs(save_path, exist_ok=True)
+os.makedirs(join(save_path, 'data_by_animal'), exist_ok=True)
 
 # Query which subjects to use and create eid list per subject
 subjects = load_subjects()
